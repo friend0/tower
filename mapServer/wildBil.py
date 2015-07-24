@@ -7,7 +7,7 @@ __author__ = 'Ryan A. Rodriguez'
 import rasterio
 from osgeo import gdal
 import gdal
-import  gdalconst
+import gdalconst
 import numpy as np
 import matplotlib.pyplot as plt
 import struct
@@ -150,12 +150,10 @@ class Vicinity(Map):
         self.RastStart = namedtuple("RastStart", ['x', 'y'], verbose=False)
         self.RastStart.x, self.RastStart.y = None, None
 
-    def getVicinity(self, mx, my, north_pixels, east_pixels):
-        '''
-        @todo Need to figure out how to read just a section of the file at a time
-        '''
-        val = 0
+    def get_vicinity(self, mx, my, north_pixels, east_pixels):
+        
 
+        val = 0
         eastBoundary = self.originX + self.ncol
         westBoundary = self.originX
         northBoundary = self.originY
@@ -203,7 +201,7 @@ if __name__ == '__main__':
     print vic.originX+vic.ncol, vic.originY+vic.nrow
     print vic.originX+vic.ncol/2, vic.originY+vic.nrow/2
 
-    res = vic.getVicinity(vic.originX+vic.ncol/2, vic.originY+vic.nrow/2, 3, 3)
+    res = vic.get_vicinity(vic.originX+vic.ncol/2, vic.originY+vic.nrow/2, 3, 3)
     print res, type(res)
 
     rast = filename
