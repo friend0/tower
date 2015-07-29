@@ -11,7 +11,7 @@ from collections import namedtuple
 
 '''
 @todo:
-Switch all te print statements to logging
+Switch all the print statements to logging
 '''
 
 import SocketServer, subprocess, sys
@@ -23,8 +23,13 @@ PORT = 2002
 x = np.array([[55, 1000, 45], [20, 3, 10], [1000000, 10, 20]])
 
 
+class CommandNotFound(Exception):
+    """ Easy to understand naming conventions work best! """
+    pass
+
+
 class Map_Interface(Vicinity):
-    def __init__(self, filename, northPixels=None, eastPixels=None):
+    def __init__(self, filename, northPixels=10, eastPixels=10):
         super(Map_Interface, self).__init__(filename)
         Coordinate = namedtuple('Coordinate', 'x y')
         self.initialCoordinates = Coordinate(x=None, y=None)
@@ -36,9 +41,9 @@ class Map_Interface(Vicinity):
             try:
                 (self.north_pixels, self.east_pixels) = (northPixels, eastPixels)
             except:
-                print "Problem with North/East pixel arguments"
+                raise CommandNotFound("Command not found. Check your syntax")
 
-        self.adjacentElevations = np.zeros((northPixels, eastPixels))
+        self.adjacentElevations = np.zeros((self.north_pixels, self.east_pixels))
         self.commands = {'get_vicinity': self.get_vicinity, 'get_elevation_at_point': self.get_elevation_at_point}
 
     def init_position(self, xCoords, yCoords):
@@ -71,23 +76,31 @@ class Map_Interface(Vicinity):
         self.currentCoordinates.x = xCoords
         self.currentCoordinates.y = yCoords
         self.adjacentElevations = self.get_vicinity(self.currentCoordinates.x, self.currentCoordinates.y,
-                                                        self.north_pixels, self.east_pixels)
+                                                    self.north_pixels, self.east_pixels)
 
     def get_elevation_at_point(self):
+        pass
+
+    def get_elevation_along_path(self):
         pass
 
     def determine_command(self, command):
         #find function and args
         res = split('[,()]*', command.strip())
         command = filter(None, res)
+        cmd = None;
         try:
-            self.commands[command[0]]()
+            cmd = self.commands[command[0]]()
         except:
             print "Command Not Found"
 
+        return cmd
+
+    def handle(self, command):
+        cmd = self.determine_command(self, command)
+
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
-
     def get_request(self):
         '''
         Override native get_request function in order to print out who is connecting to the server
@@ -107,18 +120,39 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
     when sending data back via sendto().
     """
 
-
     def setup(self):
-        self.mapInterface = Map_Interface(filename)
-        pass
+        if not hasattr(self, 'mapInterface'):
+            self.mapInterface = Map_Interface(filename)
 
     def handle(self):
+        """
+        Handles UDP requests to the server.
+        The map interface class is responsible for parsing the request, and executing the requested function.
+        :return:
+        """
+        import struct
+        import binascii
+
+        #data = self.request[0].strip()
         data = self.request[0].strip()
-        print "Address {} at {} wrote: '{}'".format(self.client_address[1], self.client_address[0], data)
-        self.mapInterface.determine_command(data)
+        #data = data.decode("utf-8")
+
+        #print "Data:", data, len(data), type(data)
+        print data
+        #data = data.decode("utf-8")
+        #print type(data)
+        if data == '\n':
+            print data
+            print "Breaking"
+
+            #print type(dat), struct.unpack(dat)
+        #print "Address {} at {} wrote: '{}'".format(self.client_address[1], self.client_address[0], data)
+        #self.mapInterface.determine_command(data)
         socket = self.request[1]
-        print x
-        socket.sendto(x.tostring('C'), self.client_address)
+        #print x
+        #socket.sendto(x.tostring('C'), self.client_address)
+        socket.sendto(x.tostring('C'), ('127.0.0.1', 25000))
+
         #scipy.io.savemat('/Users/empire/Documents/MATLAB/hybridQuadSim/quaternionController/models/mapData.mat', mdict={'mapData': x})
 
     def finish(self):
