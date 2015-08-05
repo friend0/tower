@@ -5,7 +5,7 @@ import SocketServer
 from threading import Thread
 import sys
 import os
-from wildBil import Vicinity
+from worldEngine import Map
 from re import split
 from collections import namedtuple
 
@@ -28,7 +28,12 @@ class CommandNotFound(Exception):
     pass
 
 
-class Map_Interface(Vicinity):
+class Map_Interface(Map):
+    """
+    Class on the server side that interfaces Matlab with the MapData retrieval methods provided by 'WorldEngine'
+    Used to interpret commands from UDP packets,
+    """
+
     def __init__(self, filename, northPixels=10, eastPixels=10):
         super(Map_Interface, self).__init__(filename)
         Coordinate = namedtuple('Coordinate', 'x y')
@@ -44,7 +49,9 @@ class Map_Interface(Vicinity):
                 raise CommandNotFound("Command not found. Check your syntax")
 
         self.adjacentElevations = np.zeros((self.north_pixels, self.east_pixels))
-        self.commands = {'get_vicinity': self.get_vicinity, 'get_elevation_at_point': self.get_elevation_at_point}
+        self.commands = {'get_point_elevation': self.get_point_elevation,
+                         'get_surrounding_elevation': self.get_surrounding_elevation,
+                         'get_elevation_along_path': self.get_elevation_along_segment}
 
     def init_position(self, xCoords, yCoords):
         '''
@@ -78,10 +85,13 @@ class Map_Interface(Vicinity):
         self.adjacentElevations = self.get_vicinity(self.currentCoordinates.x, self.currentCoordinates.y,
                                                     self.north_pixels, self.east_pixels)
 
-    def get_elevation_at_point(self):
+    def get_point_elevation(self):
         pass
 
-    def get_elevation_along_path(self):
+    def get_elevation_along_segment(self):
+        pass
+
+    def get_surrounding_elevation(self):
         pass
 
     def determine_command(self, command):
@@ -153,14 +163,16 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         #socket.sendto(x.tostring('C'), self.client_address)
         socket.sendto(x.tostring('C'), ('127.0.0.1', 25000))
 
-        #scipy.io.savemat('/Users/empire/Documents/MATLAB/hybridQuadSim/quaternionController/models/mapData.mat', mdict={'mapData': x})
+        #scipy.io.savemat('/Users/empire/Documents/MATLAB/hybridQuadSim/quaternionController/models/mapData.mat',
+        # mdict={'mapData': x})
 
     def finish(self):
         pass
 
 
 if __name__ == "__main__":
-    filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01/bayAreaBIL.bil'
+    filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01/bayAreaBIL' \
+               r'.bil'
 
     map_server = ThreadedUDPServer((HOST, PORT), UDP_Interrupt)
     #map_interface = Map_Interface(filename)

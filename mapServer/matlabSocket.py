@@ -1,10 +1,11 @@
 __author__ = 'empire'
 
-import wildBil
+import worldEngine
 import socket
 import sys
 
 import SocketServer
+
 
 class MyTCPHandler(SocketServer.BaseRequestHandler):
     """
@@ -21,8 +22,8 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         print data
         socket.sendto(data.upper(), self.client_address)
 
-class mapServer(object):
 
+class mapServer(object):
     def __init__(self, host, port):
         self.host = host;
         self.port = port;
@@ -77,6 +78,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         # just send back the same data, but upper-cased
         self.request.sendall(self.data.upper())
 
+
 if __name__ == '__main__':
     '''
     HOST, PORT = '', 50009
@@ -104,7 +106,6 @@ if __name__ == '__main__':
     PORT = 50006              # Arbitrary non-privileged port
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
 
     s.bind((HOST, PORT))
     s.listen(1)
