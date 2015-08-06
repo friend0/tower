@@ -7,16 +7,16 @@ Manages
 __author__ = 'Ryan A. Rodriguez'
 
 import rasterio
-#from osgeo import gdal
+from rasterio import warp
+from osgeo import gdal, osr
 #import gdal
 import gdalconst
 import numpy as np
 import matplotlib.pyplot as plt
 from pylab import *
 from collections import namedtuple
-from vehicle import Quadrotor, Coordinate
-import math
-import sys;
+from vehicle import Quadrotor, Coordinate, PixelPair
+from affine import Affine
 
 from geographiclib.geodesic import Geodesic
 from geographiclib.constants import *
@@ -45,9 +45,10 @@ class MapFile(object):
         #If the file is not a bil, maybe try to convert it with rasterio first
         try:
             self.img = rasterio.open(self.bil_file)
+
             #band = rasterio.band(src, 1)
             #w = self.src.read(1, window=((0, 100), (0, 100)))
-            #print "IMG Metadata", self.img.meta
+            print "IMG Metadata", self.img.meta
 
             #self.img = gdal.Open(self.bil_file)
             #self.band = self.img.GetRasterBand(1)
@@ -71,8 +72,9 @@ class MapFile(object):
             raise ReadException("Missing arguments for window during read")
         try:
 
-            #self.geotransform = self.img.GetGeoTransform()
             self.geotransform = self.img.meta['transform']
+            print "GeoT"
+            print self.geotransform
             self.nodatavalue, self.data = None, None
             self.nodatavalue = self.img.meta['nodata']
             self.ncol = self.img.meta['width']
@@ -150,6 +152,30 @@ class Map(MapFile):
         except:
             raise AddVehicleException("Vehicle does not have a name, or does not exist")
 
+    def latLonToPixel(self, coords):
+        # Load the image dataset
+        ds = gdal.Open(self.fileName)
+        # Get a geo-transform of the dataset
+        gt = self.geotransform
+        # Create a spatial reference object for the dataset
+        srs = osr.SpatialReference()
+        #print self.img.crs['init']
+        #print ds.GetProjection()
+
+        srs.ImportFromWkt(ds.GetProjection())
+        # Set up the coordinate transformation object
+        srsLatLong = srs.CloneGeogCS()
+        ct = osr.CoordinateTransformation(srsLatLong, srs)
+
+        # Change the point locations into the GeoTransform space
+        (x, y, holder) = ct.TransformPoint(coords.lon, coords.lat)
+        # Translate the x and y coordinates into pixel values
+        x = (x - gt[0]) / gt[1]
+        y = (y - gt[3]) / gt[5]
+        # Add the point to our return array
+        pixelPairs = PixelPair(x=int(x), y=int(y))
+        return pixelPairs
+
     def get_point_elevation(self, coordinate, mode='coords'):
         """
         Retrieve an elevation value for a single point given coordinate input
@@ -165,9 +191,9 @@ class Map(MapFile):
 
         # Convert from map to pixel coordinates.
         if mode is 'coords':
-            px = int((cx - self.originX) / self.pixelWidth) #x pixel
-            py = int((cy - self.originY) / self.pixelHeight) #y pixel
-            print px, py, self.originX, self.originY, self.pixelWidth, self.pixelHeight
+            pixs = self.latLonToPixel(coordinate)
+            px = pixs.x
+            py = pixs.y
         elif mode is 'pixel':
             px = cx
             py = cy
@@ -176,15 +202,8 @@ class Map(MapFile):
 
         #print "Px:{}, Py:{}".format(px, py), val
         try: #in case raster isnt full extent
-            #structval = self.band.ReadRaster(px, py, 1, 1, buf_type=gdal.GDT_Float32) #Assumes 32 bit int aka 'float'
-            pixel = self.img.read(1, window=((px, px + 1), (py, py + 1)))
-            print "pixel", pixel
-            #intval = struct.unpack('f', structval)
-            #had to add 0.0000... so that it wouldn't truncate to integer and fail with constraint error my database
-            #val = intval[0]
-            #if intval[0] < -9999:
-            #    val = -9999
-
+            #Window is: ((row_start, row_stop), (col_start, col_stop))
+            pixel = self.img.read(1, window=((py, py + 1), (px, px + 1)))
         except:
             RetrievePointException("Pixel read exception")
 
@@ -216,8 +235,9 @@ class Map(MapFile):
             #@todo: how to check if coords in either mode are the right format?
         if coordinates is not None:
             if mode is 'coords':
-                px = int((coordinates.lon - self.originX) / self.pixelWidth) #x pixel
-                py = int((coordinates.lat - self.originY) / self.pixelHeight) #y pixel
+                pixs = self.latLonToPixel(coordinates)
+                px = pixs.x
+                py = pixs.y
             elif mode is 'pixel':
                 px = coordinates.lon
                 py = coordinates.lat
@@ -241,25 +261,16 @@ class Map(MapFile):
         topLeftX = px - lon_window / 2
         topLeftY = px + lat_window / 2
         try: #in case raster isnt full extent
+            """@todo: use negative windowing feature of rasterio read"""
             elevations = self.img.read(1, window=((topLeftX, topLeftX + lon_window), (topLeftY, topLeftY + lat_window)))
-            #structval = self.band.ReadRaster(0, 0, 5, 5, 5, 5) #Assumes 32 bit int aka 'float'
-            #structval = self.band.ReadRaster(self.RastStart.x, self.RastStart.y, self.ncols, self.nrows,
-            # buf_type=gdal.GDT_Float32) #Assumes 32 bit int aka 'float'
-            #intval = struct.unpack('f', structval)
-            #had to add 0.0000... so that it wouldn't truncate to integer and fail with constraint error my database
-            #if elevations[0] < -9999:
-            #    elevations = -9999
         except:
             print "exception"
         return elevations
 
-    def get_elevation_along_segment(self, startCoord, endCoord, numSegments=None, mode='coords', returnStyle='array'):
+    def get_coordinates_in_segment(self, startCoord, endCoord, numSegments=None, returnStyle='array'):
         """
-        Algorithmic Development:
-            1) determine the line between start and end
-            2) sample points along the line
+        Get coordinates along the direct path between start and end coordinates
 
-            How to do this?
         :param startCoord: a Coordinate containing lat and lon, the starting point of the path.
         :param endCoord: a Coordinate containing lat and lon, the end point of the path.
         :param mode: determines how the elevation is sampled, either by pixel width, or a given sampling rate in
@@ -276,11 +287,59 @@ class Map(MapFile):
             b = l.Position(i * p['s12'] / num)
             profile.append(Coordinate(b['lat2'], b['lon2']))
             print(b['lat2'], b['lon2'])
+            #else:
+        #    raise TypeError("Invalid mode of operation specified for retrieving elevation by segment")
+
+        return profile
+
+    def get_elevation_along_segment(self, coordinateArray):
+
+        for coordinate in coordinateArray:
+            #print Coordinate
+            #print "coordinate:{}".format(coordinate)
+            print self.get_point_elevation(coordinate)
+
+
+    def get_coordinates_along_path(self, mode="coordinateTrace", returnStyle='array', **kwargs):
+        """
+
+
+        :param coordinateFile:
+        :param numSegments:
+        :param returnStyle:
+        :return:
+        """
+        file = kwargs.get('csvFile', None)
+        coordinateArray = kwargs.get('vehicleName', None)
+
+        profile = []
+
+        if mode is 'file' and file is None:
+            raise TypeError("File mode specified, but no file given")
+            #read in csv file as array of Coords
+            pass
+        elif mode is 'coordinateTrace' and coordinateArray is None:
+            raise TypeError("File mode specified, but no file given")
+            pass
+
+        if mode is 'coordinateTrace':
+            for start, end in coordinateArray:
+                profile.append(self.get_coordinates_in_segment(start, end, 15))
+
+        #else:
+        #    raise TypeError("Invalid mode of operation specified for retrieving elevation by segment")
 
         return profile
 
 
-    def get_elevation_along_path(self, startCoord, endCoord, mode='coords'):
+    def get_elevation_along_path(self, segmentList, mode='coords'):
+
+        """
+        Query elevations along a path defined by a list of segments
+
+        :param segmentList:
+        :param mode:
+        """
         pass
 
     def planPath(self, startCoord, endCoord, **kwargs):
@@ -296,32 +355,36 @@ if __name__ == '__main__':
     #Enter file name, instantiate map and pre-process
     #filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01
     # /bayAreaBIL.bil'
-    #filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01
-    # /virtRasterCalifornia.vrt'
-    filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01_BIL' \
-               r'/virtRasterCaliforniaBil.bil'
+    filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01/' \
+               r'virtRasterCalifornia.vrt'
+    #filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01_BIL' \
+    #          r'/virtRasterCaliforniaBil.bil'
+
     map = Map(filename)
     map.process_file()
 
     #@todo: look at how tigres creates many of the same type of object without having to name all of them
     #Make a quadrotor, initialize position (need to do this in Matlab in RL)
+
     lon = -122.030796
     lat = 36.974117
     quadrotor = Quadrotor(lat, lon)
     map.add_vehicle(quadrotor)
-
+    tCoord = Coordinate(lat, lon)
+    print map.latLonToPixel(tCoord)
     #res = map.get_surrounding_elevation(mode='pixel', coords = (map.ncol/2, map.nrow/2), vehicleName=quadrotor.name,
     #  lon_window=20, lat_window=20)
     #res = map.get_surrounding_elevation(mode='pixel', coordinates=Coordinate(6000, 5000), lon_window=10, lat_window=10)
     #print "Surrounding Elevations{}, \nWindow Size of{}".format(res, shape(res))
 
-    print map.get_point_elevation(Coordinate(1000, 1000), mode='pixel')
-    #print map.get_elevation_along_segment(coordinate(1000, 1000), (1000, 1500))
+    #print map.get_point_elevation(Coordinate(9719, 25110), mode='pixel')
 
+    print map.get_point_elevation(Coordinate(36.974117, -122.030796), mode='coords')
+    res = map.get_coordinates_in_segment(Coordinate(36.974117, -122.030796), Coordinate(37.411372, -122.053471))
+    print res
+    map.get_elevation_along_segment(res)
 
-    print map.get_elevation_along_segment(Coordinate(36.974117, -122.030796), Coordinate(37.411372, -122.053471))
-    mx = -122
-    my = 37
+    """@todo: turn this into a graph function"""
     #print map.readRastPix(mx, my)
 
     #band = a.GetRasterBand(1)

@@ -51,7 +51,7 @@ class Map_Interface(Map):
         self.adjacentElevations = np.zeros((self.north_pixels, self.east_pixels))
         self.commands = {'get_point_elevation': self.get_point_elevation,
                          'get_surrounding_elevation': self.get_surrounding_elevation,
-                         'get_elevation_along_path': self.get_elevation_along_segment}
+                         'get_elevation_along_path': self.get_coordinates_in_segment}
 
     def init_position(self, xCoords, yCoords):
         '''
@@ -88,7 +88,7 @@ class Map_Interface(Map):
     def get_point_elevation(self):
         pass
 
-    def get_elevation_along_segment(self):
+    def get_coordinates_in_segment(self):
         pass
 
     def get_surrounding_elevation(self):
