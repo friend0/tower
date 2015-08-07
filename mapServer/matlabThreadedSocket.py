@@ -9,13 +9,7 @@ from worldEngine import Map
 from re import split
 from collections import namedtuple
 
-'''
-@todo:
-Switch all the print statements to logging
-'''
-
-import SocketServer, subprocess, sys
-from threading import Thread
+""" @todo:Switch all the print statements to logging"""
 
 HOST = 'localhost'
 PORT = 2002
@@ -54,24 +48,26 @@ class Map_Interface(Map):
                          'get_elevation_along_path': self.get_coordinates_in_segment}
 
     def init_position(self, xCoords, yCoords):
-        '''
+        """
         Used to set the initial coordinates of the vehicle on the map. Can only be called once.
         :param xCoords: the x coordinate to be set
         :param yCoords: the y coordinate to be set
-        '''
+        """
+
         if not hasattr(self, 'initialCoordinates'):
             try:
                 self.initialCoordinates.x = xCoords
                 self.initialCoordinates.y = yCoords
-                self.adjacentElevations = self.get_vicinity(self.initialCoordinates.x, self.initialCoordinates.y,
-                                                            self.north_pixels, self.east_pixels)
+                self.adjacentElevations = self.get_surrounding_elevation(self.initialCoordinates.x,
+                                                                         self.initialCoordinates.y, self.north_pixels,
+                                                                         self.east_pixels)
             except:
                 print "Problem initializing coordinates"
         else:
             print "Currently initial coordinates may only be set once"
 
     def update_position(self, xCoords, yCoords):
-        '''
+        """
         Update Position with the Vicinity class
         Gives new coordinates so that Vacinity has the latest coordinates and elevation matrix
         Should make a call to the Vicinity classes function for retrieving elevation matrix, update the elevation
@@ -79,26 +75,18 @@ class Map_Interface(Map):
 
         :param xCoords: the x coordinate to be set
         :param yCoords: the y coordinate to be set
-        '''
+        """
+
         self.currentCoordinates.x = xCoords
         self.currentCoordinates.y = yCoords
         self.adjacentElevations = self.get_vicinity(self.currentCoordinates.x, self.currentCoordinates.y,
                                                     self.north_pixels, self.east_pixels)
 
-    def get_point_elevation(self):
-        pass
-
-    def get_coordinates_in_segment(self):
-        pass
-
-    def get_surrounding_elevation(self):
-        pass
-
     def determine_command(self, command):
         #find function and args
         res = split('[,()]*', command.strip())
         command = filter(None, res)
-        cmd = None;
+        cmd = None
         try:
             cmd = self.commands[command[0]]()
         except:
@@ -107,16 +95,16 @@ class Map_Interface(Map):
         return cmd
 
     def handle(self, command):
-        cmd = self.determine_command(self, command)
+        cmd = self.determine_command(command)
 
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
     def get_request(self):
-        '''
+        """
         Override native get_request function in order to print out who is connecting to the server
         @todo make this Python3 compatible by using superclasses. Will need to update socketServer package
         :return:
-        '''
+        """
         (data, self.socket), client_addr = SocketServer.UDPServer.get_request(self)
         print "Server connected to by:{}".format(client_addr)
         return (data, self.socket), client_addr
@@ -140,17 +128,7 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         The map interface class is responsible for parsing the request, and executing the requested function.
         :return:
         """
-        import struct
-        import binascii
-
-        #data = self.request[0].strip()
         data = self.request[0].strip()
-        #data = data.decode("utf-8")
-
-        #print "Data:", data, len(data), type(data)
-        print data
-        #data = data.decode("utf-8")
-        #print type(data)
         if data == '\n':
             print data
             print "Breaking"
@@ -175,6 +153,7 @@ if __name__ == "__main__":
                r'.bil'
 
     map_server = ThreadedUDPServer((HOST, PORT), UDP_Interrupt)
+    server_thread = None
     #map_interface = Map_Interface(filename)
 
     # terminate with Ctrl-C
