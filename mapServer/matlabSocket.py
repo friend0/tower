@@ -1,9 +1,6 @@
 __author__ = 'empire'
 
-import worldEngine
 import socket
-import sys
-
 import SocketServer
 
 
@@ -25,18 +22,17 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
 
 class mapServer(object):
     def __init__(self, host, port):
-        self.host = host;
-        self.port = port;
+        self.host = host
+        self.port = port
         self.socket = openSocket(host, port)
 
 
 def openSocket(host, port):
     """Open a socket on specified port with given host
 
-    :param name: The name to use.
-    :type name: str.
-    :param state: Current state to be in.
-    :type state: bool.
+
+    :param host: host ID
+    :param port: port number to listen on
     :returns:  a socket object
     """
 
@@ -51,12 +47,7 @@ def openSocket(host, port):
 
 def serviceRequest(fileName):
     """This function does something.
-    :param name: The name to use.
-    :type name: str.
-    :param state: Current state to be in.
-    :type state: bool.
-    :returns:  int -- the return code.
-    :raises: AttributeError, KeyError
+    :param fileName:
     """
     pass
 
@@ -80,28 +71,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
 
 
 if __name__ == '__main__':
-    '''
-    HOST, PORT = '', 50009
-    #server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    s.bind((HOST, PORT))
-
-    print("Listening on port:", PORT)
-
-    s.listen(1)
-    conn, addr = s.accept()
-
-    print 'Connected by', addr
-
-    while 1:
-        data = conn.recv(1024)
-        print data, conn
-        if not data: break
-        conn.send(data)
-    conn.close()
-    '''
     HOST = ''                 # Symbolic name meaning all available interfaces
     PORT = 50006              # Arbitrary non-privileged port
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
