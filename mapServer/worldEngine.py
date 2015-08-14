@@ -4,6 +4,9 @@ WorldEngine
 Used as the data layer for the threaded server. Retrieves and processes data stored in raster images.
 Manages
 """
+import csv
+import string
+
 __author__ = 'Ryan A. Rodriguez'
 
 import rasterio
@@ -13,6 +16,15 @@ import matplotlib.pyplot as plt
 from pylab import *
 from vehicle import Quadrotor, Coordinate, PixelPair
 from geographiclib.geodesic import Geodesic
+from itertools import izip, tee
+
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s2,s3), (s4, s5), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    a = iter(iterable)
+    return izip(a, b)
 
 
 class ReadException(Exception):
@@ -46,14 +58,6 @@ class MapFile(object):
             print "Metadata:{}".format(self.img.meta)
 
 
-class AddVehicleException(Exception):
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
-
-
 class RetrievePointException(Exception):
     def __init__(self, value):
         self.value = value
@@ -68,16 +72,6 @@ class Map(MapFile):
         self.fileName = filename
         self.adjacentElevations = np.zeros((3, 3))
         self.vehicles = {}
-
-    def add_vehicle(self, vehicle):
-        """
-        Add vehicle to the dictionary representing vehicles present on the map
-        :param vehicle:
-        """
-        try:
-            self.vehicles[vehicle.name] = vehicle
-        except:
-            raise AddVehicleException("Vehicle does not have a name, or does not exist")
 
     def latLonToPixel(self, coords):
         """
@@ -99,6 +93,39 @@ class Map(MapFile):
         y = (y - gt[3]) / gt[5]
         pixelPairs = PixelPair(x=int(x), y=int(y))
         return pixelPairs
+
+    def distance_on_unit_sphere(self, coord1, coord2):
+
+        lat1, lon1 = coord1.lat, coord1.lon
+        lat2, lon2 = coord2.lat, coord2.lon
+
+        # Convert latitude and longitude to
+        # spherical coordinates in radians
+        degrees_to_radians = math.pi / 180.0
+
+        # phi = 90 - latitude
+        phi1 = (90.0 - lat1) * degrees_to_radians
+        phi2 = (90.0 - lat2) * degrees_to_radians
+
+        # theta = longitude
+        theta1 = lon1 * degrees_to_radians
+        theta2 = lon2 * degrees_to_radians
+
+        # Compute spherical distance from spherical coordinates.
+
+        # For two locations in spherical coordinates
+        # (1, theta, phi) and (1, theta', phi')
+        # cosine( arc length ) =
+        #    sin phi sin phi' cos(theta-theta') + cos phi cos phi'
+        # distance = rho * arc length
+
+        cos = (math.sin(phi1) * math.sin(phi2) * math.cos(theta1 - theta2) +
+               math.cos(phi1) * math.cos(phi2))
+        arc = math.acos(cos)
+
+        # Remember to multiply arc by the radius of the earth
+        # in your favorite set of units to get length.
+        return arc * 6373 #for km, 3960 for feet
 
     def get_point_elevation(self, coordinate, mode='coords'):
         """
@@ -132,6 +159,13 @@ class Map(MapFile):
         return pixel[0][0]
 
     def get_surrounding_elevation(self, mode='coords', window=10, coordinates=None, vehicleName=None):
+    #def get_surrounding_elevation(self, **kwargs):
+    #    mode = kwargs.get('mode', 'coords')
+    #    window = kwargs.get('window', 3)
+    #    coordinates = kwargs.get('coordinates', None)
+    #    vehicleName = kwargs.get('vehicleName', None)
+
+
         """
         Return a square matrix of size window x window
 
@@ -233,7 +267,7 @@ class Map(MapFile):
         :param kwargs: Optional arguments for the get_coordinates_in_segment() function
         :return: A continuous set of coordinate along a path, which is a set of connected linear segments
         """
-        coordinateArray = kwargs.get('vehicleName', None)
+        coordinateArray = kwargs.get('coordinateArray', None)
         mode = kwargs.get('mode', None)
         numSamples = kwargs.get('numSamples', None)
         profile = []
@@ -271,7 +305,54 @@ class Map(MapFile):
 
         :param segmentList:
         :param mode:
+        :return the distances between each coordinate, as well as the elevations at each coordinate
         """
+        csvPath = r'/Users/empire/Dropbox/NASA-Collaboration/qgis/pathCSV/path4.csv'
+        with open(csvPath, 'rb') as csvfile:
+            mycsv = csv.reader(csvfile, delimiter=' ', quotechar='|')
+            mycsv = list(mycsv)
+
+            coordinateArray = []
+            masterCoords = []
+            masterDistance = []
+
+            lines = [ent[0].split(',') for ent in mycsv[1:] if ent]
+
+            cordura = [Coordinate(elem[1], elem[0]) for elem in [[float(e) for e in line if e] for line in lines]]
+
+            print "Cordura!\n", len(cordura), cordura
+
+            #for line in lines:
+            #    line = [float(e) for e in line if e]
+            #    coordinateArray.append(Coordinate(lat=float(line[1]), lon=float(line[0])))
+            #    print line
+            #print "CoordinateArray!\n"
+            #print coordinateArray
+
+
+
+            count = 0;
+            for segmentStart, segmentEnd in pairwise(coordinateArray):
+                count += 1
+                masterDistance.append(self.distance_on_unit_sphere(segmentStart, segmentEnd))
+
+                temp = (self.get_coordinates_in_segment(segmentStart, segmentEnd))
+                for eachEntry in temp:
+                    masterCoords.append(eachEntry)
+
+            print "MasterDistance:\n", masterDistance, "Length:\n", len(masterDistance), count, "TotalLength:\n", sum(
+                masterDistance)
+
+            masterElevation = []
+            for elem in masterCoords:
+                masterElevation.append(self.get_point_elevation(elem))
+                #print elem, '\n'
+            print masterElevation
+            return masterCoords
+
+
+        #read CSV file with list of segment pairs
+
         pass
 
     def planPath(self, startCoord, endCoord, **kwargs):
@@ -331,8 +412,8 @@ if __name__ == '__main__':
 
     lon = -122.030796
     lat = 36.974117
-    quadrotor = Quadrotor(lat, lon)
-    map.add_vehicle(quadrotor)
+    #quadrotor = Quadrotor(lat, lon)
+    #map.add_vehicle(quadrotor)
     tCoord = Coordinate(lat, lon)
     print map.latLonToPixel(tCoord)
     #res = map.get_surrounding_elevation(mode='pixel', coords = (map.ncol/2, map.nrow/2), vehicleName=quadrotor.name,
@@ -342,8 +423,10 @@ if __name__ == '__main__':
 
     #print map.get_point_elevation(Coordinate(9719, 25110), mode='pixel')
 
+    print map.get_elevation_along_path(None, mode='coords')
+
     print map.get_point_elevation(Coordinate(36.974117, -122.030796), mode='coords')
     res = map.get_coordinates_in_segment(Coordinate(36.974117, -122.030796), Coordinate(37.411372, -122.053471))
-    print res
+    #print res
     map.get_elevation_along_segment(res)
 
