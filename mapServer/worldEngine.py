@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 from pylab import *
 from vehicle import Quadrotor, Coordinate, PixelPair
 from geographiclib.geodesic import Geodesic
-from itertools import izip, tee
+from itertools import izip, tee, izip_longest
+from collections import namedtuple
 
 
 def pairwise(iterable):
@@ -98,6 +99,45 @@ class Map(MapFile):
 
         lat1, lon1 = coord1.lat, coord1.lon
         lat2, lon2 = coord2.lat, coord2.lon
+
+        # Convert latitude and longitude to
+        # spherical coordinates in radians
+        degrees_to_radians = math.pi / 180.0
+
+        # phi = 90 - latitude
+        phi1 = (90.0 - lat1) * degrees_to_radians
+        phi2 = (90.0 - lat2) * degrees_to_radians
+
+        # theta = longitude
+        theta1 = lon1 * degrees_to_radians
+        theta2 = lon2 * degrees_to_radians
+
+        # Compute spherical distance from spherical coordinates.
+
+        # For two locations in spherical coordinates
+        # (1, theta, phi) and (1, theta', phi')
+        # cosine( arc length ) =
+        #    sin phi sin phi' cos(theta-theta') + cos phi cos phi'
+        # distance = rho * arc length
+
+        cos = (math.sin(phi1) * math.sin(phi2) * math.cos(theta1 - theta2) +
+               math.cos(phi1) * math.cos(phi2))
+        arc = math.acos(cos)
+
+        # Remember to multiply arc by the radius of the earth
+        # in your favorite set of units to get length.
+        return arc * 6373 #for km, 3960 for feet
+
+    def latlon_distance_on_unit_sphere(self, coord1, coord2, mode):
+
+        if mode is 'lat':
+            lat1, lon1 = coord1.lat, coord1.lon
+            lat2, lon2 = coord1.lat, coord2.lon
+        elif mode is 'lon':
+            lat1, lon1 = coord1.lat, coord1.lon
+            lat2, lon2 = coord2.lat, coord1.lon
+        else:
+            raise ValueError
 
         # Convert latitude and longitude to
         # spherical coordinates in radians
@@ -237,7 +277,7 @@ class Map(MapFile):
         for i in range(numSamples + 1):
             b = l.Position(i * p['s12'] / num)
             profile.append(Coordinate(b['lat2'], b['lon2']))
-            print(b['lat2'], b['lon2'])
+            #print(b['lat2'], b['lon2'])
 
         return profile
 
@@ -296,59 +336,44 @@ class Map(MapFile):
         return profile
 
 
-    def get_elevation_along_path(self, segmentList, mode='coords'):
+    def get_elevation_along_path(self, path):
 
         """
         Query elevations along a path defined by a list of segments. Works by calling get_elevation_by_segment()
         iteratively on
         the segment list
 
-        :param segmentList:
-        :param mode:
+        :param path: Path specified as CSV file or coordinates
         :return the distances between each coordinate, as well as the elevations at each coordinate
         """
         csvPath = r'/Users/empire/Dropbox/NASA-Collaboration/qgis/pathCSV/path4.csv'
+
         with open(csvPath, 'rb') as csvfile:
             mycsv = csv.reader(csvfile, delimiter=' ', quotechar='|')
             mycsv = list(mycsv)
-
-            coordinateArray = []
-            masterCoords = []
-            masterDistance = []
-
             lines = [ent[0].split(',') for ent in mycsv[1:] if ent]
+            #read in csv lines, turn raw coords into namedTuple Coordinate
+            baseCoordinates = [Coordinate(lat=elem[1], lon=elem[0]) for elem in
+                               [[float(e) for e in line if e] for line in lines]]
+            coordsArray = [item for sublist in
+                           [self.get_coordinates_in_segment(segmentStart, segmentEnd) for segmentStart, segmentEnd in
+                            pairwise(baseCoordinates)] for item in sublist]
 
-            cordura = [Coordinate(elem[1], elem[0]) for elem in [[float(e) for e in line if e] for line in lines]]
-
-            print "Cordura!\n", len(cordura), cordura
-
-            #for line in lines:
-            #    line = [float(e) for e in line if e]
-            #    coordinateArray.append(Coordinate(lat=float(line[1]), lon=float(line[0])))
-            #    print line
-            #print "CoordinateArray!\n"
-            #print coordinateArray
+            distanceArray = [self.distance_on_unit_sphere(segmentStart, segmentEnd) for segmentStart, segmentEnd in
+                             pairwise(coordsArray)]
+            latDistanceArray = [self.latlon_distance_on_unit_sphere(segmentStart, segmentEnd, 'lat') for
+                                segmentStart, segmentEnd in pairwise(coordsArray)]
+            lonDistanceArray = [self.latlon_distance_on_unit_sphere(segmentStart, segmentEnd, 'lon') for
+                                segmentStart, segmentEnd in pairwise(coordsArray)]
 
 
-
-            count = 0;
-            for segmentStart, segmentEnd in pairwise(coordinateArray):
-                count += 1
-                masterDistance.append(self.distance_on_unit_sphere(segmentStart, segmentEnd))
-
-                temp = (self.get_coordinates_in_segment(segmentStart, segmentEnd))
-                for eachEntry in temp:
-                    masterCoords.append(eachEntry)
-
-            print "MasterDistance:\n", masterDistance, "Length:\n", len(masterDistance), count, "TotalLength:\n", sum(
-                masterDistance)
-
-            masterElevation = []
-            for elem in masterCoords:
-                masterElevation.append(self.get_point_elevation(elem))
-                #print elem, '\n'
-            print masterElevation
-            return masterCoords
+            #print "distance:\n", len(distanceArray), distanceArray
+            elevationArray = [self.get_point_elevation(elem) for elem in coordsArray]
+            #print len(elevationArray), elevationArray
+            pathInfo = {'coords': coordsArray, 'elevation': elevationArray, 'distance': distanceArray,
+                        'latDistance': latDistanceArray, 'lonDistance': lonDistanceArray}
+            return pathInfo
+            #return izip_longest(coordsArray, elevationArray, distanceArray)
 
 
         #read CSV file with list of segment pairs
@@ -423,10 +448,14 @@ if __name__ == '__main__':
 
     #print map.get_point_elevation(Coordinate(9719, 25110), mode='pixel')
 
-    print map.get_elevation_along_path(None, mode='coords')
-
-    print map.get_point_elevation(Coordinate(36.974117, -122.030796), mode='coords')
-    res = map.get_coordinates_in_segment(Coordinate(36.974117, -122.030796), Coordinate(37.411372, -122.053471))
+    res = map.get_elevation_along_path(None)
+    count = 0
+    for elem in res:
+        count += 1
+        #print elem
+    print count
+    #print map.get_point_elevation(Coordinate(36.974117, -122.030796), mode='coords')
+    #res = map.get_coordinates_in_segment(Coordinate(36.974117, -122.030796), Coordinate(37.411372, -122.053471))
     #print res
-    map.get_elevation_along_segment(res)
+    #map.get_elevation_along_segment(res)
 

@@ -1,11 +1,11 @@
-'''
+"""
 Credit to a1ronzo/gps_tracker
-'''
+"""
 __author__ = 'empire'
 
 from pynmea import nmea
 import matplotlib.pyplot as plt
-import serial, time, sys, threading, datetime, shutil
+import shutil
 
 
 ######Global Variables#####################################################
@@ -13,7 +13,7 @@ import serial, time, sys, threading, datetime, shutil
 filename = '../gpsDataBaskin_7_29_1538.txt'
 ser = 0
 lat = 0
-long = 0
+lon = 0
 pos_x = 0
 pos_y = 0
 alt = 0
@@ -32,7 +32,7 @@ long_input = 0           #longitude of home marker
 
 def position():
     #opens a the saved txt file, parses for lat and long, displays on map
-    global lat, long, lat_input, long_input, pos_x, pos_y, altitude
+    global lat, lon, lat_input, long_input, pos_x, pos_y, altitude
     global BLX, BLY, TRX, TRY
 
     #same process here as in altitude
@@ -55,11 +55,11 @@ def position():
                     lat1 = (float(lats[2] + lats[3] + lats[4] + lats[5] + lats[6] + lats[7] + lats[8])) / 60
                     lat = (float(lats[0] + lats[1]) + lat1)
                     long1 = (float(longs[3] + longs[4] + longs[5] + longs[6] + longs[7] + longs[8] + longs[9])) / 60
-                    long = (float(longs[0] + longs[1] + longs[2]) + long1)
+                    lon = (float(longs[0] + longs[1] + longs[2]) + long1)
 
                     #calc position
                     pos_y = lat
-                    pos_x = -long #longitude is negaitve
+                    pos_x = -lon #longitude is negaitve
 
                     #plot the x and y positions
                     plt.scatter(x=[pos_x], y=[pos_y], s=5, c='r')
@@ -85,4 +85,4 @@ def position():
 
 
 if __name__ == "__main__":
-    position();
+    position()
