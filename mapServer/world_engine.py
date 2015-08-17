@@ -5,7 +5,6 @@ Used as the data layer for the threaded server. Retrieves and processes data sto
 Manages
 """
 import csv
-import string
 
 __author__ = 'Ryan A. Rodriguez'
 
@@ -14,10 +13,9 @@ from osgeo import gdal, osr
 import numpy as np
 import matplotlib.pyplot as plt
 from pylab import *
-from vehicle import Quadrotor, Coordinate, PixelPair
+from vehicle import Coordinate, PixelPair
 from geographiclib.geodesic import Geodesic
-from itertools import izip, tee, izip_longest
-from collections import namedtuple
+from itertools import izip, tee
 
 
 def pairwise(iterable):
@@ -37,10 +35,10 @@ class ReadException(Exception):
 
 
 class MapFile(object):
-    def __init__(self, bil_file, **kwargs):
-        self.bil_file = bil_file
-        self.hdr_file = bil_file.split('.')[0] + '.hdr'  # Not sure if we need this anymore
-        self.img = rasterio.open(self.bil_file)
+    def __init__(self, filename, verbose=False):
+        self.file = filename
+        self.hdr_file = filename.split('.')[0] + '.hdr'  # Not sure if we need this anymore
+        self.img = rasterio.open(self.file)
         self.geotransform = self.img.meta['transform']
 
         self.nodatavalue, self.data = None, None
@@ -53,7 +51,6 @@ class MapFile(object):
         self.pixelWidth = self.geotransform[1]   #w/e pixel resoluton
         self.pixelHeight = self.geotransform[5]  #n/s pixel resolution
 
-        verbose = kwargs.get('verbose', False)
         if verbose is True:
             print "GeoT:{}".format(self.geotransform)
             print "Metadata:{}".format(self.img.meta)
@@ -68,8 +65,8 @@ class RetrievePointException(Exception):
 
 
 class Map(MapFile):
-    def __init__(self, filename, **kwargs):
-        super(Map, self).__init__(filename, **kwargs)
+    def __init__(self, filename, verbose=False, **kwargs):
+        super(Map, self).__init__(filename, verbose, **kwargs)
         self.fileName = filename
         self.adjacentElevations = np.zeros((3, 3))
         self.vehicles = {}
@@ -95,7 +92,8 @@ class Map(MapFile):
         pixelPairs = PixelPair(x=int(x), y=int(y))
         return pixelPairs
 
-    def distance_on_unit_sphere(self, coord1, coord2):
+    @staticmethod
+    def distance_on_unit_sphere(coord1, coord2):
 
         lat1, lon1 = coord1.lat, coord1.lon
         lat2, lon2 = coord2.lat, coord2.lon
@@ -128,7 +126,8 @@ class Map(MapFile):
         # in your favorite set of units to get length.
         return arc * 6373 #for km, 3960 for feet
 
-    def latlon_distance_on_unit_sphere(self, coord1, coord2, mode):
+    @staticmethod
+    def latlon_distance_on_unit_sphere(coord1, coord2, mode):
 
         if mode is 'lat':
             lat1, lon1 = coord1.lat, coord1.lon
@@ -167,26 +166,35 @@ class Map(MapFile):
         # in your favorite set of units to get length.
         return arc * 6373 #for km, 3960 for feet
 
-    def get_point_elevation(self, coordinate, mode='coords'):
+    def get_point_elevation(self, **kwargs):
         """
         Retrieve an elevation for a single Coordinate
-        :param coordinate: Named tuple of type Coordinate containing a lat'lon pair
+        :param coordinate: Named tuple of type Coordinate containing a lat/lon pair
         :param mode: Indicates whether we are passing in a Coordinate of lat/lon or a PixelPair of x/y
         """
+        mode = kwargs.get('mode', 'coords')
+        coords = kwargs.get('coords', None)
+        coordinates = kwargs.get('coordinate', None)
+        lat = kwargs.get('lat', None)
+        lon = kwargs.get('lon', None)
+        px = kwargs.get('px', None)
+        py = kwargs.get('py', None)
+
         pixel = None
         #@todo:figure out how to add exceptions in rasterio
         #gdal.UseExceptions() #so it doesn't print to screen everytime point is outside grid
 
-        cy = coordinate.lat
-        cx = coordinate.lon
-
-        if mode is 'coords':
-            pixs = self.latLonToPixel(coordinate)
+        if coordinates is not None:
+            coord = coordinates
+            pixs = self.latLonToPixel(coord)
             px = pixs.x
             py = pixs.y
-        elif mode is 'pixel':
-            px = cx
-            py = cy
+        elif (lat, lon) is not (None, None):
+            pixs = self.latLonToPixel(Coordinate(lat=lat, lon=lon))
+            px = pixs.x
+            py = pixs.y
+        elif (px, py) is not (None, None):
+            pass
         else:
             raise TypeError(mode + "is not a valid mode for reading pixels from raster.")
 
@@ -198,14 +206,7 @@ class Map(MapFile):
 
         return pixel[0][0]
 
-    def get_surrounding_elevation(self, mode='coords', window=10, coordinates=None, vehicleName=None):
-    #def get_surrounding_elevation(self, **kwargs):
-    #    mode = kwargs.get('mode', 'coords')
-    #    window = kwargs.get('window', 3)
-    #    coordinates = kwargs.get('coordinates', None)
-    #    vehicleName = kwargs.get('vehicleName', None)
-
-
+    def get_surrounding_elevation(self, *args, **kwargs):
         """
         Return a square matrix of size window x window
 
@@ -216,9 +217,17 @@ class Map(MapFile):
         :param vehicleName: The UUID of a vehicle object; used to retrieve the vehicle's current coordinates
         :return: a square matrix with sides of length window
         """
+
+        mode = kwargs.get('mode', 'coords')
+        window = kwargs.get('window', 3)
+        coords = kwargs.get('coordinates', None)
+        lat = kwargs.get('lat', None)
+        lon = kwargs.get('lon', None)
+        vehicleName = kwargs.get('vehicleName', None)
+
         px, py = None, None
         elevations = None
-        coordinates = coordinates
+        coordinates = Coordinate(lat=lat, lon=lon)
         vehicleName = vehicleName
 
         if bool(coordinates) ^ bool(vehicleName):
@@ -292,7 +301,6 @@ class Map(MapFile):
         for coordinate in coordinateArray:
             elevation = self.get_point_elevation(coordinate)
             elevationArray.append(elevation)
-            print elevation
         return elevationArray
 
 
@@ -336,7 +344,8 @@ class Map(MapFile):
         return profile
 
 
-    def get_elevation_along_path(self, path):
+    def get_elevation_along_path(self, **kwargs):
+        path = kwargs.get('path', None)
 
         """
         Query elevations along a path defined by a list of segments. Works by calling get_elevation_by_segment()
@@ -347,7 +356,7 @@ class Map(MapFile):
         :return the distances between each coordinate, as well as the elevations at each coordinate
         """
         csvPath = r'/Users/empire/Dropbox/NASA-Collaboration/qgis/pathCSV/path4.csv'
-
+        pathInfo = {}
         with open(csvPath, 'rb') as csvfile:
             mycsv = csv.reader(csvfile, delimiter=' ', quotechar='|')
             mycsv = list(mycsv)
@@ -368,17 +377,12 @@ class Map(MapFile):
 
 
             #print "distance:\n", len(distanceArray), distanceArray
-            elevationArray = [self.get_point_elevation(elem) for elem in coordsArray]
-            #print len(elevationArray), elevationArray
+            elevationArray = [self.get_point_elevation(coordinate=elem) for elem in coordsArray]
             pathInfo = {'coords': coordsArray, 'elevation': elevationArray, 'distance': distanceArray,
                         'latDistance': latDistanceArray, 'lonDistance': lonDistanceArray}
-            return pathInfo
+            return np.array(pathInfo['elevation'])
             #return izip_longest(coordsArray, elevationArray, distanceArray)
 
-
-        #read CSV file with list of segment pairs
-
-        pass
 
     def planPath(self, startCoord, endCoord, **kwargs):
         """
@@ -430,15 +434,18 @@ if __name__ == '__main__':
     #filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01_BIL' \
     #          r'/virtRasterCaliforniaBil.bil'
 
-    map = Map(filename, verbose=True)
+    argin = {'verbose': True}
+    map = Map(filename, **argin)
 
     #@todo: look at how tigres creates many of the same type of object without having to name all of them
     #Make a quadrotor, initialize position (need to do this in Matlab in RL)
 
     lon = -122.030796
     lat = 36.974117
+
     #quadrotor = Quadrotor(lat, lon)
     #map.add_vehicle(quadrotor)
+
     tCoord = Coordinate(lat, lon)
     print map.latLonToPixel(tCoord)
     #res = map.get_surrounding_elevation(mode='pixel', coords = (map.ncol/2, map.nrow/2), vehicleName=quadrotor.name,
