@@ -2,18 +2,19 @@
 Threaded Socket Server over UDP for serving up map data
 """
 import SocketServer
-from threading import Thread
 import sys
-from re import split
-from itertools import izip_longest
-from ast import literal_eval
 import re
 import struct
 import logging
+from threading import Thread
+from re import split
+from itertools import izip_longest
+from ast import literal_eval
 
 import numpy as np
 
-from map_interface import MapInterface
+from mapServer.server.server_conf import settings
+from mapServer.mapping.map_interface import MapInterface
 
 
 __author__ = "Ryan A. Rodriguez"
@@ -28,30 +29,26 @@ __status__ = "Prototype"
 
 # @todo:Switch all the print statements to logging
 
-
 HOST = 'localhost'
 PORT = 2002
 
-x = np.array([[55, 1000, 45], [20, 3, 10], [1000000, 10, 20]])
-
 
 def grouper(iterable, n, fillvalue=None):
-    "Collect data into fixed-length chunks or blocks"
-    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
+    """
+    Collect data into fixed-length chunks or blocks
+    grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
+    """
+
     args = [iter(iterable)] * n
     return izip_longest(fillvalue=fillvalue, *args)
 
-#@todo: think about including in a seperate module for exceptions
+#@todo: think about including in a separate module for exceptions
 class CommandNotFound(Exception):
     """ Easy to understand naming conventions work best! """
     pass
 
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
-    """
-    Override stock function in order to print client address on connect
-    """
-
     def get_request(self):
         """
         Override native get_request function in order to print out who is connecting to the server
@@ -77,10 +74,9 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         @todo: figure out how to make the map interface a singleton class
         :rtype : None
         """
-        filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01/' \
-                   r'virtRasterCalifornia.vrt'
+
         if not hasattr(self, 'mapInterface'):
-            self.mapInterface = MapInterface(filename)
+            self.mapInterface = MapInterface(settings['FILE_CONFIG']['filename'])
 
     def handle(self):
         """
@@ -109,11 +105,7 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         #         #print ret[idx]
 
 
-    def finish(self):
-        pass
-
     def command_parse(self, rawCommand):
-        #find function and args
         """
         Parse raw input and execute specified function with args
         :param coords: coordinates in lat/lon
@@ -129,7 +121,6 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
 
 
     def command_response(self, cmd_name, returned_data, socket, client_ip, client_address):
-        #find function and args
         """
         Parse raw input and execute specified function with args
         :param coords: coordinates in lat/lon
@@ -138,11 +129,10 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         returned_data.astype(np.float32)
         response = returned_data.tostring('C')
         response_length = len(response)
-        sign = 1
         response_arr = [response]
 
         if response_length > 256:
-            response_arr = list(self.split_by_n(response, 256 * 4))
+            response_arr = list(self.split_by_n(response_arr[0], 256 * 4))
 
         data = [response_length]
         s = struct.pack('f' * len(data), *data)
@@ -167,11 +157,11 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         else:
             return []
 
+    def finish(self):
+        pass
+
 
 if __name__ == "__main__":
-
-    filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01/' \
-               r'virtRasterCalifornia.vrt'
 
     logger = logging.getLogger('py_map_server')
     logger.setLevel(logging.DEBUG)

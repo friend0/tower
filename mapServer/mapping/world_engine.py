@@ -10,10 +10,11 @@ __author__ = 'Ryan A. Rodriguez'
 
 import rasterio
 from osgeo import gdal, osr
+from mapServer.server.server_conf import settings
 import numpy as np
 import matplotlib.pyplot as plt
 from pylab import *
-from vehicle import Coordinate, PixelPair
+from mapServer.vehicles.vehicle import Coordinate, PixelPair
 from geographiclib.geodesic import Geodesic
 from itertools import izip, tee
 
@@ -426,43 +427,13 @@ class Map(MapFile):
 
 
 if __name__ == '__main__':
-    #Enter file name, instantiate map and pre-process
-    #filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01
-    # /bayAreaBIL.bil'
-    filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01/' \
-               r'virtRasterCalifornia.vrt'
-    #filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01_BIL' \
-    #          r'/virtRasterCaliforniaBil.bil'
-
-    argin = {'verbose': True}
-    map = Map(filename, **argin)
-
-    #@todo: look at how tigres creates many of the same type of object without having to name all of them
-    #Make a quadrotor, initialize position (need to do this in Matlab in RL)
-
-    lon = -122.030796
-    lat = 36.974117
+    filename = settings['FILE_CONFIG']['filename']
+    map = Map(filename, verbose=True)
 
     #quadrotor = Quadrotor(lat, lon)
     #map.add_vehicle(quadrotor)
 
-    tCoord = Coordinate(lat, lon)
-    print map.latLonToPixel(tCoord)
-    #res = map.get_surrounding_elevation(mode='pixel', coords = (map.ncol/2, map.nrow/2), vehicleName=quadrotor.name,
-    #  lon_window=20, lat_window=20)
-    #res = map.get_surrounding_elevation(mode='pixel', coordinates=Coordinate(6000, 5000), lon_window=10, lat_window=10)
-    #print "Surrounding Elevations{}, \nWindow Size of{}".format(res, shape(res))
-
-    #print map.get_point_elevation(Coordinate(9719, 25110), mode='pixel')
-
     res = map.get_elevation_along_path(None)
     count = 0
-    for elem in res:
-        count += 1
-        #print elem
-    print count
-    #print map.get_point_elevation(Coordinate(36.974117, -122.030796), mode='coords')
-    #res = map.get_coordinates_in_segment(Coordinate(36.974117, -122.030796), Coordinate(37.411372, -122.053471))
-    #print res
-    #map.get_elevation_along_segment(res)
+
 

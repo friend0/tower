@@ -1,4 +1,3 @@
-__author__ = 'empire'
 from world_engine import Map
 
 
@@ -8,10 +7,6 @@ class AddVehicleException(Exception):
 
     def __str__(self):
         return repr(self.value)
-
-
-filename = r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01/' \
-           r'virtRasterCalifornia.vrt'
 
 
 class MapInterface(Map):
