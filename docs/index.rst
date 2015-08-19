@@ -28,13 +28,14 @@ This entire document is written with the RST syntax. In the right sidebar, you s
 
 Tree
 #############
+
 .. toctree::
 :maxdepth: 3
 
-       index.rst
-       mapServer.rst
-       worldEngine.rst
-       vehicle.rst
+        index.rst
+        mapServer.rst
+        worldEngine.rst
+        vehicle.rst
 
 
 Indices and tables
