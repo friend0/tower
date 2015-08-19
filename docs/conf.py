@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # mapServer documentation build configuration file, created by
-# sphinx-quickstart on Tue Aug 18 21:42:08 2015.
+# sphinx-quickstart on Tue Aug 18 23:51:38 2015.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
