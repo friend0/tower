@@ -17,15 +17,6 @@ from mapServer.server.server_conf import settings
 from mapServer.mapping.map_interface import MapInterface
 
 
-__author__ = "Ryan A. Rodriguez"
-__copyright__ = "Copyright 2007"
-__credits__ = []
-__license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Ryan A. Rodriguez"
-__email__ = "ryarodri@ucsc.edu"
-__status__ = "Prototype"
-
 
 # @todo:Switch all the print statements to logging
 
@@ -44,7 +35,7 @@ def grouper(iterable, n, fillvalue=None):
 
 #@todo: think about including in a separate module for exceptions
 class CommandNotFound(Exception):
-    """ Easy to understand naming conventions work best! """
+    """ Command received does not match one listed in the command dictionary """
     pass
 
 
@@ -87,7 +78,7 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         socket = self.request[1]
         data = self.request[0].strip()
         logger.info("Address {} at {} wrote: '{}'".format(self.client_address[1], self.client_address[0], data))
-        cmd_strn, ret = self.command_parse(data)
+        cmd_strn, ret = self.command_service(data)
         self.command_response(cmd_strn, ret, self.request[1], self.client_address[0],
                               self.mapInterface.router[cmd_strn])
 
@@ -104,11 +95,11 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         #         ret[idx + 1] = ret[idx + 1] + ret[idx]
         #         #print ret[idx]
 
-
-    def command_parse(self, rawCommand):
+    def command_service(self, rawCommand):
         """
         Parse raw input and execute specified function with args
-        :param coords: coordinates in lat/lon
+        :param rawCommand: csv string from Matlab/Simulink of the form:
+                'command, namedArg1, arg1, namedArg2, arg2, ..., namedArgN, argN'
         :return: the command and arguments as a dictionary
         """
         pack = [x.strip() for x in split('[,()]*', rawCommand.strip())]
@@ -165,7 +156,7 @@ if __name__ == "__main__":
 
     logger = logging.getLogger('py_map_server')
     logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler('spam.log')
+    fh = logging.FileHandler('../logs/spam.log')
     fh.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
