@@ -18,6 +18,7 @@ from mapServer.mapping.map_interface import MapInterface
 
 
 
+
 # @todo:Switch all the print statements to logging
 
 HOST = 'localhost'
@@ -109,7 +110,6 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         ret = cmd(**argDict)
         logger.info("Command '{}' run with args {}".format(raw_cmd, argDict))
         return raw_cmd, ret
-
 
     def command_response(self, cmd_name, returned_data, socket, client_ip, client_address):
         """
