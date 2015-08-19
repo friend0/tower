@@ -3,9 +3,11 @@ Credit to a1ronzo/gps_tracker
 """
 __author__ = 'empire'
 
+import shutil
+
 from pynmea import nmea
 import matplotlib.pyplot as plt
-import shutil
+
 
 
 ######Global Variables#####################################################
