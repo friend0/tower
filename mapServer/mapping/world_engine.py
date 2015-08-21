@@ -11,8 +11,6 @@ __author__ = 'Ryan A. Rodriguez'
 import rasterio
 from osgeo import gdal, osr
 from mapServer.server.server_conf import settings
-import numpy as np
-import matplotlib.pyplot as plt
 from pylab import *
 from mapServer.vehicles.vehicle import Coordinate, PixelPair
 from geographiclib.geodesic import Geodesic

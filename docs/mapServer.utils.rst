@@ -8,15 +8,15 @@ mapServer.utils.nmea_parser module
 ----------------------------------
 
 .. automodule:: mapServer.utils.nmea_parser
-:members:
-        :undoc-members:
-        :show-inheritance:
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 
 Module contents
 ---------------
 
 .. automodule:: mapServer.utils
-:members:
-        :undoc-members:
-        :show-inheritance:
+    :members:
+    :undoc-members:
+    :show-inheritance:

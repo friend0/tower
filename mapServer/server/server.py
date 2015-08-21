@@ -1,6 +1,5 @@
-"""
-Threaded Socket Server over UDP for serving up map data
-"""
+__author__ = 'empire'
+
 import SocketServer
 import sys
 import re
@@ -16,19 +15,17 @@ import numpy as np
 from mapServer.server.server_conf import settings
 from mapServer.mapping.map_interface import MapInterface
 
-
-
-
-# @todo:Switch all the print statements to logging
-
 HOST = 'localhost'
 PORT = 2002
-
 
 def grouper(iterable, n, fillvalue=None):
     """
     Collect data into fixed-length chunks or blocks
     grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
+    :param iterable:
+    :param n:
+    :param fillvalue:
+    :rtype : object
     """
 
     args = [iter(iterable)] * n
@@ -41,6 +38,30 @@ class CommandNotFound(Exception):
 
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
+    """
+    Threaded UDP server for receiving and responding to requests from client applications. We can run the server safely
+    by doing:
+
+    Example::
+
+        map_server = ThreadedUDPServer((HOST, PORT), UDP_Interrupt)
+        server_thread = None
+        logger.info('Instantiation succesful')
+        # terminate with Ctrl-C
+        try:
+            server_thread = Thread(target=map_server.serve_forever)
+            server_thread.daemon = False
+            logger.info("Threaded server loop running in: {}".format(server_thread.name))
+            print("Threaded server loop running in: {}".format(server_thread.name))
+            server_thread.start()
+
+        except KeyboardInterrupt:
+            server_thread.kill()
+            map_server.shutdown()
+            sys.exit(0)
+
+    """
+
     def get_request(self):
         """
         Override native get_request function in order to print out who is connecting to the server
@@ -63,9 +84,9 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
     def setup(self):
         """
         Instantiate the connection with the worldEngine, the MapInterface.
-        @todo: figure out how to make the map interface a singleton class
         :rtype : None
         """
+        # TODO : figure out how to make the map interface a singleton class
 
         if not hasattr(self, 'mapInterface'):
             self.mapInterface = MapInterface(settings['FILE_CONFIG']['filename'])
