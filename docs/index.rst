@@ -11,7 +11,7 @@ For Spatially Aware Decision Making Algorithms
 Intro
 ---------
 World Engine uses GDAL and Rasterio to interface with raw raster data in a variety of formats.
-Using the server functionality of this module, it is possible to host this information via UDP to client applications.
+A built-in socket server makes it possible to host this information via UDP to client applications.
 The intent of this project is to offer a framework for those wishing to implement decision making algorithms on top of geographic
 information.
 
