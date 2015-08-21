@@ -15,7 +15,7 @@ A built-in socket server makes it possible to host this information via UDP to c
 The intent of this project is to offer a framework for those wishing to implement decision making algorithms on top of geographic
 information.
 
-.. image:: ../../img/hslLogo.png
+.. image:: ../docs/img/hslLogo.png
     :align: center
 
 Install
