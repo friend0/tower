@@ -31,8 +31,9 @@ import os
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../'))
-sys.path.insert(0, os.path.abspath('../img/'))
+sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('../../img/'))
 sys.path.insert(0, os.path.abspath('../../mapServer'))
 sys.path.insert(0, os.path.abspath('../../mapServer/mapping/'))
 sys.path.insert(0, os.path.abspath('../../mapServer/mapServer/mapping/'))
