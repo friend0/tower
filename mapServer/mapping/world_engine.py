@@ -4,17 +4,17 @@ WorldEngine
 Used as the data layer for the threaded server. Retrieves and processes data stored in raster images.
 Manages
 """
-import csv
 
-__author__ = 'Ryan A. Rodriguez'
+import csv
+from itertools import izip, tee
 
 import rasterio
 from osgeo import gdal, osr
-from mapServer.server.server_conf import settings
 from pylab import *
-from mapServer.vehicles.vehicle import Coordinate, PixelPair
 from geographiclib.geodesic import Geodesic
-from itertools import izip, tee
+
+from mapServer.server.server_conf import settings
+from mapServer.vehicles.vehicle import Coordinate, PixelPair
 
 
 def pairwise(iterable):
@@ -26,17 +26,32 @@ def pairwise(iterable):
 
 
 class ReadException(Exception):
-    def __init__(self, value):
-        self.value = value
+    """ReadExceptions occur in response to invalid rasters or file paths
+
+    Args:
+        strn (str): Human readable string describing the exception.
+
+    Attributes:
+        strn (str): Human readable string describing the exception.
+
+    """
+
+    def __init__(self, strn):
+        self.strn = strn
 
     def __str__(self):
-        return repr(self.value)
+        return repr(self.strn)
 
 
 class MapFile(object):
+    """MapFile abstracts the atomic raster file read/write processes.
+    """
     def __init__(self, filename, verbose=False):
+        """
+        :param filename: path to the raster file to be opened
+        :param verbose: indicate whether we would like to print out certain metrics regarding the file opened
+        """
         self.file = filename
-        self.hdr_file = filename.split('.')[0] + '.hdr'  # Not sure if we need this anymore
         self.img = rasterio.open(self.file)
         self.geotransform = self.img.meta['transform']
 
@@ -56,14 +71,38 @@ class MapFile(object):
 
 
 class RetrievePointException(Exception):
-    def __init__(self, value):
-        self.value = value
+    """ReadExceptions occur in response to invalid queries on coordinates
+
+    These invalid queries include coordinates that are not within the extent of the current raster,
+    or those that are either not available or contain a recognized 'no-data' value.
+
+    Note:
+        I'm unsure how NaN values translate on the Matlab side. It is also
+        possible to return the 'no-value' float directly. This value can typically be found in
+        a raster files header, and are stored in the MapFile class' attribute `nodatavalue`
+
+    Args:
+        strn (str): Human readable string describing the exception.
+
+    Attributes:
+        strn (str): Human readable string describing the exception.
+
+    """
+
+    def __init__(self, strn):
+        self.strn = strn
 
     def __str__(self):
-        return repr(self.value)
+        return repr(self.strn)
 
 
 class Map(MapFile):
+    """ The Map Class offers both atomic and advanced map read operations
+
+    The Map Class is built on tope of the MapFile class for low-level file reading operations.
+    Map depends on the GDAL and Rasterio abstraction layers.
+
+    """
     def __init__(self, filename, verbose=False, **kwargs):
         super(Map, self).__init__(filename, verbose, **kwargs)
         self.fileName = filename
@@ -92,7 +131,17 @@ class Map(MapFile):
         return pixelPairs
 
     @staticmethod
-    def distance_on_unit_sphere(coord1, coord2):
+    def distance_on_unit_sphere(coord1, coord2, mode='km'):
+        # todo: need to make this work with ellipsoid earth models for more accurate distance calculations
+        """
+        Calculates the distance on a unit sphere, with the radius of the earth hard-coded.
+        Note that this formula is assuming a spherical earth.
+
+        :param coord1: start coordinates
+        :param coord2: end coordinates
+        :param mode: choose whether to return in km or feet
+        :return: return the distance in km
+        """
 
         lat1, lon1 = coord1.lat, coord1.lon
         lat2, lon2 = coord2.lat, coord2.lon
@@ -123,10 +172,23 @@ class Map(MapFile):
 
         # Remember to multiply arc by the radius of the earth
         # in your favorite set of units to get length.
-        return arc * 6373 #for km, 3960 for feet
+        if mode is 'km':
+            return arc * 6373
+        else:
+            return arc * 3960
 
     @staticmethod
-    def latlon_distance_on_unit_sphere(coord1, coord2, mode):
+    def latlon_distance_on_unit_sphere(coord1, coord2, mode='km'):
+        """
+        Compute either the lateral or longitudinal distance from on point to another;
+        This corresponds to finding the length of one of the legs of the right triangle between
+        the two points.
+
+        :param coord1: start coordinates
+        :param coord2: end coordinates
+        :param mode: choose whether to return in km or feet
+        :return:
+        """
 
         if mode is 'lat':
             lat1, lon1 = coord1.lat, coord1.lon
@@ -163,11 +225,15 @@ class Map(MapFile):
 
         # Remember to multiply arc by the radius of the earth
         # in your favorite set of units to get length.
-        return arc * 6373 #for km, 3960 for feet
+        if mode is 'km':
+            return arc * 6373
+        else:
+            return arc * 3960
 
     def get_point_elevation(self, **kwargs):
         """
         Retrieve an elevation for a single Coordinate
+
         :param coordinate: Named tuple of type Coordinate containing a lat/lon pair
         :param mode: Indicates whether we are passing in a Coordinate of lat/lon or a PixelPair of x/y
         """
@@ -293,6 +359,7 @@ class Map(MapFile):
         """
         A segment is an array of coordinates, or similar iterable structure of coords. This function returns a conjugate
         array of elevations corresponding to each coordinate element in the input array
+
         :param coordinateArray:
         :return:
         """
@@ -344,23 +411,21 @@ class Map(MapFile):
 
 
     def get_elevation_along_path(self, **kwargs):
-        path = kwargs.get('path', None)
-
         """
         Query elevations along a path defined by a list of segments. Works by calling get_elevation_by_segment()
-        iteratively on
-        the segment list
+        iteratively on the segment list (CSV file)
 
         :param path: Path specified as CSV file or coordinates
         :return the distances between each coordinate, as well as the elevations at each coordinate
         """
+        path = kwargs.get('path', None)
+        #todo: need to make this work with some tmp file
         csvPath = r'/Users/empire/Dropbox/NASA-Collaboration/qgis/pathCSV/path4.csv'
         pathInfo = {}
         with open(csvPath, 'rb') as csvfile:
             mycsv = csv.reader(csvfile, delimiter=' ', quotechar='|')
             mycsv = list(mycsv)
             lines = [ent[0].split(',') for ent in mycsv[1:] if ent]
-            #read in csv lines, turn raw coords into namedTuple Coordinate
             baseCoordinates = [Coordinate(lat=elem[1], lon=elem[0]) for elem in
                                [[float(e) for e in line if e] for line in lines]]
             coordsArray = [item for sublist in
@@ -385,14 +450,18 @@ class Map(MapFile):
 
     def planPath(self, startCoord, endCoord, **kwargs):
         """
-        @todo From start coordinates to end coordinates, sample elevation. Determine Path
+        From start coordinates to end coordinates, sample elevation. Determine Path
         optional args will determine how the path is optimized
         """
 
         pass
 
     def plot(self, **window):
-        """@todo: turn this into a graph function"""
+        # todo: turn this into a graph function
+        """
+        This function is not yet ready to call. Used to be executed in main after point and elevation samplings.
+
+        """
         #band = a.GetRasterBand(1)
         #imshow(a, interpolation='bilinear',cmap=cm.prism,alpha=1.0)
         if len(window) is not 0:

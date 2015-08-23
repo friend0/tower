@@ -1,4 +1,8 @@
-__author__ = 'empire'
+"""
+The server module is responsible for managng the threaded UDP socket server.
+This server is used to communicate with Matlab/Simulink simulations, but can also be used in the implementation of other
+decision making algorithms.
+"""
 
 import SocketServer
 import sys
@@ -95,6 +99,7 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         """
         Handles UDP requests to the server.
         The map interface class is responsible for parsing the request, and executing the requested function.
+
         :return:
         """
         socket = self.request[1]
@@ -120,6 +125,7 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
     def command_service(self, rawCommand):
         """
         Parse raw input and execute specified function with args
+
         :param rawCommand: csv string from Matlab/Simulink of the form:
                 'command, namedArg1, arg1, namedArg2, arg2, ..., namedArgN, argN'
         :return: the command and arguments as a dictionary
@@ -135,6 +141,7 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
     def command_response(self, cmd_name, returned_data, socket, client_ip, client_address):
         """
         Parse raw input and execute specified function with args
+
         :param coords: coordinates in lat/lon
         :return: the command and arguments as a dictionary
         """
@@ -183,10 +190,8 @@ if __name__ == "__main__":
     fh.setFormatter(formatter)
     logger.addHandler(fh)
     logger.info('Creating an instance of pyMapServer...')
-
     map_server = ThreadedUDPServer((HOST, PORT), UDP_Interrupt)
     server_thread = None
-
     logger.info('Instantiation succesful')
 
     # terminate with Ctrl-C

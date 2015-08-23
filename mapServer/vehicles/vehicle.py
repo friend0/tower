@@ -3,20 +3,19 @@
 The quadrotor class can be used to place various vehicles on a map.
 The class keeps track of the vehicles starting point, and its current location
 """
-__author__ = 'Ryan Rodriguez'
 
 from collections import namedtuple
 from uuid import uuid4
+from abc import ABCMeta, abstractmethod, abstractproperty
+
 
 Coordinate = namedtuple("Coordinate", ['lat', 'lon'], verbose=False)
 PixelPair = namedtuple("PixelPair", ['x', 'y'], verbose=False)
 
 
 class Path(object):
+
     pass
-
-
-from abc import ABCMeta, abstractmethod, abstractproperty
 
 
 class Vehicle(object):
@@ -27,14 +26,21 @@ class Vehicle(object):
         self.coordinates = Coordinate(initialLat, initialLon)
         self.name = uuid4()
 
-
     @abstractproperty
     def initialCoordinates(self):
+        """
+        Set the initial coordiantes of the vehicle
+        :return: the initial coords
+        """
         return self.__initialCoordinates
 
     @initialCoordinates.setter
     def initialCoordinates(self, val):
         #@todo:implement check on valid range for coords
+        """
+        Sets the initial coordinates, but checks if the coordinates are valid first
+        :param val: A Coordinate of type named-tuple
+        """
         pass
 
     @abstractproperty
@@ -43,6 +49,7 @@ class Vehicle(object):
 
     @coordinates.setter
     def coordinates(self, val):
+        # todo: need to check that coords are valid params
         pass
 
     @abstractmethod
@@ -57,6 +64,12 @@ class Vehicle(object):
 
 
 class Quadrotor(Vehicle):
+    """ The Quadrotor Vehicle Class
+
+    This class is used as the base class for implementing particular quadrotor vehicles with
+    specific weights, payloads, battery and thrust capacities.
+    """
+
     def __init__(self, initialLat, initialLon):
         super(Quadrotor, self).__init__(initialLat, initialLon)
         self.battery = 100
@@ -69,6 +82,12 @@ class Quadrotor(Vehicle):
 
     @battery.setter
     def battery(self, val):
+        """
+        The percent of charge remaining on the battery
+
+        :param val: the percentage of the battery, from zero to one-hundred
+        :return:
+        """
         if val < 0:
             self.__battery = 0
         elif val > 100:
@@ -82,6 +101,11 @@ class Quadrotor(Vehicle):
 
     @weight.setter
     def weight(self, val):
+        """
+        Used to limit weights to positive values
+
+        :param val: an integer or float value representing the weight of the vehicle itsel
+        """
         if val < 0:
             self.__weight = 0
         else:
@@ -93,6 +117,10 @@ class Quadrotor(Vehicle):
 
     @payload.setter
     def payload(self, val):
+        """
+        Used to limit payloads to positive values
+        :param val: an integer or float value representing the weight of the vehicles payload
+        """
         if val < 0:
             self.__payload = 0
         else:

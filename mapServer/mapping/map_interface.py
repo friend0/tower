@@ -2,6 +2,8 @@ from world_engine import Map
 
 
 class AddVehicleException(Exception):
+    """If vehicle has invlaid UUID (name) or does not exist
+    """
     def __init__(self, value):
         self.value = value
 
@@ -12,7 +14,7 @@ class AddVehicleException(Exception):
 class MapInterface(Map):
     """
     Interface between Matlab and the MapData retrieval methods provided by 'WorldEngine'
-    Used to interpret commands from UDP packets,
+    Used to interpret commands from UDP packets.
     """
 
     def __init__(self, filename):
@@ -31,6 +33,7 @@ class MapInterface(Map):
     def add_vehicle(self, vehicle):
         """
         Add vehicle to the dictionary representing vehicles present on the map
+
         :param vehicle:
         """
         try:
@@ -41,6 +44,7 @@ class MapInterface(Map):
     def init_position(self, xCoords, yCoords, vehicleName=None):
         """
         Used to set the initial coordinates of the vehicle on the map. Can only be called once.
+
         :param xCoords: the x coordinate to be set
         :param yCoords: the y coordinate to be set
         :param vehicleName: Name of the vehicle to be updated; if vehicle is not present, adds it with init_position.
@@ -76,7 +80,4 @@ class MapInterface(Map):
         self.adjacentElevations = self.get_vicinity(self.currentCoordinates.x, self.currentCoordinates.y,
                                                     self.north_pixels, self.east_pixels)
 
-
-    def get_surrounding_elevation(self, mode='coords', window=10, coordinates=None, vehicleName=None):
-        pass
 
