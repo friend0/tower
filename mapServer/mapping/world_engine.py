@@ -10,7 +10,7 @@ import rasterio
 from osgeo import gdal, osr
 #from pylab import *
 import matplotlib.pyplot as plt
-from numpy import *
+from numpy import NaN, math
 import numpy as np
 from geographiclib.geodesic import Geodesic
 
