@@ -21,7 +21,15 @@ import os
 
 from recommonmark.parser import CommonMarkParser
 
+# print os.path.abspath('../../world_engine/')
+# print os.path.abspath('../../world_engine/mapServer/mapping')
+
+sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../../world_engine'))
+sys.path.insert(0, os.path.abspath('../../world_engine/mapServer/mapping'))
+sys.path.insert(0, os.path.abspath('../../world_engine/mapServer/server'))
+
 
 # -- General configuration ------------------------------------------------
 
