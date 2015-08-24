@@ -1,13 +1,13 @@
-mapServer.vehicles package
+world_engine.utils package
 ==========================
 
 Submodules
 ----------
 
-mapServer.vehicles.vehicle module
----------------------------------
+world_engine.utils.nmea_parser module
+-------------------------------------
 
-.. automodule:: mapServer.vehicles.vehicle
+.. automodule:: world_engine.utils.nmea_parser
     :members:
     :undoc-members:
     :show-inheritance:
@@ -16,7 +16,7 @@ mapServer.vehicles.vehicle module
 Module contents
 ---------------
 
-.. automodule:: mapServer.vehicles
+.. automodule:: world_engine.utils
     :members:
     :undoc-members:
     :show-inheritance:
