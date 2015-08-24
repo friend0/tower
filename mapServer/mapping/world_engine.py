@@ -8,8 +8,10 @@ from itertools import izip, tee
 
 import rasterio
 from osgeo import gdal, osr
-from pylab import *
-
+#from pylab import *
+import matplotlib.pyplot as plt
+from numpy import *
+import numpy as np
 from geographiclib.geodesic import Geodesic
 
 from mapServer.server.server_conf import settings
