@@ -68,4 +68,4 @@ Indices and tables
 Credits
 =======
 
-.. include:: ../CONTRIBUTORS.txt
+#.. include:: ../CONTRIBUTORS.txt
