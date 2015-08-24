@@ -1,7 +1,9 @@
 """
+
 The server module is responsible for managng the threaded UDP socket server.
 This server is used to communicate with Matlab/Simulink simulations, but can also be used in the implementation of other
 decision making algorithms.
+
 """
 
 import SocketServer
@@ -16,8 +18,8 @@ from ast import literal_eval
 
 import numpy as np
 
-from mapServer.server.server_conf import settings
-from mapServer.mapping.map_interface import MapInterface
+from world_engine.server.server_conf import settings
+from world_engine.mapping.map_interface import MapInterface
 
 HOST = 'localhost'
 PORT = 2002
