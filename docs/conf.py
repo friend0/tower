@@ -29,15 +29,22 @@ import os
 #
 # print devdir, " <- DEVDIR"
 
+# print os.getcwd()
+# print os.path.abspath('.')
+# print os.path.abspath('../')
+# print os.path.abspath('../../')
+# print os.path.abspath('../mapServer/docs/img/')
+# print os.path.abspath('../mapServer/mapServer/mapping/')
+# print os.path.abspath('../mapServer/mapServer/server/')
+
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../'))
 sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../../'))
-sys.path.insert(0, os.path.abspath('../../img/'))
-sys.path.insert(0, os.path.abspath('../../mapServer'))
-sys.path.insert(0, os.path.abspath('../../mapServer/mapping'))
-sys.path.insert(0, os.path.abspath('../../../mapServer/mapServer/mapping/'))
-sys.path.insert(0, os.path.abspath('../../mapServer/mapServer/server/server'))
+sys.path.insert(0, os.path.abspath('../mapServer/docs/img/'))
+sys.path.insert(0, os.path.abspath('../mapServer/mapServer/mapping/'))
+sys.path.insert(0, os.path.abspath('../mapServer/mapServer/server/'))
+
 
 
 # -- General configuration ------------------------------------------------
