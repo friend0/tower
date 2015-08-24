@@ -1,7 +1,5 @@
 """
-WorldEngine
-
-Used as the data layer for the threaded server. Retrieves and processes data stored in raster images.
+WorldEngine is used as the data layer for the threaded server. Retrieves and processes data stored in raster images.
 Manages
 """
 
@@ -11,6 +9,7 @@ from itertools import izip, tee
 import rasterio
 from osgeo import gdal, osr
 from pylab import *
+
 from geographiclib.geodesic import Geodesic
 
 from mapServer.server.server_conf import settings
