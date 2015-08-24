@@ -37,8 +37,7 @@ import os
 # print os.path.abspath('../mapServer/mapServer/mapping/')
 # print os.path.abspath('../mapServer/mapServer/server/')
 
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('..'))
 # sys.path.insert(0, os.path.abspath('../mapServer/docs/img/'))
 # sys.path.insert(0, os.path.abspath('../mapServer/mapServer/mapping/'))
 # sys.path.insert(0, os.path.abspath('../mapServer/mapServer/server/'))
@@ -74,9 +73,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'mapServer'
-copyright = u'2015, Author'
-author = u'Author'
+project = u'World Engine'
+copyright = u'2015, Ryan A. Rodriguez'
+author = u'Ryan A. Rodriguez'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
