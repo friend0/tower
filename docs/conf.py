@@ -31,17 +31,29 @@ import os
 
 # print os.getcwd()
 # print os.path.abspath('.')
-# print os.path.abspath('../')
+import MagicMock as MagicMock
+
+print os.path.abspath('../')
 # print os.path.abspath('../../')
 # print os.path.abspath('../mapServer/docs/img/')
 # print os.path.abspath('../mapServer/mapServer/mapping/')
 # print os.path.abspath('../mapServer/mapServer/server/')
 
 sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('..'))
 # sys.path.insert(0, os.path.abspath('../mapServer/docs/img/'))
 # sys.path.insert(0, os.path.abspath('../mapServer/mapServer/mapping/'))
 # sys.path.insert(0, os.path.abspath('../mapServer/mapServer/server/'))
+
+import sys
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return Mock()
+
+MOCK_MODULES = ['rasterio', 'numpy', 'pynmea']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 
 
