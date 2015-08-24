@@ -8,6 +8,7 @@ from itertools import izip, tee
 
 import rasterio
 from osgeo import gdal, osr
+
 from pylab import *
 
 from geographiclib.geodesic import Geodesic
@@ -26,13 +27,6 @@ def pairwise(iterable):
 
 class ReadException(Exception):
     """ReadExceptions occur in response to invalid rasters or file paths
-
-    Args:
-        strn (str): Human readable string describing the exception.
-
-    Attributes:
-        strn (str): Human readable string describing the exception.
-
     """
 
     def __init__(self, strn):

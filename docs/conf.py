@@ -19,15 +19,9 @@ import os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
-# devdir=''
-# try:
-#     if os.environ['DEVDIR']:
-#         devdir = os.environ['DEVDIR']
-# except KeyError:
-#     print 'Unable to obtain $DEVDIR from the environment.'
-#     exit(-1)
-#
-# print devdir, " <- DEVDIR"
+
+from recommonmark.parser import CommonMarkParser
+
 
 # print os.getcwd()
 # print os.path.abspath('.')
@@ -64,7 +58,10 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
+source_parsers = {
+    '.md': CommonMarkParser,
+}
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
