@@ -26,8 +26,8 @@ print os.path.abspath('../../world_engine/mapServer/mapping')
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0, os.path.abspath('/Users/empire/Documents/GitHub/world_engine/world_engine/mapping'))
-sys.path.insert(0, os.path.abspath('/Users/empire/Documents/GitHub/world_engine/world_engine/server'))
+sys.path.insert(0, os.path.abspath('../../world_engine/world_engine/mapping'))
+sys.path.insert(0, os.path.abspath('../..//world_engine/world_engine/server'))
 
 
 # -- General configuration ------------------------------------------------
