@@ -52,7 +52,7 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
             return Mock()
 
-MOCK_MODULES = ['rasterio', 'numpy', 'pynmea', 'osgeo', 'matplotlib.pyplot']
+MOCK_MODULES = ['rasterio', 'numpy', 'pynmea', 'osgeo', 'matplotlib', 'matplotlib.pyplot']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 
