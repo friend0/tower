@@ -21,12 +21,11 @@ import os
 
 
 sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0, os.path.abspath('../../world_engine'))
+sys.path.insert(0, os.path.abspath('../..'))
+# sys.path.insert(0, os.path.abspath('../../world_engine'))
 # sys.path.insert(0, os.path.abspath('../../world_engine/world_engine/mapping'))
 # sys.path.insert(0, os.path.abspath('../../world_engine/world_engine/server'))
 
-print os.path.abspath('../../world_engine/world_engine/server')
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -39,6 +38,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
+    'sphinx.ext.napoleon'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
