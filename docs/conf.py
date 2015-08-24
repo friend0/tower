@@ -31,7 +31,7 @@ import os
 
 # print os.getcwd()
 # print os.path.abspath('.')
-import MagicMock as MagicMock
+from mock import Mock as MagicMock
 
 print os.path.abspath('../')
 # print os.path.abspath('../../')
