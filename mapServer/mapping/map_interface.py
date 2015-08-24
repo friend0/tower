@@ -1,3 +1,6 @@
+"""Map Interface module
+Used as a thin layer between the server and map classes
+"""
 from world_engine import Map
 
 
