@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# mapServer documentation build configuration file, created by
+# world_engine documentation build configuration file, created by
 # sphinx-quickstart on Thu Aug 20 03:27:07 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -19,26 +19,12 @@ import os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
-# devdir=''
-# try:
-#     if os.environ['DEVDIR']:
-#         devdir = os.environ['DEVDIR']
-# except KeyError:
-#     print 'Unable to obtain $DEVDIR from the environment.'
-#     exit(-1)
-#
-# print devdir, " <- DEVDIR"
 
 sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../'))
 sys.path.insert(0, os.path.abspath('../..'))
-sys.path.insert(0, os.path.abspath('../../'))
-sys.path.insert(0, os.path.abspath('../../img/'))
-sys.path.insert(0, os.path.abspath('../../mapServer'))
-sys.path.insert(0, os.path.abspath('../../mapServer/mapping'))
-sys.path.insert(0, os.path.abspath('../../../mapServer/mapServer/mapping/'))
-sys.path.insert(0, os.path.abspath('../../mapServer/mapServer/server/server'))
-
+# sys.path.insert(0, os.path.abspath('../../world_engine'))
+# sys.path.insert(0, os.path.abspath('../../world_engine/world_engine/mapping'))
+# sys.path.insert(0, os.path.abspath('../../world_engine/world_engine/server'))
 
 # -- General configuration ------------------------------------------------
 
@@ -52,6 +38,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
+    'sphinx.ext.napoleon'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -62,6 +49,7 @@ templates_path = ['_templates']
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
 
+
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
 
@@ -69,9 +57,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'mapServer'
-copyright = u'2015, Author'
-author = u'Author'
+project = u'World Engine'
+copyright = u'2015, Ryan A. Rodriguez'
+author = u'Ryan A. Rodriguez'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -253,7 +241,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'mapServer.tex', u'mapServer Documentation',
+  (master_doc, 'world_engine.tex', u'world_engine Documentation',
    u'Author', 'manual'),
 ]
 
@@ -283,7 +271,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'mapserver', u'mapServer Documentation',
+    (master_doc, 'mapserver', u'world_engine Documentation',
      [author], 1)
 ]
 
@@ -297,8 +285,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'mapServer', u'mapServer Documentation',
-   author, 'mapServer', 'One line description of project.',
+  (master_doc, 'world_engine', u'world_engine Documentation',
+   author, 'world_engine', 'One line description of project.',
    'Miscellaneous'),
 ]
 
