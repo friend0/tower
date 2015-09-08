@@ -9,18 +9,20 @@ import sys
 import re
 import struct
 import logging
+import numpy as np
+import requests
 from threading import Thread
 from re import split
 from itertools import izip_longest
 from ast import literal_eval
-
-import numpy as np
-
+from threading import Timer
 from mapServer.server.server_conf import settings
 from mapServer.mapping.map_interface import MapInterface
+from time import strftime
 
 HOST = 'localhost'
 PORT = 2002
+
 
 def grouper(iterable, n, fillvalue=None):
     """
@@ -35,7 +37,8 @@ def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return izip_longest(fillvalue=fillvalue, *args)
 
-#@todo: think about including in a separate module for exceptions
+
+# @todo: think about including in a separate module for exceptions
 class CommandNotFound(Exception):
     """ Command received does not match one listed in the command dictionary """
     pass
@@ -106,6 +109,7 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         data = self.request[0].strip()
         logger.info("Address {} at {} wrote: '{}'".format(self.client_address[1], self.client_address[0], data))
         cmd_strn, ret = self.command_service(data)
+        print ret
         self.command_response(cmd_strn, ret, self.request[1], self.client_address[0],
                               self.mapInterface.router[cmd_strn])
 
@@ -159,7 +163,6 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         for response_packet in response_arr:
             socket.sendto(response_packet, (client_ip, client_address))
 
-
     @staticmethod
     def split_by_n(seq, n):
         """A generator to divide a sequence into chunks of n units."""
@@ -180,11 +183,48 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         pass
 
 
+class Interrupt(object):
+    def __init__(self, interval, function, *args, **kwargs):
+        self._timer = None
+        self.interval = interval
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+        self.is_running = False
+        self.start()
+
+    def _run(self):
+        self.is_running = False
+        self.start()
+        self.function(*self.args, **self.kwargs)
+
+    def start(self):
+        if not self.is_running:
+            self._timer = Timer(self.interval, self._run)
+            self._timer.daemon = True
+            self._timer.start()
+            self.is_running = True
+
+    def stop(self):
+        self._timer.cancel()
+        self.is_running = False
+
+
+def call_request(url=None, data=None, headers=None):
+    url = 'http://httpbin.org/post'
+    headers = {'content-type': 'application/json'}
+    time_stamp = strftime("%Y-%m-%d %H:%M:%S")
+    data = {'flightId': 0001, 'time': time_stamp, 'latitude': 36, 'longitude': -120, 'altitude': 50, 'speed': 100,
+            'heading': 0, 'hasLanded': False, 'dataSource': "UCSC"}
+    r = requests.post(url, json=data, headers=headers)
+    print r.status_code
+
+
 if __name__ == "__main__":
 
     logger = logging.getLogger('py_map_server')
     logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler('../logs/spam.log')
+    fh = logging.FileHandler('../../logs/spam.log')
     fh.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
@@ -201,6 +241,8 @@ if __name__ == "__main__":
         logger.info("Threaded server loop running in: {}".format(server_thread.name))
         print("Threaded server loop running in: {}".format(server_thread.name))
         server_thread.start()
+        #rt = Interrupt(5, call_request, url=None, data=None, headers=None)  # it auto-starts, no need of rt.start()
+
 
     except KeyboardInterrupt:
         server_thread.kill()

@@ -14,7 +14,6 @@ PixelPair = namedtuple("PixelPair", ['x', 'y'], verbose=False)
 
 
 class Path(object):
-
     pass
 
 
@@ -36,7 +35,7 @@ class Vehicle(object):
 
     @initialCoordinates.setter
     def initialCoordinates(self, val):
-        #@todo:implement check on valid range for coords
+        # @todo:implement check on valid range for coords
         """
         Sets the initial coordinates, but checks if the coordinates are valid first
         :param val: A Coordinate of type named-tuple
@@ -129,3 +128,4 @@ class Quadrotor(Vehicle):
     def vehicle_type(self):
         """"Return a string representing the type of vehicle this is."""
         return 'Fixed-rotor'
+

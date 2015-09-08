@@ -4,16 +4,14 @@ Manages
 """
 
 import csv
-from itertools import izip, tee
-
 import rasterio
+import matplotlib.pyplot as plt
+import numpy as np
+from itertools import izip, tee
 from osgeo import gdal, osr
 #from pylab import *
-import matplotlib.pyplot as plt
 from numpy import NaN, math
-import numpy as np
 from geographiclib.geodesic import Geodesic
-
 from mapServer.server.server_conf import settings
 from mapServer.vehicles.vehicle import Coordinate, PixelPair
 
