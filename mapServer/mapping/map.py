@@ -2,7 +2,9 @@
 WorldEngine is used as the data layer for the threaded server. Retrieves and processes data stored in raster images.
 Manages
 """
-
+import multiprocessing
+import zmq
+import msgpack
 import csv
 import rasterio
 import matplotlib.pyplot as plt
@@ -14,7 +16,7 @@ from numpy import NaN, math
 from geographiclib.geodesic import Geodesic
 from mapServer.server.server_conf import settings
 from mapServer.vehicles.vehicle import Coordinate, PixelPair
-
+from utils.utils import *
 
 def pairwise(iterable):
     "s -> (s0,s1), (s2,s3), (s4, s5), ..."
@@ -98,7 +100,7 @@ class RetrievePointException(Exception):
 class Map(MapFile):
     """ The Map Class offers both atomic and advanced map read operations
 
-    The Map Class is built on tope of the MapFile class for low-level file reading operations.
+    The Map Class is built on top of the MapFile class for low-level file reading operations.
     Map depends on the GDAL and Rasterio abstraction layers.
 
     """
@@ -167,6 +169,7 @@ class Map(MapFile):
 
         cos = (math.sin(phi1) * math.sin(phi2) * math.cos(theta1 - theta2) +
                math.cos(phi1) * math.cos(phi2))
+        """ @todo: need to implement domain check"""
         arc = math.acos(cos)
 
         # Remember to multiply arc by the radius of the earth
@@ -409,7 +412,7 @@ class Map(MapFile):
         return profile
 
 
-    def get_elevation_along_path(self, **kwargs):
+    def get_elevation_along_path_csv(self, **kwargs):
         """
         Query elevations along a path defined by a list of segments. Works by calling get_elevation_by_segment()
         iteratively on the segment list (CSV file)
@@ -425,6 +428,7 @@ class Map(MapFile):
             mycsv = csv.reader(csvfile, delimiter=' ', quotechar='|')
             mycsv = list(mycsv)
             lines = [ent[0].split(',') for ent in mycsv[1:] if ent]
+            print lines
             baseCoordinates = [Coordinate(lat=elem[1], lon=elem[0]) for elem in
                                [[float(e) for e in line if e] for line in lines]]
             coordsArray = [item for sublist in
@@ -445,6 +449,40 @@ class Map(MapFile):
                         'latDistance': latDistanceArray, 'lonDistance': lonDistanceArray}
             return np.array(pathInfo['elevation'])
             #return izip_longest(coordsArray, elevationArray, distanceArray)
+
+    # @TODO: D.R.Y!! quick and dirty method for demo - let's fold this and the csv function into one
+    def get_elevation_along_path(self, lat_lon_array):
+        """
+        Query elevations along a path defined by a list of segments. Works by calling get_elevation_by_segment()
+        iteratively on the segment list (CSV file)
+
+        :param lat_lon_array: Path specified as an array of coordinates
+        :return the distances between each coordinate, as well as the elevations at each coordinate
+        """
+        #with open(csvPath, 'rb') as csvfile:
+        #    mycsv = csv.reader(csvfile, delimiter=' ', quotechar='|')
+        #    mycsv = list(mycsv)
+        #baseCoordinates = [Coordinate(lat=elem[1], lon=elem[0]) for elem in
+        #                   [[float(e) for e in line if e] for line in lines]]
+        coordsArray = [item for sublist in
+                       [self.get_coordinates_in_segment(segmentStart, segmentEnd) for segmentStart, segmentEnd in
+                        pairwise(lat_lon_array)] for item in sublist]
+
+        distanceArray = [self.distance_on_unit_sphere(segmentStart, segmentEnd) for segmentStart, segmentEnd in
+                         pairwise(coordsArray)]
+        latDistanceArray = [self.latlon_distance_on_unit_sphere(segmentStart, segmentEnd, 'lat') for
+                            segmentStart, segmentEnd in pairwise(coordsArray)]
+        lonDistanceArray = [self.latlon_distance_on_unit_sphere(segmentStart, segmentEnd, 'lon') for
+                            segmentStart, segmentEnd in pairwise(coordsArray)]
+
+
+        #print "distance:\n", len(distanceArray), distanceArray
+        elevationArray = [self.get_point_elevation(coordinate=elem) for elem in coordsArray]
+        pathInfo = {'coords': coordsArray, 'elevation': elevationArray, 'distance': distanceArray,
+                    'latDistance': latDistanceArray, 'lonDistance': lonDistanceArray}
+        #return np.array(pathInfo['elevation'])
+        return pathInfo
+        #return izip_longest(coordsArray, elevationArray, distanceArray)
 
 
     def planPath(self, startCoord, endCoord, **kwargs):
@@ -492,6 +530,36 @@ class Map(MapFile):
                 pass
 
 
+class Map_Process(Map, multiprocessing.Process):
+
+    def __init__(self, filename):
+        #  super(Map_Process, self).__init__(filename)
+
+        Map.__init__(self, filename)
+        multiprocessing.Process.__init__(self)
+
+    def run(self, context=None, worker_ip=None, worker_port=5555):
+        context = context or zmq.Context.instance()
+        # Socket to talk to dispatcher
+        socket = context.socket(zmq.SUB)
+        socket.setsockopt(zmq.SUBSCRIBE, '')
+
+        if worker_ip is None:
+            worker_ip = 'tcp://127.0.0.1:{}'
+        socket.connect(worker_ip.format(worker_port))
+        msg = socket.recv()
+        print "message received"
+        lat_lon_array = msgpack.unpackb(msg)
+        coordinate_pairs = [Coordinate(lat=lat, lon=lon) for lon, lat in
+                                   grouper(lat_lon_array, 2)]
+        path_info = self.get_elevation_along_path(coordinate_pairs)
+
+        #self.q.put(path_info)
+
+    def router(self):
+
+        pass
+
 if __name__ == '__main__':
     filename = settings['FILE_CONFIG']['filename']
     map = Map(filename, verbose=True)
@@ -499,7 +567,7 @@ if __name__ == '__main__':
     #quadrotor = Quadrotor(lat, lon)
     #map.add_vehicle(quadrotor)
 
-    res = map.get_elevation_along_path(None)
+    res = map.get_elevation_along_path_csv()
     count = 0
 
 

@@ -4,31 +4,20 @@
 #   Collects weather updates and finds avg temp in zipcode
 #
 
-import sys
+import time
 import zmq
 
 #  Socket to talk to server
 context = zmq.Context()
 socket = context.socket(zmq.SUB)
 
-print("Collecting updates from QGIS…")
-socket.connect("tcp://localhost:5556")
+print("Collecting updates from QGIS...")
+socket.connect("tcp://127.0.0.1:5555")
 
-# Subscribe to zipcode, default is NYC, 10001
-zip_filter = sys.argv[1] if len(sys.argv) > 1 else "10001"
+socket.setsockopt(zmq.SUBSCRIBE, '')
 
-# Python 2 - ascii bytes to unicode str
-if isinstance(zip_filter, bytes):
-    zip_filter = zip_filter.decode('ascii')
-socket.setsockopt_string(zmq.SUBSCRIBE, zip_filter)
-
-# Process 5 updates
 total_temp = 0
 for update_nbr in range(5):
     string = socket.recv_string()
-    zipcode, temperature, relhumidity = string.split()
-    total_temp += int(temperature)
+    print string
 
-print("Average temperature for zipcode '%s' was %dF" % (
-      zip_filter, total_temp / update_nbr)
-)

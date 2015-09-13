@@ -1,4 +1,4 @@
-from world_engine import Map
+from map import Map
 
 
 class AddVehicleException(Exception):
@@ -22,7 +22,7 @@ class MapInterface(Map):
 
         self.commands = {'get_point_elevation': super(MapInterface, self).get_point_elevation,
                          'get_surrounding_elevation': super(MapInterface, self).get_surrounding_elevation,
-                         'get_elevation_along_path': super(MapInterface, self).get_elevation_along_path
+                         'get_elevation_along_path': super(MapInterface, self).get_elevation_along_path_csv
         }
 
         self.router = {'get_point_elevation': 24995,

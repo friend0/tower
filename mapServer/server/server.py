@@ -5,7 +5,7 @@ decision making algorithms.
 """
 
 import SocketServer
-import sys
+import sys, os, subprocess
 import re
 import struct
 import logging
@@ -19,11 +19,18 @@ from threading import Timer
 from mapServer.server.server_conf import settings
 from mapServer.mapping.map_interface import MapInterface
 from time import strftime
+from message_passing.zmq.zmq_workers import ZMQ_Worker, ZMQ_Worker_Sub
+import Queue
+import matplotlib.pyplot as plt
+import zmq
+
+import pymatbridge as pymat
+from pymatbridge import Matlab
 
 HOST = 'localhost'
 PORT = 2002
 
-
+""" @todo: put all itertool implementatinos into a utils file """
 def grouper(iterable, n, fillvalue=None):
     """
     Collect data into fixed-length chunks or blocks
@@ -83,7 +90,7 @@ class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
 class UDP_Interrupt(SocketServer.BaseRequestHandler):
     """
     This class works similar to the TCP handler class, except that
-    self.request consists of a pair of data and client socket, and since
+    self.request consists of a pair of data and client sockets, and since
     there is no connection the client address must be given explicitly
     when sending data back via sendto().
     """
@@ -113,18 +120,6 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         self.command_response(cmd_strn, ret, self.request[1], self.client_address[0],
                               self.mapInterface.router[cmd_strn])
 
-        # if pack[0] == 'coords':
-        #     coords = Coordinate(float(pack[1]), float(pack[2]))
-        #     ret = super(MapInterface, self.mapInterface).get_surrounding_elevation(window=3, coordinates=coords)
-        #     ret = ret.astype(np.float32)
-        # elif pack[0] == 'lonDistance':
-        #     ret = super(MapInterface, self.mapInterface).get_elevation_along_path(None)
-        #     ret = np.array(ret['lonDistance'])
-        #     ret = ret.astype(np.float32)
-        #     for idx, distTuple in enumerate(pairwise(ret[:-1])):
-        #         #print distTuple[0] + distTuple[1]
-        #         ret[idx + 1] = ret[idx + 1] + ret[idx]
-        #         #print ret[idx]
 
     def command_service(self, rawCommand):
         """
@@ -219,7 +214,7 @@ def call_request(url=None, data=None, headers=None):
     r = requests.post(url, json=data, headers=headers)
     print r.status_code
 
-
+#  @todo: remove executable from server file into a workflow_manager file
 if __name__ == "__main__":
 
     logger = logging.getLogger('py_map_server')
@@ -234,15 +229,94 @@ if __name__ == "__main__":
     server_thread = None
     logger.info('Instantiation succesful')
 
+    zmq_result = Queue.Queue()
+
     # terminate with Ctrl-C
     try:
+        """ Threaded UDP server ought to be a process"""
         server_thread = Thread(target=map_server.serve_forever)
         server_thread.daemon = False
         logger.info("Threaded server loop running in: {}".format(server_thread.name))
         print("Threaded server loop running in: {}".format(server_thread.name))
         server_thread.start()
+
+        """ Interrupt used to update AMES every ~5s """
         #rt = Interrupt(5, call_request, url=None, data=None, headers=None)  # it auto-starts, no need of rt.start()
 
+
+        # @todo: need to think about how to get ZMQ tasks up and running
+        context = zmq.Context()
+        zmq_worker_qgis = ZMQ_Worker_Sub(zmq_result)
+        zmq_worker_qgis.start()
+
+        logger.info("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
+        print("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
+
+        """ Instance of Matlab Engine should be  process"""
+        mlab = Matlab()          # Matlab Bridge
+        try:
+            pass
+            # mlab.start()
+        except:
+            pass
+
+        """ remove wihle loops, processes remain persistent in their own threads"""
+        while(1):
+            if not zmq_result.empty():
+                val = zmq_result.get()
+                path_info = val
+                elevations = path_info['elevation']
+                distances = path_info['distance']
+                lat_distance = path_info['latDistance']
+                lon_distance = path_info['lonDistance']
+
+                elevations = elevations[:-1]
+                distances = [elem*1000 for elem in distances]
+                lat_distance = [elem*1000 for elem in lat_distance]
+                lon_distance = [elem*1000 for elem in lon_distance]
+
+                distances = [sum(distances[:idx]) for idx, elem in enumerate(distances)]
+                lat_distance = [sum(lat_distance[:idx]) for idx, elem in enumerate(lat_distance)]
+                lon_distance = [sum(lon_distance[:idx]) for idx, elem in enumerate(lon_distance)]
+
+                print len(distances), len(elevations), len(lat_distance), len(lon_distance)
+                print distances
+                print elevations
+                print lat_distance
+                print lon_distance
+
+                """ Send to Matlab/trigger simulink """
+
+                """ Get variables into workspace"""
+                np.asarray(distances, dtype=np.float32)
+                np.asarray(elevations, dtype=np.float32)
+                np.asarray(lat_distance, dtype=np.float32)
+                np.asarray(lon_distance, dtype=np.float32)
+
+                print("Putting Control Variables Into Workspace..")
+                #mlab.set_variable('elevations', elevations)
+                #mlab.set_variable('distances', distances)
+                #mlab.set_variable('lat_distances', lat_distance)
+                #mlab.set_variable('lon_distances', lon_distance)
+                print "Done\n"
+                """ Run the simulink model, which takes the new workspace variables as inputs"""
+
+                print("Getting Variables Back From Workspace:")
+                #print 'elevations', mlab.get_variable('elevations')
+                #print 'distances', mlab.get_variable('distances')
+                #print 'lat_distances', mlab.get_variable('lat_distances')
+                #print 'lon_distances', mlab.get_variable('lon_distances')
+                # calculate polynomial
+                z = np.polyfit(distances, elevations, 3)
+                f = np.poly1d(z)
+
+                # calculate new x's and y's
+                x_new = np.linspace(distances[0], distances[-1], len(distances))
+                y_new = f(x_new)
+
+                plt.plot(distances, elevations, 'o', x_new, y_new)
+                plt.xlim([distances[0]-1, distances[-1] + 1 ])
+                plt.show()
 
     except KeyboardInterrupt:
         server_thread.kill()
