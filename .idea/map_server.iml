@@ -3,11 +3,11 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/mapServer/server" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/mapServer" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/mapServer/mapping" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/world_engine/server" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/world_engine" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/world_engine/mapping" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 2.7.10 virtualenv at ~/demEnv" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 2.7.10 (/opt/local/Library/Frameworks/Python.framework/Versions/2.7/bin/python2.7)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="ReSTService">
