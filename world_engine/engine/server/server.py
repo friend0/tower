@@ -6,14 +6,14 @@ decision making algorithms.
 
 import SocketServer
 import numpy as np
-import sys, os, subprocess
+import sys
 import re
 import struct
 import logging
 import requests
+import utils
 from threading import Thread
 from re import split
-from itertools import izip_longest
 from ast import literal_eval
 from threading import Timer
 from server_conf import settings
@@ -23,7 +23,6 @@ from message_passing.zmq.zmq_workers import ZMQ_Worker, ZMQ_Worker_Sub
 import Queue
 import matplotlib.pyplot as plt
 import zmq
-from utils import *
 import pymatbridge as pymat
 from pymatbridge import Matlab
 
@@ -117,7 +116,7 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         """
         pack = [x.strip() for x in split('[,()]*', rawCommand.strip())]
         raw_cmd = pack[0]
-        argDict = {key: literal_eval(value) for key, value in grouper(pack[1:], 2)}
+        argDict = {key: literal_eval(value) for key, value in utils.grouper(pack[1:], 2)}
         cmd = self.mapInterface.commands[raw_cmd]
         ret = cmd(**argDict)
         logger.info("Command '{}' run with args {}".format(raw_cmd, argDict))

@@ -1,4 +1,4 @@
-from map import Map
+from world.mapping.map import Map
 
 
 class AddVehicleException(Exception):

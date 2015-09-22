@@ -5,7 +5,7 @@ from world import mapping, vehicles
 from engine.server.server import ThreadedUDPServer, UDP_Interrupt
 from engine.server.server_conf import settings
 from engine.server.message_passing.zmq.zmq_workers import ZMQ_Worker_Sub
-from world.mapping import map_interface, map
+from world.mapping import map
 from utils import logging_thread
 from utils.utils import Interrupt
 from engine.server.web_services.web_update import web_post
@@ -18,21 +18,20 @@ PORT = 2002
 class WorkflowManager(object):
 
     def __init__(self):
-        np.matrix('1 1 1')
         #self.logger = logging.getLogger('py_map_server')
         self.processes = {}
         self.threads = {}
         self.context = zmq.Context()
         self.zmq_result = Queue()
         self.commands = Queue()
-        self.mapInterface = mapping.map_interface.MapInterface(settings['FILE_CONFIG']['filename'])
         self.logger = Queue()
 
     def start_engine(self):
         self.start_logging()
         self.start_server_process()
+        #self.start_zmq_processes()
         self.start_map_process()
-        self.start_web_services()
+        #self.start_web_services()
 
     def init_model(self):
         pass
@@ -78,7 +77,7 @@ class WorkflowManager(object):
         @todo: This ought to be something other than a subscriber?
 
         """
-        map_process = map.Map_Process(settings['FILE_CONFIG']['filename'])
+        map_process = map.MapProcess(settings['FILE_CONFIG']['filename'])
         self.processes['map_process'] = map_process
         self.logger.put("{} beginning..".format(map_process.name))
         map_process.start()
@@ -91,7 +90,7 @@ class WorkflowManager(object):
         """
         zmq_worker_qgis = ZMQ_Worker_Sub(qin=self.commands, qout=self.zmq_result)
         zmq_worker_qgis.start()
-        self.processes['qgis_worker'] = zmq_worker_qgis
+        self.threads['qgis_worker'] = zmq_worker_qgis
         #self.logger.info("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
         self.logger.put("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
         print("ZMQ processes running in: '{}'".format(zmq_worker_qgis.name))
