@@ -45,7 +45,7 @@ Contents:
     :maxdepth: 2
 
     self
-    mapServer
+    world_engine
     about
 
 
