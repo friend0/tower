@@ -3,9 +3,7 @@ WorldEngine is used as the data layer for the threaded server. Retrieves and pro
 Manages
 """
 import multiprocessing
-import csv
 import zmq
-import msgpack
 import rasterio
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,6 +19,8 @@ from utils.utils import *
 from collections import namedtuple
 from re import split
 from zmq.eventloop import ioloop, zmqstream
+import csv
+from multiprocessing import Queue
 
 ioloop.install()
 
@@ -93,7 +93,6 @@ class MapFile(object):
         self.pixelWidth = self.geotransform[1]  # w/e pixel resoluton
         self.pixelHeight = self.geotransform[5]  # n/s pixel resolution
 
-        print self.semimajor, self.flattening
 
         if verbose is True:
             print "GeoT:{}".format(self.geotransform)
@@ -304,8 +303,11 @@ class Map(MapFile):
         and the forward and reverse azimuths between these points.
         lats, longs and azimuths are in radians, distance in metres
 
-        Returns ( s, alpha12,  alpha21 ) as a tuple
-
+        :param f: flattening of the geodesic
+        :param a: the semimajor axis of the geodesic
+        :param coordinate_a: decimal coordinate given as named tuple coordinate
+        :param coordinate_b: decimal coordinate given as named tuple coordinate
+        Note: The problem calculates forward and reverse azimuths as: coordinate_a -> coordinate_b
         """
         phi1 = math.radians(coordinate_a.lat)
         lembda1 = math.radians(coordinate_a.lon)
@@ -314,7 +316,7 @@ class Map(MapFile):
         lembda2 = math.radians(coordinate_b.lon)
 
         if (abs(phi2 - phi1) < 1e-8) and (abs(lembda2 - lembda1) < 1e-8):
-            return 0.0, 0.0, 0.0
+            return {'distance': 0.0, 'forward_azimuth': 0.0, 'reverse_azimuth': 0.0}
 
         two_pi = 2.0 * math.pi
 
@@ -565,32 +567,28 @@ class Map(MapFile):
             print "exception"
         return elevations
 
-    def get_coordinates_in_segment(self, startCoord, endCoord, mode='samples', numSamples=15, returnStyle='array'):
+    """ TODO: need to decide whether to use functions from the geodesic lib, or from vincenty """
+    def get_coordinates_in_segment(self, startCoord, endCoord, numSamples=10, returnStyle='array'):
         """
+
         Get coordinates along the direct path between start and end coordinates
 
         :param startCoord: a Coordinate containing lat and lon, the starting point of the path.
         :param endCoord: a Coordinate containing lat and lon, the end point of the path.
-        :param mode: determines how the elevation is sampled, either by pixel width, or a given sampling rate in
-        'coordinate distance'
         :param numSamples: Number of
         :param returnStyle: Default return style is an array of Coordinates
         :rtype : not sure yet, perhaps determine this with an optional arg
+
         """
 
+        """ TODO: this is bad form - need to actually check what datum we're using for the map instance """
         profile = []
         p = Geodesic.WGS84.Inverse(startCoord.lat, startCoord.lon, endCoord.lat, endCoord.lon)
         l = Geodesic.WGS84.Line(p['lat1'], p['lon1'], p['azi1'])
 
-        if mode is 'samples':
-            num = 15
-        elif mode is 'frequency':
-            pass
         for i in range(numSamples + 1):
-            b = l.Position(i * p['s12'] / num)
+            b = l.Position(i * p['s12'] / (numSamples))
             profile.append(Coordinate(b['lat2'], b['lon2']))
-            # print(b['lat2'], b['lon2'])
-
         return profile
 
     def get_elevation_along_segment(self, coordinateArray):
@@ -639,7 +637,7 @@ class Map(MapFile):
 
         if mode is 'coordinateTrace':
             for start, end in coordinateArray:
-                profile.append(self.get_coordinates_in_segment(start, end, 15))
+                profile.append(self.get_coordinates_in_segment(start, end, numSamples=15))
 
         # else:
         #    raise TypeError("Invalid mode of operation specified for retrieving elevation by segment")
@@ -662,7 +660,6 @@ class Map(MapFile):
             mycsv = csv.reader(csvfile, delimiter=' ', quotechar='|')
             mycsv = list(mycsv)
             lines = [ent[0].split(',') for ent in mycsv[1:] if ent]
-            print lines
             baseCoordinates = [Coordinate(lat=elem[1], lon=elem[0]) for elem in
                                [[float(e) for e in line if e] for line in lines]]
             coordsArray = [item for sublist in
@@ -766,8 +763,8 @@ class Map(MapFile):
 class Coord(object):
     def __init__(self, data, prev, next):
         self.data = data  # data is a named tuple of type coordinate
-        self.prev = prev
-        self.next = next
+        self.prev = prev  # prev is a reference to the coordinate before
+        self.next = next  # reference to the next coordinate
 
     def __str__(self):
         return str(self.data)
@@ -785,12 +782,7 @@ class Path(object):
 
         self.path_info = path_info
         self.coordinates = self.path_info['coords']
-        self.coordinate_pairs = utils.grouper(self.path_info['coords'], 2)
-        self.nodes = []
-        for idx, item in enumerate(self.coordinates):
-            self.nodes.append(Coord(item, self.coordinates[idx - 1] if idx >= 1 else None,
-                                    self.coordinates[idx + 1] if idx < len(self.coordinates) - 1 else None))
-
+        #dll of nodes, where node is a wrapper object 'Coord' for named tuple Coordinates
         self.nodes = [Coord(item, self.coordinates[idx - 1] if idx >= 1 else None,
                             self.coordinates[idx + 1] if idx < len(self.coordinates) - 1 else None) for idx, item in
                         enumerate(self.coordinates)]
@@ -798,7 +790,7 @@ class Path(object):
         self.distance = utils.grouper(self.path_info['distance'], 2)
         self.lat_distance = utils.grouper(self.path_info['latDistance'], 2)
         self.lon_distance = utils.grouper(self.path_info['lonDistance'], 2)
-        self.idx = 0
+        self.idx = -1
         self.mode = mode
 
     def __iter__(self):
@@ -807,7 +799,7 @@ class Path(object):
     def next(self):
         """
 
-        Get the next coordinate in path
+        Get the next Coord in path
 
         """
         if self.idx < len(self.nodes) - 1:
@@ -820,6 +812,17 @@ class Path(object):
                 self.idx = len(self.nodes)
                 raise StopIteration
 
+    def has_next(self):
+        """
+
+        Return true if there are nodes left in dll
+
+        """
+        if self.idx < len(self.nodes):
+            return True
+        else:
+            return False
+
     def previous(self):
         """
 
@@ -829,11 +832,7 @@ class Path(object):
 
         pass
 
-    def has_next(self):
-        if self.idx < len(self.nodes):
-            return True
-        else:
-            return False
+
 
 
 class MapProcess(Map, multiprocessing.Process):
@@ -861,8 +860,8 @@ class MapProcess(Map, multiprocessing.Process):
         self.results_q = multiprocessing.Queue()
         self.zmq_worker_qgis = ZMQ_Worker_Sub(qin=None, qout=self.results_q)
         self.zmq_worker_qgis.start()
-        self.zmq_worker_model = ZMQ_Worker_Pair(q=self.results_q, worker_port=settings['MODEL_PORT'])
-        self.zmq_worker_model.start()
+        #self.zmq_worker_model = ZMQ_Worker_Pair(q=self.results_q, worker_port=settings['MODEL_PORT'])
+        #self.zmq_worker_model.start()
 
         """ Configure API """
         # will not include statically defined methods
@@ -885,9 +884,13 @@ class MapProcess(Map, multiprocessing.Process):
 
         while 1:
             if not self.results_q.empty():
-                print
                 msg = self.results_q.get()
                 self.decode_api_call(msg)
+                """ TODO: this is a really gross workaround for a weird problem. Seem like the message from QGIS is
+                getting put onto the queue more than once """
+                while not self.results_q.empty():
+                    self.results_q.get()
+
 
     def decode_api_call(self, raw_cmd):
         """
@@ -902,8 +905,8 @@ class MapProcess(Map, multiprocessing.Process):
 
         # cmd = self.map_api[cmd]
         cmd = self.api[cmd]
-        for key, value in utils.grouper(raw_cmd[1:], 2):
-            print key, value
+        #for key, value in utils.grouper(raw_cmd[1:], 2):
+        #    print key, value
         argDict = {key: value for key, value in utils.grouper(raw_cmd[1:], 2)}
         cmd(**argDict)  # callable functions in map must take kwargs in order to be called..
 
@@ -920,19 +923,67 @@ class MapProcess(Map, multiprocessing.Process):
         coordinate_pairs = [Coordinate(lat=lat, lon=lon) for lon, lat in grouper(msg, 2)]
         path_info = self.get_elevation_along_path(**{'coordinate_pairs': coordinate_pairs})
         path = Path(path_info, mode='one-shot')
+
+        print "QGIS Called"
+        print path_info
         """
-        @todo: now path class needs to get assigned to a vehicle, and we need to call equations of motion for that
+        @todo: now path class needs to be assigned to a vehicle, and we need to call equations of motion for that
         vehicle processing will consist of:
           - calling vinc_dist between adjacent points on a circular path
           - once we have tracking angle and distance between points, call vinc_pt with information on the vehicles speed
           every five seconds.
 
         """
-        #while path.has_next():
-        #    try:
-        #        pass
-        #    except StopIteration:
-        #        break
+
+        ground_speed = 48.27  #km/h
+        dt = .01  #1 mS
+        rocd = 0  #constant altitude
+        # @todo: think about adding this to the creation of the path object
+        count = 0
+        tol = .1
+        results = []
+        while path.has_next():
+            try:
+                current_coord = path.next()     # get the current node, a Coord object
+                next_coord = current_coord.next
+                current_coord = current_coord.data
+                #print current_coord, type(current_coord), next_coord, type(next_coord)
+                if next_coord is not None:
+                    inverse = self.vinc_inv(self.flattening, self.semimajor, current_coord, next_coord)
+                    distance = inverse['distance']
+                    fwd_azimuth = inverse['forward_azimuth']
+                    rev_azimuth = inverse['reverse_azimuth']
+                    err = distance
+                    remaining_distance = distance
+                    count = 0
+                    while remaining_distance > 1:
+                        count+=1
+                        # @todo will need to call physical model to get current velocity based on past state and acceleration
+                        fpm_to_fps = 0.01666666666667  # Feet per minute to feet per second.
+                        ellipsoidal_velocity = ground_speed  # is this correct?
+                        ellipsoidal_distance = ellipsoidal_velocity * dt
+                        remaining_distance -= ellipsoidal_distance
+                        temp_coord, temp = self.vinc_dir(0.00335281068118, 6378137.0, current_coord, fwd_azimuth,
+                                                             ellipsoidal_distance)
+                        altitude = rocd * fpm_to_fps * dt
+                        current_coord = temp_coord
+                        err = distance - remaining_distance
+                        if count >= 500:
+                            results.append(current_coord)
+                            count = 0
+
+            except StopIteration:
+                break
+        f = open('recon.csv', 'wt')
+        try:
+            writer = csv.writer(f)
+            writer.writerow( ['Lat', 'Lon'] )
+            for elem in results:
+                writer.writerow([elem.lat, elem.lon])
+        finally:
+            f.close()
+
+        print "Results", results
 
     def update_data(self):
         """
@@ -945,13 +996,3 @@ class MapProcess(Map, multiprocessing.Process):
             pass
 
 
-if __name__ == '__main__':
-    filename = settings['FILE_CONFIG']['filename']
-    map = Map(filename, verbose=True)
-
-    print map.lat_lon_to_pixel(Coordinate(lat=36.974117, lon=-122.030796))
-    # quadrotor = Quadrotor(lat, lon)
-    # map.add_vehicle(quadrotor)
-
-    res = map.get_elevation_along_path_csv()
-    count = 0

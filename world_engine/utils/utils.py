@@ -1,4 +1,3 @@
-import requests
 from itertools import izip, tee, izip_longest
 from itertools import cycle
 from threading import Timer
