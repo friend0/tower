@@ -27,82 +27,76 @@
 #  MA  02110-1301, USA.
 
 import math
+
 import zmq
-from collections import namedtuple
+
 import time
-
-Reference = namedtuple("Reference", 'x y z yaw', verbose=False, rename=False)
-Configurator = namedtuple("gains", 'p i d set', verbose=False, rename=False)
-PidOutputs = namedtuple("PidOutputs", 'roll pitch yaw thrust')
-
 
 class PID_V(object):
     """
     Discrete PID control
     """
 
-    def __init__(self, p=0, i=0, d=0, set_point=0, set_point_max=1, set_point_min=-1, saturate_max=None, saturate_min=None):
-
+    def __init__(self, p=1, i=1, d=1, set_point=1, set_point_max=1, set_point_min=-1, saturate_max=None, saturate_min = None):
         self.kp = p
-        self.Ki = i
-        self.Kd = d
-        self._Ti = self.kp / self.Ki
+        self.ki = i
+        self.kd = d
+        self._Ti = self.kp / self.ki
         self._Td = self.kd / self.kp
-        self.prev_time = 0
-        self.dt = 0
 
+        self.saturate_max = saturate_max
+        self.saturate_min = saturate_min
         self.set_point_max = set_point_max
         self.set_point_min = set_point_min
         self.set_point = set_point
-        self.saturate_max = saturate_max
-        self.saturate_min = saturate_min
+        self.dt = 0
+        self.prev_t = 0
 
-        self.ut = 0.0    # the output
-        self.ut_1 = 0.0  # the last output
-        self.et = 0.0    # the error
-        self.et_1 = 0.0  # the last error
-        self.et_2 = 0.0  # ...
+        self.ut = 0.0
+        self.ut_1 = 0.0
+        self.et = 0.0
+        self.et_1 = 0.0
+        self.et_2 = 0.0
 
     def update(self, feedback):
         """
         Calculate PID output value for given reference input and feedback
         :param feedback: state of the plant
         """
+        """ @todo: make dt a property to prevent it from being seen as a zero"""
         self.dt = (time.time() - self.prev_t)
-        self.prev_time = time.time()
+        if self.dt == 0:
+            self.dt = 1e-3
+        self.prev_t = time.time()
         self.et = self.set_point - feedback
         self.ut = self.ut_1 + self.kp * (
             (1 + self.dt / self._Ti + self._Td / self.dt) * self.et - (1 + 2 * self._Td / self.dt) * self.et_1
             + (self._Td * self.et_2) / self.dt)
-
         self.et_2 = self.et_1
         self.et_1 = self.et
         self.ut_1 = self.ut
-
         return self.ut
 
+    """
     @property
     def kp(self):
         return self._kp
 
     @kp.setter
     def kp(self, p):
-        """
 
-        :param P:
-        """
-        self._Kp = p
+        self._kp = p
         self._Ti = self._kp / self.ki
         self._Td = self.kd / self._kp
 
     @property
     def ki(self):
-        return self._Ki
+        return self._ki
 
 
-    @Ki.setter
-    def ki(self, i):
-        self._Ki = i
+    @ki.setter
+    def ki(self, val):
+        self._ki = val
         self._Ti = self.kp / self._ki
         self._Td = self.kd / self.kp
 
@@ -116,7 +110,7 @@ class PID_V(object):
         self._kd = d
         self._Ti = self.kp / self.ki
         self._Td = self._kd / self.kp
-
+    """
     @property
     def set_point(self):
         return self._set_point

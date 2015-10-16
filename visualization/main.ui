@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Kinect PID visualizer</string>
+   <string>Optitrack PID visualizer</string>
   </property>
   <property name="statusTip">
    <string/>
