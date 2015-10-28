@@ -81,17 +81,17 @@ ctrl_conn.connect("tcp://127.0.0.1:5124")
 yaw_sp = 0
 
 """ Roll, Pitch and Yaw PID controllers """
-r_pid = PID_RP(name="roll", P=35, I=0.28, D=7, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
-p_pid = PID_RP(name="pitch", P=35, I=0.28, D=7, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
-y_pid = PID_RP(name="yaw", P=10, I=0, D=0.35, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
-t_pid = PID_RP(name="thrust", P=22, I=5*0.035, D=8*0.035, set_point=1, Integrator_max=0.01,
+r_pid = PID_RP(name="roll", P= 0, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
+p_pid = PID_RP(name="pitch", P= 10, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
+y_pid = PID_RP(name="yaw", P= 0, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
+t_pid = PID_RP(name="thrust", P=20, I=0, D=0, set_point=1.75, Integrator_max=0.01,
                Integrator_min=-0.01/0.035, zmq_connection=pid_viz_conn)
 
 
 """ Vertical position and velocity PID loops """
-v_pid = PID_RP(name="position", P=.25, D=0.0, I=0.28, Integrator_max=100/0.035, Integrator_min=-100/0.035, set_point=1,
+v_pid = PID_RP(name="position", P=.5, D=0.0, I=0, Integrator_max=100/0.035, Integrator_min=-100/0.035, set_point= .5,
                zmq_connection=pid_viz_conn)
-vv_pid = PID_RP(name="velocity", P=0.1, D=0.00315, I=0.28, Integrator_max=5/0.035, Integrator_min=-5/0.035,
+vv_pid = PID_RP(name="velocity", P=.75, D=0, I=0, Integrator_max=5/0.035, Integrator_min=-5/0.035,
                 set_point=0, zmq_connection=pid_viz_conn)
 
 
@@ -155,6 +155,26 @@ def map_angle(angle):
 
 signal.signal(signal.SIGINT, signal_handler)
 
+"""
+Ramp up CF Motors to avoid current surge
+"""
+
+
+try:
+    print("Spinning up motors...")
+    for i in range(2500, 4500, 1):
+        cmd["ctrl"]["roll"] = 0
+        cmd["ctrl"]["pitch"] = 0
+        cmd["ctrl"]["yaw"] = 0
+        cmd["ctrl"]["thrust"] = i / 100.0
+        client_conn.send_json(cmd)
+        time.sleep(0.001)
+except:
+    print("Motor wind-up failed")
+
+print("Motor spin-up complete")
+client_conn.send_json(cmd)
+
 while True:
 
     try:
@@ -162,57 +182,46 @@ while True:
         unpackd = msgpack.unpackb(packet)
         optitrack_conn.send(b'Ack', zmq.NOBLOCK)
 
-        """ Position Feedback"""
-        x = unpackd[0]  # x+ -> roll-
-        y = unpackd[1]  # y+ -> pitch+
-        z = unpackd[2]  # z+ -> thrust+
-        #x = 1000*unpackd[0]  # x+ -> roll-
-        #y = 1000*unpackd[1]  # y+ -> pitch+
-        #z = 1000*unpackd[2]  # z+ -> thrust+
-        """ Rotate Optitrack Axis"""
-        #y, z = z, y
+        # Position Feedback given in meters
+        # Forward is + pitch, Right is + roll
 
-        """
-        Orientation Feedback: quaternion given as (qx, qy, qz, qw)
-        """
+        # x+ -> roll-
+        # y+ -> pitch+
+        # z+ -> thrust+
+
+        x = unpackd[0]
+        y = unpackd[1]
+        z = unpackd[2]
+
+        # Swap Z and Y axes since Y axis is 'up' w/ Optitrack
+        y, z = z, y
+
+        # Orientation Feedback: quaternion given as (qx, qy, qz, qw)
         qx, qy, qz, qw = unpackd[3], unpackd[4], unpackd[5], unpackd[6]
         q = np.array([qx, qy, qz, qw])
-        q = np.linalg.norm(q)
+        np.linalg.norm(q)
+        print(q)
         #print("X:{}, Y:{}, Z:{}".format(x, y, z))
-        orientation = euler_from_quaternion([unpackd[3], unpackd[4], unpackd[5], unpackd[6]], axes='sxzy')
-        #orientation = [elem*(180/math.pi) for elem in orientation]
+        #orientation = euler_from_quaternion([unpackd[3], unpackd[4], unpackd[5], unpackd[6]], axes='sxzy')
+        orientation = euler_from_quaternion(q, axes='syzx')
+        orientation = [elem*(180/math.pi) for elem in orientation]
+        print(orientation)
 
 
-        roll = orientation[1]
-        pitch = orientation[0]
-        yaw = orientation[2]
+        # Are these correct?
+        roll = orientation[0]
+        yaw = orientation[1]
+        pitch = orientation[2]
 
 
         """
-        Check if vehicle is being tracked by cameras
+        Check if body is being tracked by cameras
         """
         detected = unpackd[-1]
         if detected:
             last_detect_ts = time.time()
             delta = unpackd[-2]
 
-
-
-        """
-        try:
-            while True:
-                md = midi_conn.recv_json(zmq.NOBLOCK)
-                print (md["knobs"][0] - 0.5) * 2
-                r_pid.set_point = (md["knobs"][0]-0.5) * 2
-                p_pid.set_point = (md["knobs"][1]-0.5) * 2
-                y_pid.set_point = md["knobs"][2] * 360
-
-                rp_p = md["sliders"][0] * 40
-                rp_i = md["sliders"][1]
-                rp_d = md["sliders"][2] * 200
-        except zmq.error.Again:
-            pass
-        """
 
         # Get the set-points (if there are any)
         try:
@@ -246,7 +255,7 @@ while True:
 
                 velocity = v_pid.update(z)
                 velocity = max(min(velocity, 10), -10)  #Limit vertical velocity between -1 and 1 m/sec
-                velocity = midi_acc
+                #velocity = midi_acc
                 vv_pid.set_point = velocity
                 dt = (time.time() - prev_t)
                 curr_velocity = (z-prev_z)/dt
@@ -299,7 +308,7 @@ while True:
             y_pid.Integrator = 0.0
             on_detect_counter = 0
 
-        client_conn.send_json(cmd, zmq.NOBLOCK)
+        client_conn.send_json(cmd)
 
     except simplejson.scanner.JSONDecodeError as e:
         print e
