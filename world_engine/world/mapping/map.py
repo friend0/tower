@@ -29,13 +29,9 @@ PixelPair = namedtuple("PixelPair", ['x', 'y'], verbose=False)
 
 
 class ReadException(Exception):
-    """ReadExceptions occur in response to invalid rasters or file paths
+    """
 
-    Args:
-        strn (str): Human readable string describing the exception.
-
-    Attributes:
-        strn (str): Human readable string describing the exception.
+    ReadExceptions occur in response to invalid rasters or file paths
 
     """
 
@@ -45,6 +41,21 @@ class ReadException(Exception):
     def __str__(self):
         return repr(self.strn)
 
+class ArgumentError(Exception):
+
+    def __init__(self, message, errors=None):
+
+        # Call the base class constructor with the parameters it needs
+        """
+
+        :param message: The error message output
+        :param errors: An optional dict of error messages
+
+        """
+
+        super(ArgumentError, self).__init__(message)
+
+        self.errors = errors
 
 class MapFile(object):
     """MapFile abstracts the atomic raster file read/write processes.
@@ -115,7 +126,9 @@ class RetrievePointException(Exception):
 
 
 class Map(MapFile):
-    """ The Map Class offers both atomic and advanced map read operations
+    """
+
+    The Map Class offers both atomic and advanced map read operations
 
     The Map Class is built on top of the MapFile class for low-level file reading operations.
     Map depends on the GDAL and Rasterio abstraction layers.
@@ -131,12 +144,14 @@ class Map(MapFile):
 
     def lat_lon_to_pixel(self, coords):
         """
+
         First open the file with gdal (see if we can get around this), then retrieve its geotransform.
         Next, obtain a spatial reference, and perform a coordinate transformation.
 
         Return the pixel pair corresponding to the input coordinates given in lat/lon
         :param coords: A named Tuple of type 'Coordinate' containing a lat/lon pair
         :return: A named tuple of type PixelPair containing an x/y pair
+
         """
         ds = self.ds
         gt = self.geotransform
@@ -150,14 +165,17 @@ class Map(MapFile):
         pixel_pair = PixelPair(x=int(x), y=int(y))
         return pixel_pair
 
+    # todo: ought to take datum as input
     def pixel_to_lat_lon(self, pixel):
         """
-        First open the file with gdal (see if we can get around this), then retrieve its geotransform.
+
+        First open the file with gdal @todo:(see if we can get around this), then retrieve its geotransform.
         Next, obtain a spatial reference, and perform a coordinate transformation.
 
         Return the geographic coordinate corresponding to the input coordinates given in pixel x/y
         :param coords: A named Tuple of type 'Coordinate' containing a lat/lon pair
         :return: A named tuple of type PixelPair containing an x/y pair
+
         """
         # get the existing coordinate system
         ds = self.ds
@@ -193,16 +211,18 @@ class Map(MapFile):
         return Coordinate(lon=latlong[0], lat=latlong[1])
 
     @staticmethod
-    def distance_on_unit_sphere(coord1, coord2, mode='km'):
+    def distance_on_unit_sphere(coord1, coord2, units='km'):
         # todo: need to make this work with ellipsoid earth models for more accurate distance calculations
+        # todo:
         """
-        Calculates the distance on a unit sphere, with the radius of the earth hard-coded.
-        Note that this formula is assuming a spherical earth.
+
+        Calculate the distance on a spherical earth model with radius hard-coded.
 
         :param coord1: start coordinates
         :param coord2: end coordinates
-        :param mode: choose whether to return in km or feet
+        :param units: choose whether to return in km or feet
         :return: return the distance in km
+
         """
 
         lat1, lon1 = coord1.lat, coord1.lon
@@ -233,24 +253,24 @@ class Map(MapFile):
         """ @todo: need to implement domain check"""
         arc = math.acos(cos)
 
-        # Remember to multiply arc by the radius of the earth
-        # in your favorite set of units to get length.
-        if mode is 'km':
+        if units is 'km':
             return arc * 6373
         else:
             return arc * 3960
 
     @staticmethod
-    def lat_lon_distance_on_unit_sphere(coord1, coord2, lat_lon, mode='km'):
+    def lat_lon_distance_on_unit_sphere(coord1, coord2, lat_lon, units='km'):
         """
+
         Compute either the lateral or longitudinal distance from on point to another;
         This corresponds to finding the length of one of the legs of the right triangle between
         the two points.
 
         :param coord1: start coordinates
         :param coord2: end coordinates
-        :param mode: choose whether to return in km or miles
-        :return:
+        :param units: choose whether to return in km or miles
+        :return: distance in units specified by 'units' param
+
         """
 
         if lat_lon is 'lat':
@@ -279,7 +299,7 @@ class Map(MapFile):
 
         # Remember to multiply arc by the radius of the earth
         # in your favorite set of units to get length.
-        if mode is 'km':
+        if units is 'km':
             return arc * 6373
         else:
             return arc * 3960
@@ -297,6 +317,7 @@ class Map(MapFile):
         :param coordinate_a: decimal coordinate given as named tuple coordinate
         :param coordinate_b: decimal coordinate given as named tuple coordinate
         Note: The problem calculates forward and reverse azimuths as: coordinate_a -> coordinate_b
+
         """
         phi1 = math.radians(coordinate_a.lat)
         lembda1 = math.radians(coordinate_a.lon)
@@ -383,10 +404,12 @@ class Map(MapFile):
     @staticmethod
     def vinc_dir(f, a, coordinate_a, alpha12, s):
         """
+
         Returns the lat and long of projected point and reverse azimuth
         given a reference point and a distance and azimuth to project.
         lats, longs and azimuths are passed in decimal degrees
         Returns ( phi2,  lambda2,  alpha21 ) as a tuple
+
         """
 
         phi1, lambda1 = coordinate_a.lat, coordinate_a.lon
@@ -525,9 +548,8 @@ class Map(MapFile):
         vehicleName = vehicleName
 
         if bool(coordinates) ^ bool(vehicleName):
-            # @todo: raise an exception; trying to retrieve elevation based on coordinates and vehicle name, or neither
-            # raise BaseException
-            pass
+            # @todo: raise an exception; trying to retrieve elevation based on csv_file and array of Coords, or neither
+            ArgumentError("Attempting to retrieve elevation based on csv_file and array of Coords, or neither")
 
         if vehicleName is not None:
             try:
@@ -619,10 +641,10 @@ class Map(MapFile):
             pass
         elif mode is 'segments':
             if len(segmentPairs) < 2:
-                """@todo:raise an exception"""
+                # todo:raise an exception
                 pass
         else:
-            """@todo: raise an exception if illegal mode provided"""
+            # todo: raise an exception if illegal mode provided
             pass
 
         if mode is 'coordinateTrace':
@@ -634,76 +656,49 @@ class Map(MapFile):
 
         return profile
 
-    def get_elevation_along_path_csv(self, **kwargs):
-        """
-        Query elevations along a path defined by a list of segments. Works by calling get_elevation_by_segment()
-        iteratively on the segment list (CSV file)
 
-        :param path: Path specified as CSV file or coordinates
-        :return the distances between each coordinate, as well as the elevations at each coordinate
-        """
-        path = kwargs.get('path', None)
-        # todo: need to make this work with some tmp file
-        csvPath = r'/Users/empire/Dropbox/NASA-Collaboration/qgis/pathCSV/path4.csv'
-        pathInfo = {}
-        with open(csvPath, 'rb') as csvfile:
-            mycsv = csv.reader(csvfile, delimiter=' ', quotechar='|')
-            mycsv = list(mycsv)
-            lines = [ent[0].split(',') for ent in mycsv[1:] if ent]
-            baseCoordinates = [Coordinate(lat=elem[1], lon=elem[0]) for elem in
-                               [[float(e) for e in line if e] for line in lines]]
-            coordsArray = [item for sublist in
-                           [self.get_coordinates_in_segment(segmentStart, segmentEnd) for segmentStart, segmentEnd in
-                            pairwise(baseCoordinates)] for item in sublist]
-
-            distanceArray = [self.distance_on_unit_sphere(segmentStart, segmentEnd) for segmentStart, segmentEnd in
-                             pairwise(coordsArray)]
-            latDistanceArray = [self.lat_lon_distance_on_unit_sphere(segmentStart, segmentEnd, 'lat', mode='km') for
-                                segmentStart, segmentEnd in pairwise(coordsArray)]
-            lonDistanceArray = [self.lat_lon_distance_on_unit_sphere(segmentStart, segmentEnd, 'lon', mode='km') for
-                                segmentStart, segmentEnd in pairwise(coordsArray)]
-
-
-            # print "distance:\n", len(distanceArray), distanceArray
-            elevationArray = [self.get_point_elevation(coordinate=elem) for elem in coordsArray]
-            pathInfo = {'coords': coordsArray, 'elevation': elevationArray, 'distance': distanceArray,
-                        'latDistance': latDistanceArray, 'lonDistance': lonDistanceArray}
-            return np.array(pathInfo['elevation'])
-            # return izip_longest(coordsArray, elevationArray, distanceArray)
-
-    # @TODO: D.R.Y!! quick and dirty method for demo - let's fold this and the csv function into one
+    # todo: think about how we want to return all of these values. This function is beginning to look like a script
     def get_elevation_along_path(self, **kwargs):
         """
+
         Query elevations along a path defined by a list of segments. Works by calling get_elevation_by_segment()
         iteratively on the segment list (CSV file)
 
         :param lat_lon_array: Path specified as an array of coordinates
-        :return the distances between each coordinate, as well as the elevations at each coordinate
-        """
-        # with open(csvPath, 'rb') as csvfile:
-        #    mycsv = csv.reader(csvfile, delimiter=' ', quotechar='|')
-        #    mycsv = list(mycsv)
-        # baseCoordinates = [Coordinate(lat=elem[1], lon=elem[0]) for elem in
-        #                   [[float(e) for e in line if e] for line in lines]]
+        :return: A numpy array with elevations corresponding to each input coordinate
 
+        """
+
+        csv_file = kwargs.get('csv_file', None)
         lat_lon_array = kwargs.get('coordinate_pairs', None)
-        coordsArray = [item for sublist in
-                       [self.get_coordinates_in_segment(segmentStart, segmentEnd) for segmentStart, segmentEnd in
-                        pairwise(lat_lon_array)] for item in sublist]
+        if bool(csv_file) ^ bool(lat_lon_array):
+            ArgumentError("Attempting to get elevation profile with file and array input, or neither.")
+
+        mycsv = csv.reader(csv_file, delimiter=' ', quotechar='|')
+        mycsv = list(mycsv)
+        lines = [ent[0].split(',') for ent in mycsv[1:] if ent]
+
+        if csv_file:
+            coord_array = [Coordinate(lat=elem[1], lon=elem[0]) for elem in
+                               [[float(e) for e in line if e] for line in lines]]
+
+        else:
+            coord_array = [item for sublist in
+                           [self.get_coordinates_in_segment(segmentStart, segmentEnd) for segmentStart, segmentEnd in
+                            pairwise(lat_lon_array)] for item in sublist]
 
         distanceArray = [self.distance_on_unit_sphere(segmentStart, segmentEnd) for segmentStart, segmentEnd in
-                         pairwise(coordsArray)]
+                         pairwise(coord_array)]
         latDistanceArray = [self.lat_lon_distance_on_unit_sphere(segmentStart, segmentEnd, 'lat') for
-                            segmentStart, segmentEnd in pairwise(coordsArray)]
+                            segmentStart, segmentEnd in pairwise(coord_array)]
         lonDistanceArray = [self.lat_lon_distance_on_unit_sphere(segmentStart, segmentEnd, 'lon') for
-                            segmentStart, segmentEnd in pairwise(coordsArray)]
+                            segmentStart, segmentEnd in pairwise(coord_array)]
         # print "distance:\n", len(distanceArray), distanceArray
-        elevationArray = [self.get_point_elevation(coordinate=elem) for elem in coordsArray]
-        pathInfo = {'coords': coordsArray, 'elevation': elevationArray, 'distance': distanceArray,
+        elevationArray = [self.get_point_elevation(coordinate=elem) for elem in coord_array]
+        pathInfo = {'coords': coord_array, 'elevation': elevationArray, 'distance': distanceArray,
                     'latDistance': latDistanceArray, 'lonDistance': lonDistanceArray}
         # return np.array(pathInfo['elevation'])
         return pathInfo
-        # return izip_longest(coordsArray, elevationArray, distanceArray)
 
     def planPath(self, startCoord, endCoord, **kwargs):
         """
