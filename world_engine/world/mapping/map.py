@@ -2,40 +2,30 @@
 WorldEngine is used as the data layer for the threaded server. Retrieves and processes data stored in raster images.
 Manages
 """
-import multiprocessing
-import zmq
-import rasterio
-import matplotlib.pyplot as plt
-import numpy as np
-import sys
-import inspect
-from utils import utils
-from ast import literal_eval
-from osgeo import gdal, osr
-from numpy import NaN, math
-from geographiclib.geodesic import Geodesic
-from engine.server.server_conf import settings
-from utils.utils import *
-from collections import namedtuple
-from re import split
-from zmq.eventloop import ioloop, zmqstream
+from __future__ import absolute_import, division, print_function, unicode_literals
+from builtins import next
+from builtins import str
+from builtins import range
+from builtins import object
+
+__metaclass__ = type
 import csv
-from multiprocessing import Queue
-
-ioloop.install()
-
-from engine.server.message_passing.zmq.zmq_workers import ZMQ_Worker_Sub, ZMQ_Worker_Pair
+import inspect
+import matplotlib.pyplot as plt
+import multiprocessing
+import numpy as np
+import rasterio
+import sys
+import zmq
+from collections import namedtuple
+from geographiclib.geodesic import Geodesic
+from numpy import NaN, math
+from osgeo import gdal, osr
+from utils.utils import pairwise, grouper
+from engine.server.message_passing.zmq.zmq_workers import ZmqSubWorker
 
 Coordinate = namedtuple("Coordinate", ['lat', 'lon'], verbose=False)
 PixelPair = namedtuple("PixelPair", ['x', 'y'], verbose=False)
-
-
-def pairwise(iterable):
-    "s -> (s0,s1), (s2,s3), (s4, s5), ..."
-    a, b = tee(iterable)
-    next(b, None)
-    a = iter(iterable)
-    return izip(a, b)
 
 
 class ReadException(Exception):
@@ -68,9 +58,9 @@ class MapFile(object):
         self.file = filename
         try:
             self.img = rasterio.open(self.file)
-        except RuntimeError, e:
-            print 'Unable to open {}'.format(str(self.file))
-            print e
+        except RuntimeError as e:
+            print('Unable to open {}'.format(str(self.file)))
+            print(e)
             sys.exit(1)
         self.crs_wkt = self.img.crs_wkt
         spheroid_start = self.crs_wkt.find("SPHEROID[") + len("SPHEROID")
@@ -93,10 +83,9 @@ class MapFile(object):
         self.pixelWidth = self.geotransform[1]  # w/e pixel resoluton
         self.pixelHeight = self.geotransform[5]  # n/s pixel resolution
 
-
         if verbose is True:
-            print "GeoT:{}".format(self.geotransform)
-            print "Metadata:{}".format(self.img.meta)
+            print("GeoT:{}".format(self.geotransform))
+            print("Metadata:{}".format(self.img.meta))
 
 
 class RetrievePointException(Exception):
@@ -337,7 +326,7 @@ class Map(MapFile):
 
         while (last_lembda < -3000000.0 or lembda != 0 and abs((last_lembda - lembda) / lembda) > 1.0e-9):
             sqr_sin_sigma = pow(math.cos(U2) * math.sin(lembda), 2) + \
-                            pow((math.cos(U1) * math.sin(U2) - \
+                            pow((math.cos(U1) * math.sin(U2) -
                                  math.sin(U1) * math.cos(U2) * math.cos(lembda)), 2)
 
             Sin_sigma = math.sqrt(sqr_sin_sigma)
@@ -379,15 +368,15 @@ class Map(MapFile):
                              (-math.sin(U1) * math.cos(U2) + math.cos(U1) * math.sin(U2) * math.cos(lembda)))
 
         if (alpha12 < 0.0):
-            alpha12 = alpha12 + two_pi
+            alpha12 += two_pi
         if (alpha12 > two_pi):
-            alpha12 = alpha12 - two_pi
+            alpha12 -= two_pi
 
-        alpha21 = alpha21 + two_pi / 2.0
-        if (alpha21 < 0.0):
-            alpha21 = alpha21 + two_pi
-        if (alpha21 > two_pi):
-            alpha21 = alpha21 - two_pi
+        alpha21 += two_pi / 2.0
+        if alpha21 < 0.0:
+            alpha21 += alpha21 + two_pi
+        if alpha21 > two_pi:
+            alpha21 -= two_pi
 
         return {"distance": s, "forward_azimuth": alpha12, "reverse_azimuth": alpha21}
 
@@ -564,10 +553,11 @@ class Map(MapFile):
             """@todo: use negative windowing feature of rasterio read"""
             elevations = self.img.read(1, window=((topLeftY, topLeftY + window), (topLeftX, topLeftX + window)))
         except:
-            print "exception"
+            print("exception")
         return elevations
 
     """ TODO: need to decide whether to use functions from the geodesic lib, or from vincenty """
+
     def get_coordinates_in_segment(self, startCoord, endCoord, numSamples=10, returnStyle='array'):
         """
 
@@ -782,21 +772,21 @@ class Path(object):
 
         self.path_info = path_info
         self.coordinates = self.path_info['coords']
-        #dll of nodes, where node is a wrapper object 'Coord' for named tuple Coordinates
+        # dll of nodes, where node is a wrapper object 'Coord' for named tuple Coordinates
         self.nodes = [Coord(item, self.coordinates[idx - 1] if idx >= 1 else None,
                             self.coordinates[idx + 1] if idx < len(self.coordinates) - 1 else None) for idx, item in
-                        enumerate(self.coordinates)]
-        self.elevation = utils.grouper(self.coordinates, 2)
-        self.distance = utils.grouper(self.path_info['distance'], 2)
-        self.lat_distance = utils.grouper(self.path_info['latDistance'], 2)
-        self.lon_distance = utils.grouper(self.path_info['lonDistance'], 2)
+                      enumerate(self.coordinates)]
+        self.elevation = grouper(self.coordinates, 2)
+        self.distance = grouper(self.path_info['distance'], 2)
+        self.lat_distance = grouper(self.path_info['latDistance'], 2)
+        self.lon_distance = grouper(self.path_info['lonDistance'], 2)
         self.idx = -1
         self.mode = mode
 
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         """
 
         Get the next Coord in path
@@ -833,12 +823,13 @@ class Path(object):
         pass
 
 
-
-
 class MapProcess(Map, multiprocessing.Process):
     """
 
     Map Process
+    Defines ZMQ connection protocol and implements the thin API layer to the analytical map functions of the 'Map'
+    module
+    Can be used to implement high level logic relating to API calls
 
     """
 
@@ -858,10 +849,8 @@ class MapProcess(Map, multiprocessing.Process):
         """
 
         self.results_q = multiprocessing.Queue()
-        self.zmq_worker_qgis = ZMQ_Worker_Sub(qin=None, qout=self.results_q)
+        self.zmq_worker_qgis = ZmqSubWorker(qin=None, qout=self.results_q)
         self.zmq_worker_qgis.start()
-        #self.zmq_worker_model = ZMQ_Worker_Pair(q=self.results_q, worker_port=settings['MODEL_PORT'])
-        #self.zmq_worker_model.start()
 
         """ Configure API """
         # will not include statically defined methods
@@ -870,7 +859,7 @@ class MapProcess(Map, multiprocessing.Process):
         self.api = self.map_api.copy()
         self.api.update(self.process_api)
 
-    # @todo: will need tyo manage the update of all vehicles managed by the map - threads?
+    # @todo: will need to manage the update of all vehicles managed by the map - threads?
     def run(self, context=None, worker_ip=None):
         """
         Now that the ZMQ processes are up and running, check to see if they put any api calls on the results queue
@@ -891,23 +880,21 @@ class MapProcess(Map, multiprocessing.Process):
                 while not self.results_q.empty():
                     self.results_q.get()
 
-
     def decode_api_call(self, raw_cmd):
         """
 
-        Keeps a dict of all available functions in the Map class, compares api calls from external processes w/ ZMQ
-        socket access
+        Tries to decode packets received by ZMQ by comparing against known function, or API calls
 
-        :param raw_cmd:
+        :param raw_cmd: ZMQ packet to be processed as an API call
 
         """
         cmd = raw_cmd[0]
 
         # cmd = self.map_api[cmd]
         cmd = self.api[cmd]
-        #for key, value in utils.grouper(raw_cmd[1:], 2):
+        # for key, value in utils.grouper(raw_cmd[1:], 2):
         #    print key, value
-        argDict = {key: value for key, value in utils.grouper(raw_cmd[1:], 2)}
+        argDict = {key: value for key, value in grouper(raw_cmd[1:], 2)}
         cmd(**argDict)  # callable functions in map must take kwargs in order to be called..
 
     def qgis(self, *args, **kwargs):
@@ -924,8 +911,8 @@ class MapProcess(Map, multiprocessing.Process):
         path_info = self.get_elevation_along_path(**{'coordinate_pairs': coordinate_pairs})
         path = Path(path_info, mode='one-shot')
 
-        print "QGIS Called"
-        print path_info
+        print("QGIS Called")
+        print(path_info)
         """
         @todo: now path class needs to be assigned to a vehicle, and we need to call equations of motion for that
         vehicle processing will consist of:
@@ -935,19 +922,19 @@ class MapProcess(Map, multiprocessing.Process):
 
         """
 
-        ground_speed = 48.27  #km/h
-        dt = .01  #1 mS
-        rocd = 0  #constant altitude
+        ground_speed = 48.27  # km/h
+        dt = .01  # 1 mS
+        rocd = 0  # constant altitude
         # @todo: think about adding this to the creation of the path object
         count = 0
         tol = .1
         results = []
         while path.has_next():
             try:
-                current_coord = path.next()     # get the current node, a Coord object
-                next_coord = current_coord.next
+                current_coord = next(path)  # get the current node, a Coord object
+                next_coord = current_coord.__next__
                 current_coord = current_coord.data
-                #print current_coord, type(current_coord), next_coord, type(next_coord)
+                # print current_coord, type(current_coord), next_coord, type(next_coord)
                 if next_coord is not None:
                     inverse = self.vinc_inv(self.flattening, self.semimajor, current_coord, next_coord)
                     distance = inverse['distance']
@@ -957,14 +944,15 @@ class MapProcess(Map, multiprocessing.Process):
                     remaining_distance = distance
                     count = 0
                     while remaining_distance > 1:
-                        count+=1
-                        # @todo will need to call physical model to get current velocity based on past state and acceleration
+                        count += 1
+                        # @todo will need to call physical model to get current velocity based on past state and
+                        # acceleration
                         fpm_to_fps = 0.01666666666667  # Feet per minute to feet per second.
                         ellipsoidal_velocity = ground_speed  # is this correct?
                         ellipsoidal_distance = ellipsoidal_velocity * dt
                         remaining_distance -= ellipsoidal_distance
                         temp_coord, temp = self.vinc_dir(0.00335281068118, 6378137.0, current_coord, fwd_azimuth,
-                                                             ellipsoidal_distance)
+                                                         ellipsoidal_distance)
                         altitude = rocd * fpm_to_fps * dt
                         current_coord = temp_coord
                         err = distance - remaining_distance
@@ -977,13 +965,13 @@ class MapProcess(Map, multiprocessing.Process):
         f = open('recon.csv', 'wt')
         try:
             writer = csv.writer(f)
-            writer.writerow( ['Lat', 'Lon'] )
+            writer.writerow(['Lat', 'Lon'])
             for elem in results:
                 writer.writerow([elem.lat, elem.lon])
         finally:
             f.close()
 
-        print "Results", results
+        print("Results", results)
 
     def update_data(self):
         """
@@ -994,5 +982,3 @@ class MapProcess(Map, multiprocessing.Process):
         for vehicle in self.vehicles:
             # if type(vehicle) is Quadrotor:
             pass
-
-

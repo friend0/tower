@@ -36,7 +36,6 @@ Mako==1.0.2
 MarkupSafe==0.23
 matlabengineforpython===R2015a
 matplotlib==1.4.3
-mercurial===3.5-rc-12-a74e9806d17d
 mistune==0.5
 mock==1.0.1
 modulegraph==0.12.1

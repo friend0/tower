@@ -1,32 +1,8 @@
-import time
 import threading
+import multiprocessing
+
 import zmq
 import msgpack
-import multiprocessing
-#from world.mapping.map_interface import MapInterface
-from engine.server.server_conf import settings
-from itertools import izip, tee, izip_longest
-
-""" @todo: remove this, or inherit from world_engine's pairwise"""
-def pairwise(iterable):
-    "s -> (s0,s1), (s2,s3), (s4, s5), ..."
-    a, b = tee(iterable)
-    next(b, None)
-    a = iter(iterable)
-    return izip(a, b)
-
-def grouper(iterable, n, fillvalue=None):
-    """
-    Collect data into fixed-length chunks or blocks
-    grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
-    :param iterable:
-    :param n:
-    :param fillvalue:
-    :rtype : object
-    """
-
-    args = [iter(iterable)] * n
-    return izip_longest(fillvalue=fillvalue, *args)
 
 """
 def worker_routine(worker_ip='tcp://127.0.0.1:{}', worker_port=5555, context=None):
@@ -58,11 +34,11 @@ def worker_routine(worker_ip='tcp://127.0.0.1:{}', worker_port=5555, context=Non
         socket.send(b"Ack")
 """
 
-class ZMQ_Worker(threading.Thread):
 
+class ZMQ_Worker(threading.Thread):
     def __init__(self, q):
         self.q = q
-        #self.map = MapInterface(settings['FILE_CONFIG']['filename'])
+        # self.map = MapInterface(settings['FILE_CONFIG']['filename'])
         threading.Thread.__init__(self)
 
     def run(self, context=None, worker_ip=None, worker_port=5555):
@@ -72,23 +48,30 @@ class ZMQ_Worker(threading.Thread):
         if worker_ip is None:
             worker_ip = 'tcp://127.0.0.1:{}'
         socket.bind(worker_ip.format(worker_port))
-        #while True:
+        # while True:
         msg = socket.recv()
         lat_lon_array = msgpack.unpackb(msg)
-        #print "Got", lat_lon_array
-        #for lat, lon in grouper(lat_lon_array, 2):
+        # print "Got", lat_lon_array
+        # for lat, lon in grouper(lat_lon_array, 2):
         #    print lat, lon
-        #coordinate_pairs = [Coordinate(lat=lat, lon=lon) for lon, lat in
+        # coordinate_pairs = [Coordinate(lat=lat, lon=lon) for lon, lat in
         #                           grouper(lat_lon_array, 2)]
-        #print coordinate_pairs
-        #path_info = self.map.get_elevation_along_path(coordinate_pairs)
-        #print path_info
-        #self.q.put(path_info)
+        # print coordinate_pairs
+        # path_info = self.map.get_elevation_along_path(coordinate_pairs)
+        # print path_info
+        # self.q.put(path_info)
         socket.send(b"Ack")
 
 
 # @todo: this worker class can be used more generally as a subscriber worker. Make it so.
-class ZMQ_Worker_Sub(multiprocessing.Process):
+class ZmqSubWorker(multiprocessing.Process):
+    """
+
+    This class is used to initiate a worker process listening to a ZMQ subscription.
+    IP and Port can be specified on initialization, and multiprocessing queues are used to exchange information with
+    parent processes.
+
+    """
 
     def __init__(self, qin, qout, worker_ip=None, worker_port=5555):
         self.qin = qin
@@ -111,9 +94,15 @@ class ZMQ_Worker_Sub(multiprocessing.Process):
             lat_lon_array = msgpack.unpackb(msg)
             self.qout.put(lat_lon_array)
 
-class ZMQ_Worker_Pair(threading.Thread):
 
-    def __init__(self, q,  **kwargs):
+class ZmqPairWorker(threading.Thread):
+    """
+
+    This class is used to initiate a worker process implementing one-half of a ZMQ Pair.
+
+    """
+
+    def __init__(self, q, **kwargs):
         self.role = kwargs.get('role', 'client')
         self.worker_port = kwargs.get('worker_port', 5555)
         self.q = q
@@ -133,16 +122,6 @@ class ZMQ_Worker_Pair(threading.Thread):
             worker_ip = 'tcp://127.0.0.1:{}'
         socket.connect(worker_ip.format(self.worker_port))
 
-        #while True:
         msg = socket.recv()
         unpack = msgpack.unpackb(msg)
-        #for lat, lon in grouper(lat_lon_array, 2):
-        #    print lat, lon
-        #coordinate_pairs = [Coordinate(lat=lat, lon=lon) for lon, lat in
-        #                           grouper(lat_lon_array, 2)]
-        #print coordinate_pairs
-        #path_info = self.map.get_elevation_along_path(coordinate_pairs)
-
-        #print path_info
-        # @todo:
         self.q.put(unpack)

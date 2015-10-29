@@ -1,33 +1,39 @@
-from multiprocessing import Process, Queue
-from server import ThreadedUDPServer, UDP_Interrupt
-from server_conf import settings
+from __future__ import print_function
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import input
+from builtins import object
+from multiprocessing import Process
+import queue
+
 import zmq
-from message_passing.zmq.zmq_workers import ZMQ_Worker_Sub
-import Queue
-from ...world import mapping
+import numpy as np
+
+from .server import ThreadedUDPServer, UDP_Interrupt
+from .server_conf import settings
+from .message_passing.zmq.zmq_workers import ZmqSubWorker
 from mapping import map_interface, map
-import msgpack
 from utils import logging_thread
 from utils.utils import Interrupt, web_post
-from web_services.web_update import post_vehicle
-import numpy as np
+
 KILL_COMMAND = 'DEATH'
 
 HOST = 'localhost'
 PORT = 2002
 
-class WorkflowManager(object):
 
+class WorkflowManager(object):
     def __init__(self):
         np.matrix('1 1 1')
-        #self.logger = logging.getLogger('py_map_server')
+        # self.logger = logging.getLogger('py_map_server')
         self.processes = {}
         self.threads = {}
         self.context = zmq.Context()
-        self.zmq_result = Queue.Queue()
-        self.commands = Queue.Queue()
+        self.zmq_result = queue.Queue()
+        self.commands = queue.Queue()
         self.mapInterface = map_interface.MapInterface(settings['FILE_CONFIG']['filename'])
-        self.logger = Queue.Queue()
+        self.logger = queue.Queue()
 
     def start_engine(self):
         self.start_logging()
@@ -43,7 +49,6 @@ class WorkflowManager(object):
         logger.daemon = True
         self.threads['logging_thread'] = logger
         logger.start()
-
 
     def start_web_services(self):
         rt = Interrupt(5, web_post, url=None, data=None, headers=None)  # it auto-starts, no need of rt.start()
@@ -64,7 +69,6 @@ class WorkflowManager(object):
         print("UDP server running in process: '{}'".format(server_process.name))
         server_process.daemon = True
         server_process.start()
-
 
     def start_matlab_process(self):
         """
@@ -90,33 +94,29 @@ class WorkflowManager(object):
         Initialize ZMQ communication links in a process, interface to QGIS
         :return:
         """
-        zmq_worker_qgis = ZMQ_Worker_Sub(qin=self.commands, qout=self.zmq_result)
+        zmq_worker_qgis = ZmqSubWorker(qin=self.commands, qout=self.zmq_result)
         zmq_worker_qgis.start()
         self.processes['qgis_worker'] = zmq_worker_qgis
-        #self.logger.info("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
+        # self.logger.info("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
         self.logger.put("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
         print("ZMQ processes running in: '{}'".format(zmq_worker_qgis.name))
 
 
-
-
-#  @todo: remove executable from server file into a workflow_manager file
+# @todo: remove executable from server file into a workflow_manager file
 if __name__ == "__main__":
     try:
         subscriptions = []
         manager = WorkflowManager()
         manager.start_engine()
-        command = raw_input('Server Command:')
+        command = eval(input('Server Command:'))
         if command == 'shutdown':
-            print "Giving the kill command"
+            print("Giving the kill command")
             manager.commands.put(KILL_COMMAND)
-            for process in manager.processes.values():
-                print process
+            for process in list(manager.processes.values()):
+                print(process)
                 process.terminate()
-            for thread in manager.threads.values():
-                print thread
-                #thread.kill()
+            for thread in list(manager.threads.values()):
+                print(thread)
+                # thread.kill()
     except KeyboardInterrupt:
         pass
-
-

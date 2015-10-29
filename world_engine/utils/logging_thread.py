@@ -1,11 +1,11 @@
+from __future__ import print_function
 import threading
 import logging
+
 import zmq
-import Queue
-import msgpack
+
 
 class LogThread(threading.Thread):
-
     def __init__(self, q, worker_port=None):
         threading.Thread.__init__(self)
         self.q = q
@@ -20,7 +20,7 @@ class LogThread(threading.Thread):
         self.logger.info('Instantiation succesful')
 
         if worker_port is None:
-            worker_port = 5555+128
+            worker_port = 5555 + 128
         context = zmq.Context.instance()
         self.socket = context.socket(zmq.SUB)
         self.socket.setsockopt(zmq.SUBSCRIBE, '')
@@ -31,8 +31,8 @@ class LogThread(threading.Thread):
     def run(self):
         while 1:
             msg = self.socket.recv_string()
-            print "Message received"
-            #log_msg = msgpack.unpackb(msg)
+            print("Message received")
+            # log_msg = msgpack.unpackb(msg)
             self.logger.info(msg)
 
             while not self.q.empty():

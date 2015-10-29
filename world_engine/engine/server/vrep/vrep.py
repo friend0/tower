@@ -1,3 +1,8 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import str
+from builtins import range
+from past.utils import old_div
 # This file is part of the REMOTE API
 # 
 # Copyright 2006-2015 Coppelia Robotics GmbH. All rights reserved. 
@@ -29,13 +34,13 @@
 import platform
 import struct
 from ctypes import *
-from vrepConst import *
 
-#load library
+
+# load library
 libsimx = None
 try:
-    if platform.system() =='Windows':
-        libsimx = CDLL("./remoteApi.dll") 
+    if platform.system() == 'Windows':
+        libsimx = CDLL("./remoteApi.dll")
     elif platform.system() == 'Darwin':
         libsimx = CDLL("./remoteApi.dylib")
     else:
@@ -48,144 +53,208 @@ except:
     print ('----------------------------------------------------')
     print ('')
 
-#ctypes wrapper prototypes 
-c_GetJointPosition          = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetJointPosition", libsimx))
-c_SetJointPosition          = CFUNCTYPE(c_int32,c_int32, c_int32, c_float, c_int32)(("simxSetJointPosition", libsimx))
-c_GetJointMatrix            = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetJointMatrix", libsimx))
-c_SetSphericalJointMatrix   = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_float), c_int32)(("simxSetSphericalJointMatrix", libsimx))
-c_SetJointTargetVelocity    = CFUNCTYPE(c_int32,c_int32, c_int32, c_float, c_int32)(("simxSetJointTargetVelocity", libsimx))
-c_SetJointTargetPosition    = CFUNCTYPE(c_int32,c_int32, c_int32, c_float, c_int32)(("simxSetJointTargetPosition", libsimx))
-c_GetJointForce             = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetJointForce", libsimx))
-c_SetJointForce             = CFUNCTYPE(c_int32,c_int32, c_int32, c_float, c_int32)(("simxSetJointForce", libsimx))
-c_ReadForceSensor           = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_ubyte), POINTER(c_float), POINTER(c_float), c_int32)(("simxReadForceSensor", libsimx))
-c_BreakForceSensor          = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32)(("simxBreakForceSensor", libsimx))
-c_ReadVisionSensor          = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_ubyte), POINTER(POINTER(c_float)), POINTER(POINTER(c_int32)), c_int32)(("simxReadVisionSensor", libsimx))
-c_GetObjectHandle           = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_int32), c_int32)(("simxGetObjectHandle", libsimx))
-c_GetVisionSensorImage      = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_int32), POINTER(POINTER(c_byte)), c_ubyte, c_int32)(("simxGetVisionSensorImage", libsimx))
-c_SetVisionSensorImage      = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_byte), c_int32, c_ubyte, c_int32)(("simxSetVisionSensorImage", libsimx))
-c_GetVisionSensorDepthBuffer= CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_int32), POINTER(POINTER(c_float)), c_int32)(("simxGetVisionSensorDepthBuffer", libsimx))
-c_GetObjectChild            = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetObjectChild", libsimx))
-c_GetObjectParent           = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetObjectParent", libsimx))
-c_ReadProximitySensor       = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_ubyte), POINTER(c_float), POINTER(c_int32), POINTER(c_float), c_int32)(("simxReadProximitySensor", libsimx))
-c_LoadModel                 = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_ubyte, POINTER(c_int32), c_int32)(("simxLoadModel", libsimx))
-c_LoadUI                    = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_ubyte, POINTER(c_int32), POINTER(POINTER(c_int32)), c_int32)(("simxLoadUI", libsimx))
-c_LoadScene                 =  CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_ubyte, c_int32)(("simxLoadScene", libsimx))
-c_StartSimulation           = CFUNCTYPE(c_int32,c_int32, c_int32)(("simxStartSimulation", libsimx))
-c_PauseSimulation           = CFUNCTYPE(c_int32,c_int32, c_int32)(("simxPauseSimulation", libsimx))
-c_StopSimulation            = CFUNCTYPE(c_int32,c_int32, c_int32)(("simxStopSimulation", libsimx))
-c_GetUIHandle               = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_int32), c_int32)(("simxGetUIHandle", libsimx))
-c_GetUISlider               = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetUISlider", libsimx))
-c_SetUISlider               = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, c_int32, c_int32)(("simxSetUISlider", libsimx))
-c_GetUIEventButton          = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_int32), POINTER(c_int32), c_int32)(("simxGetUIEventButton", libsimx))
-c_GetUIButtonProperty       = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetUIButtonProperty", libsimx))
-c_SetUIButtonProperty       = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, c_int32, c_int32)(("simxSetUIButtonProperty", libsimx))
-c_AddStatusbarMessage       = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_int32)(("simxAddStatusbarMessage", libsimx))
-c_AuxiliaryConsoleOpen      = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_int32, c_int32, POINTER(c_int32), POINTER(c_int32), POINTER(c_float), POINTER(c_float), POINTER(c_int32), c_int32)(("simxAuxiliaryConsoleOpen", libsimx))
-c_AuxiliaryConsoleClose     = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32)(("simxAuxiliaryConsoleClose", libsimx))
-c_AuxiliaryConsolePrint     = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_char), c_int32)(("simxAuxiliaryConsolePrint", libsimx))
-c_AuxiliaryConsoleShow      = CFUNCTYPE(c_int32,c_int32, c_int32, c_ubyte, c_int32)(("simxAuxiliaryConsoleShow", libsimx))
-c_GetObjectOrientation      = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetObjectOrientation", libsimx))
-c_GetObjectPosition         = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetObjectPosition", libsimx))
-c_SetObjectOrientation      = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(("simxSetObjectOrientation", libsimx))
-c_SetObjectPosition         = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(("simxSetObjectPosition", libsimx))
-c_SetObjectParent           = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, c_ubyte, c_int32)(("simxSetObjectParent", libsimx))
-c_SetUIButtonLabel          = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_char), POINTER(c_char), c_int32)(("simxSetUIButtonLabel", libsimx))
-c_GetLastErrors             = CFUNCTYPE(c_int32,c_int32, POINTER(c_int32), POINTER(POINTER(c_char)), c_int32)(("simxGetLastErrors", libsimx))
-c_GetArrayParameter         = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetArrayParameter", libsimx))
-c_SetArrayParameter         = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_float), c_int32)(("simxSetArrayParameter", libsimx))
-c_GetBooleanParameter       = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_ubyte), c_int32)(("simxGetBooleanParameter", libsimx))
-c_SetBooleanParameter       = CFUNCTYPE(c_int32,c_int32, c_int32, c_ubyte, c_int32)(("simxSetBooleanParameter", libsimx))
-c_GetIntegerParameter       = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetIntegerParameter", libsimx))
-c_SetIntegerParameter       = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, c_int32)(("simxSetIntegerParameter", libsimx))
-c_GetFloatingParameter      = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetFloatingParameter", libsimx))
-c_SetFloatingParameter      = CFUNCTYPE(c_int32,c_int32, c_int32, c_float, c_int32)(("simxSetFloatingParameter", libsimx))
-c_GetStringParameter        = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(POINTER(c_char)), c_int32)(("simxGetStringParameter", libsimx))
-c_GetCollisionHandle        = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_int32), c_int32)(("simxGetCollisionHandle", libsimx))
-c_GetDistanceHandle         = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_int32), c_int32)(("simxGetDistanceHandle", libsimx))
-c_ReadCollision             = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_ubyte), c_int32)(("simxReadCollision", libsimx))
-c_ReadDistance              = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_float), c_int32)(("simxReadDistance", libsimx))
-c_RemoveObject              = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32)(("simxRemoveObject", libsimx))
-c_RemoveModel               = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32)(("simxRemoveModel", libsimx))
-c_RemoveUI                  = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32)(("simxRemoveUI", libsimx))
-c_CloseScene                = CFUNCTYPE(c_int32,c_int32, c_int32)(("simxCloseScene", libsimx))
-c_GetObjects                = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_int32), POINTER(POINTER(c_int32)), c_int32)(("simxGetObjects", libsimx))
-c_DisplayDialog             = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_char), c_int32, POINTER(c_char), POINTER(c_float), POINTER(c_float), POINTER(c_int32), POINTER(c_int32), c_int32)(("simxDisplayDialog", libsimx))
-c_EndDialog                 = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32)(("simxEndDialog", libsimx))
-c_GetDialogInput            = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(POINTER(c_char)), c_int32)(("simxGetDialogInput", libsimx))
-c_GetDialogResult           = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetDialogResult", libsimx))
-c_CopyPasteObjects          = CFUNCTYPE(c_int32,c_int32, POINTER(c_int32), c_int32, POINTER(POINTER(c_int32)), POINTER(c_int32), c_int32)(("simxCopyPasteObjects", libsimx))
-c_GetObjectSelection        = CFUNCTYPE(c_int32,c_int32, POINTER(POINTER(c_int32)), POINTER(c_int32), c_int32)(("simxGetObjectSelection", libsimx))
-c_SetObjectSelection        = CFUNCTYPE(c_int32,c_int32, POINTER(c_int32), c_int32, c_int32)(("simxSetObjectSelection", libsimx))
-c_ClearFloatSignal          = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_int32)(("simxClearFloatSignal", libsimx))
-c_ClearIntegerSignal        = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_int32)(("simxClearIntegerSignal", libsimx))
-c_ClearStringSignal         = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_int32)(("simxClearStringSignal", libsimx))
-c_GetFloatSignal            = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_float), c_int32)(("simxGetFloatSignal", libsimx))
-c_GetIntegerSignal          = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_int32), c_int32)(("simxGetIntegerSignal", libsimx))
-c_GetStringSignal           = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(POINTER(c_ubyte)), POINTER(c_int32), c_int32)(("simxGetStringSignal", libsimx))
-c_SetFloatSignal            = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_float, c_int32)(("simxSetFloatSignal", libsimx))
-c_SetIntegerSignal          = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_int32, c_int32)(("simxSetIntegerSignal", libsimx))
-c_SetStringSignal           = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_ubyte), c_int32, c_int32)(("simxSetStringSignal", libsimx))
-c_AppendStringSignal        = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_ubyte), c_int32, c_int32)(("simxAppendStringSignal", libsimx))
-c_WriteStringStream       	= CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_ubyte), c_int32, c_int32)(("simxWriteStringStream", libsimx))
-c_GetObjectFloatParameter   = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetObjectFloatParameter", libsimx))
-c_SetObjectFloatParameter   = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, c_float, c_int32)(("simxSetObjectFloatParameter", libsimx))
-c_GetObjectIntParameter     = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetObjectIntParameter", libsimx))
-c_SetObjectIntParameter     = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, c_int32, c_int32)(("simxSetObjectIntParameter", libsimx))
-c_GetModelProperty          = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetModelProperty", libsimx))
-c_SetModelProperty          = CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, c_int32)(("simxSetModelProperty", libsimx))
-c_Start                     = CFUNCTYPE(c_int32,POINTER(c_char), c_int32, c_ubyte, c_ubyte, c_int32, c_int32)(("simxStart", libsimx))
-c_Finish                    = CFUNCTYPE(None, c_int32)(("simxFinish", libsimx))
-c_GetPingTime               = CFUNCTYPE(c_int32,c_int32, POINTER(c_int32))(("simxGetPingTime", libsimx))
-c_GetLastCmdTime            = CFUNCTYPE(c_int32,c_int32)(("simxGetLastCmdTime", libsimx))
-c_SynchronousTrigger        = CFUNCTYPE(c_int32,c_int32)(("simxSynchronousTrigger", libsimx))
-c_Synchronous               = CFUNCTYPE(c_int32,c_int32, c_ubyte)(("simxSynchronous", libsimx))
-c_PauseCommunication        = CFUNCTYPE(c_int32,c_int32, c_ubyte)(("simxPauseCommunication", libsimx))
-c_GetInMessageInfo          = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_int32))(("simxGetInMessageInfo", libsimx))
-c_GetOutMessageInfo         = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_int32))(("simxGetOutMessageInfo", libsimx))
-c_GetConnectionId           = CFUNCTYPE(c_int32,c_int32)(("simxGetConnectionId", libsimx))
-c_CreateBuffer              = CFUNCTYPE(POINTER(c_ubyte), c_int32)(("simxCreateBuffer", libsimx))
-c_ReleaseBuffer             = CFUNCTYPE(None, c_void_p)(("simxReleaseBuffer", libsimx))
-c_TransferFile              = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_char), c_int32, c_int32)(("simxTransferFile", libsimx))
-c_EraseFile                 = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), c_int32)(("simxEraseFile", libsimx))
-c_GetAndClearStringSignal   = CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(POINTER(c_ubyte)), POINTER(c_int32), c_int32)(("simxGetAndClearStringSignal", libsimx))
-c_ReadStringStream   		= CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(POINTER(c_ubyte)), POINTER(c_int32), c_int32)(("simxReadStringStream", libsimx))
-c_CreateDummy      			= CFUNCTYPE(c_int32,c_int32, c_float, POINTER(c_ubyte), POINTER(c_int32), c_int32)(("simxCreateDummy", libsimx))
-c_Query           			= CFUNCTYPE(c_int32,c_int32, POINTER(c_char), POINTER(c_ubyte), c_int32, POINTER(c_char), POINTER(POINTER(c_ubyte)), POINTER(c_int32), c_int32)(("simxQuery", libsimx))
-c_GetObjectGroupData		= CFUNCTYPE(c_int32,c_int32, c_int32, c_int32, POINTER(c_int32), POINTER(POINTER(c_int32)), POINTER(c_int32), POINTER(POINTER(c_int32)), POINTER(c_int32), POINTER(POINTER(c_float)), POINTER(c_int32), POINTER(POINTER(c_char)), c_int32)(("simxGetObjectGroupData", libsimx))
-c_GetObjectVelocity         = CFUNCTYPE(c_int32,c_int32, c_int32, POINTER(c_float), POINTER(c_float), c_int32)(("simxGetObjectVelocity", libsimx))
+# ctypes wrapper prototypes
+c_GetJointPosition = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetJointPosition", libsimx))
+c_SetJointPosition = CFUNCTYPE(c_int32, c_int32, c_int32, c_float, c_int32)(("simxSetJointPosition", libsimx))
+c_GetJointMatrix = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetJointMatrix", libsimx))
+c_SetSphericalJointMatrix = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(
+    ("simxSetSphericalJointMatrix", libsimx))
+c_SetJointTargetVelocity = CFUNCTYPE(c_int32, c_int32, c_int32, c_float, c_int32)(
+    ("simxSetJointTargetVelocity", libsimx))
+c_SetJointTargetPosition = CFUNCTYPE(c_int32, c_int32, c_int32, c_float, c_int32)(
+    ("simxSetJointTargetPosition", libsimx))
+c_GetJointForce = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(("simxGetJointForce", libsimx))
+c_SetJointForce = CFUNCTYPE(c_int32, c_int32, c_int32, c_float, c_int32)(("simxSetJointForce", libsimx))
+c_ReadForceSensor = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_ubyte), POINTER(c_float), POINTER(c_float), c_int32)(
+    ("simxReadForceSensor", libsimx))
+c_BreakForceSensor = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32)(("simxBreakForceSensor", libsimx))
+c_ReadVisionSensor = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_ubyte), POINTER(POINTER(c_float)),
+                               POINTER(POINTER(c_int32)), c_int32)(("simxReadVisionSensor", libsimx))
+c_GetObjectHandle = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_int32), c_int32)(
+    ("simxGetObjectHandle", libsimx))
+c_GetVisionSensorImage = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_int32), POINTER(POINTER(c_byte)), c_ubyte,
+                                   c_int32)(("simxGetVisionSensorImage", libsimx))
+c_SetVisionSensorImage = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_byte), c_int32, c_ubyte, c_int32)(
+    ("simxSetVisionSensorImage", libsimx))
+c_GetVisionSensorDepthBuffer = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_int32), POINTER(POINTER(c_float)),
+                                         c_int32)(("simxGetVisionSensorDepthBuffer", libsimx))
+c_GetObjectChild = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(
+    ("simxGetObjectChild", libsimx))
+c_GetObjectParent = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetObjectParent", libsimx))
+c_ReadProximitySensor = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_ubyte), POINTER(c_float), POINTER(c_int32),
+                                  POINTER(c_float), c_int32)(("simxReadProximitySensor", libsimx))
+c_LoadModel = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_ubyte, POINTER(c_int32), c_int32)(
+    ("simxLoadModel", libsimx))
+c_LoadUI = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_ubyte, POINTER(c_int32), POINTER(POINTER(c_int32)), c_int32)(
+    ("simxLoadUI", libsimx))
+c_LoadScene = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_ubyte, c_int32)(("simxLoadScene", libsimx))
+c_StartSimulation = CFUNCTYPE(c_int32, c_int32, c_int32)(("simxStartSimulation", libsimx))
+c_PauseSimulation = CFUNCTYPE(c_int32, c_int32, c_int32)(("simxPauseSimulation", libsimx))
+c_StopSimulation = CFUNCTYPE(c_int32, c_int32, c_int32)(("simxStopSimulation", libsimx))
+c_GetUIHandle = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_int32), c_int32)(("simxGetUIHandle", libsimx))
+c_GetUISlider = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetUISlider", libsimx))
+c_SetUISlider = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, c_int32, c_int32)(("simxSetUISlider", libsimx))
+c_GetUIEventButton = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_int32), POINTER(c_int32), c_int32)(
+    ("simxGetUIEventButton", libsimx))
+c_GetUIButtonProperty = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(
+    ("simxGetUIButtonProperty", libsimx))
+c_SetUIButtonProperty = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, c_int32, c_int32)(
+    ("simxSetUIButtonProperty", libsimx))
+c_AddStatusbarMessage = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_int32)(("simxAddStatusbarMessage", libsimx))
+c_AuxiliaryConsoleOpen = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_int32, c_int32, POINTER(c_int32),
+                                   POINTER(c_int32), POINTER(c_float), POINTER(c_float), POINTER(c_int32), c_int32)(
+    ("simxAuxiliaryConsoleOpen", libsimx))
+c_AuxiliaryConsoleClose = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32)(("simxAuxiliaryConsoleClose", libsimx))
+c_AuxiliaryConsolePrint = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_char), c_int32)(
+    ("simxAuxiliaryConsolePrint", libsimx))
+c_AuxiliaryConsoleShow = CFUNCTYPE(c_int32, c_int32, c_int32, c_ubyte, c_int32)(("simxAuxiliaryConsoleShow", libsimx))
+c_GetObjectOrientation = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(
+    ("simxGetObjectOrientation", libsimx))
+c_GetObjectPosition = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(
+    ("simxGetObjectPosition", libsimx))
+c_SetObjectOrientation = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(
+    ("simxSetObjectOrientation", libsimx))
+c_SetObjectPosition = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(
+    ("simxSetObjectPosition", libsimx))
+c_SetObjectParent = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, c_ubyte, c_int32)(("simxSetObjectParent", libsimx))
+c_SetUIButtonLabel = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_char), POINTER(c_char), c_int32)(
+    ("simxSetUIButtonLabel", libsimx))
+c_GetLastErrors = CFUNCTYPE(c_int32, c_int32, POINTER(c_int32), POINTER(POINTER(c_char)), c_int32)(
+    ("simxGetLastErrors", libsimx))
+c_GetArrayParameter = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(
+    ("simxGetArrayParameter", libsimx))
+c_SetArrayParameter = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(
+    ("simxSetArrayParameter", libsimx))
+c_GetBooleanParameter = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_ubyte), c_int32)(
+    ("simxGetBooleanParameter", libsimx))
+c_SetBooleanParameter = CFUNCTYPE(c_int32, c_int32, c_int32, c_ubyte, c_int32)(("simxSetBooleanParameter", libsimx))
+c_GetIntegerParameter = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(
+    ("simxGetIntegerParameter", libsimx))
+c_SetIntegerParameter = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, c_int32)(("simxSetIntegerParameter", libsimx))
+c_GetFloatingParameter = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(
+    ("simxGetFloatingParameter", libsimx))
+c_SetFloatingParameter = CFUNCTYPE(c_int32, c_int32, c_int32, c_float, c_int32)(("simxSetFloatingParameter", libsimx))
+c_GetStringParameter = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(POINTER(c_char)), c_int32)(
+    ("simxGetStringParameter", libsimx))
+c_GetCollisionHandle = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_int32), c_int32)(
+    ("simxGetCollisionHandle", libsimx))
+c_GetDistanceHandle = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_int32), c_int32)(
+    ("simxGetDistanceHandle", libsimx))
+c_ReadCollision = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_ubyte), c_int32)(("simxReadCollision", libsimx))
+c_ReadDistance = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(("simxReadDistance", libsimx))
+c_RemoveObject = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32)(("simxRemoveObject", libsimx))
+c_RemoveModel = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32)(("simxRemoveModel", libsimx))
+c_RemoveUI = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32)(("simxRemoveUI", libsimx))
+c_CloseScene = CFUNCTYPE(c_int32, c_int32, c_int32)(("simxCloseScene", libsimx))
+c_GetObjects = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_int32), POINTER(POINTER(c_int32)), c_int32)(
+    ("simxGetObjects", libsimx))
+c_DisplayDialog = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_char), c_int32, POINTER(c_char),
+                            POINTER(c_float), POINTER(c_float), POINTER(c_int32), POINTER(c_int32), c_int32)(
+    ("simxDisplayDialog", libsimx))
+c_EndDialog = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32)(("simxEndDialog", libsimx))
+c_GetDialogInput = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(POINTER(c_char)), c_int32)(
+    ("simxGetDialogInput", libsimx))
+c_GetDialogResult = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetDialogResult", libsimx))
+c_CopyPasteObjects = CFUNCTYPE(c_int32, c_int32, POINTER(c_int32), c_int32, POINTER(POINTER(c_int32)), POINTER(c_int32),
+                               c_int32)(("simxCopyPasteObjects", libsimx))
+c_GetObjectSelection = CFUNCTYPE(c_int32, c_int32, POINTER(POINTER(c_int32)), POINTER(c_int32), c_int32)(
+    ("simxGetObjectSelection", libsimx))
+c_SetObjectSelection = CFUNCTYPE(c_int32, c_int32, POINTER(c_int32), c_int32, c_int32)(
+    ("simxSetObjectSelection", libsimx))
+c_ClearFloatSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_int32)(("simxClearFloatSignal", libsimx))
+c_ClearIntegerSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_int32)(("simxClearIntegerSignal", libsimx))
+c_ClearStringSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_int32)(("simxClearStringSignal", libsimx))
+c_GetFloatSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_float), c_int32)(
+    ("simxGetFloatSignal", libsimx))
+c_GetIntegerSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_int32), c_int32)(
+    ("simxGetIntegerSignal", libsimx))
+c_GetStringSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(POINTER(c_ubyte)), POINTER(c_int32), c_int32)(
+    ("simxGetStringSignal", libsimx))
+c_SetFloatSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_float, c_int32)(("simxSetFloatSignal", libsimx))
+c_SetIntegerSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_int32, c_int32)(("simxSetIntegerSignal", libsimx))
+c_SetStringSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_ubyte), c_int32, c_int32)(
+    ("simxSetStringSignal", libsimx))
+c_AppendStringSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_ubyte), c_int32, c_int32)(
+    ("simxAppendStringSignal", libsimx))
+c_WriteStringStream = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_ubyte), c_int32, c_int32)(
+    ("simxWriteStringStream", libsimx))
+c_GetObjectFloatParameter = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_float), c_int32)(
+    ("simxGetObjectFloatParameter", libsimx))
+c_SetObjectFloatParameter = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, c_float, c_int32)(
+    ("simxSetObjectFloatParameter", libsimx))
+c_GetObjectIntParameter = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(
+    ("simxGetObjectIntParameter", libsimx))
+c_SetObjectIntParameter = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, c_int32, c_int32)(
+    ("simxSetObjectIntParameter", libsimx))
+c_GetModelProperty = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_int32), c_int32)(("simxGetModelProperty", libsimx))
+c_SetModelProperty = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, c_int32)(("simxSetModelProperty", libsimx))
+c_Start = CFUNCTYPE(c_int32, POINTER(c_char), c_int32, c_ubyte, c_ubyte, c_int32, c_int32)(("simxStart", libsimx))
+c_Finish = CFUNCTYPE(None, c_int32)(("simxFinish", libsimx))
+c_GetPingTime = CFUNCTYPE(c_int32, c_int32, POINTER(c_int32))(("simxGetPingTime", libsimx))
+c_GetLastCmdTime = CFUNCTYPE(c_int32, c_int32)(("simxGetLastCmdTime", libsimx))
+c_SynchronousTrigger = CFUNCTYPE(c_int32, c_int32)(("simxSynchronousTrigger", libsimx))
+c_Synchronous = CFUNCTYPE(c_int32, c_int32, c_ubyte)(("simxSynchronous", libsimx))
+c_PauseCommunication = CFUNCTYPE(c_int32, c_int32, c_ubyte)(("simxPauseCommunication", libsimx))
+c_GetInMessageInfo = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_int32))(("simxGetInMessageInfo", libsimx))
+c_GetOutMessageInfo = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_int32))(("simxGetOutMessageInfo", libsimx))
+c_GetConnectionId = CFUNCTYPE(c_int32, c_int32)(("simxGetConnectionId", libsimx))
+c_CreateBuffer = CFUNCTYPE(POINTER(c_ubyte), c_int32)(("simxCreateBuffer", libsimx))
+c_ReleaseBuffer = CFUNCTYPE(None, c_void_p)(("simxReleaseBuffer", libsimx))
+c_TransferFile = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_char), c_int32, c_int32)(
+    ("simxTransferFile", libsimx))
+c_EraseFile = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), c_int32)(("simxEraseFile", libsimx))
+c_GetAndClearStringSignal = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(POINTER(c_ubyte)), POINTER(c_int32),
+                                      c_int32)(("simxGetAndClearStringSignal", libsimx))
+c_ReadStringStream = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(POINTER(c_ubyte)), POINTER(c_int32), c_int32)(
+    ("simxReadStringStream", libsimx))
+c_CreateDummy = CFUNCTYPE(c_int32, c_int32, c_float, POINTER(c_ubyte), POINTER(c_int32), c_int32)(
+    ("simxCreateDummy", libsimx))
+c_Query = CFUNCTYPE(c_int32, c_int32, POINTER(c_char), POINTER(c_ubyte), c_int32, POINTER(c_char),
+                    POINTER(POINTER(c_ubyte)), POINTER(c_int32), c_int32)(("simxQuery", libsimx))
+c_GetObjectGroupData = CFUNCTYPE(c_int32, c_int32, c_int32, c_int32, POINTER(c_int32), POINTER(POINTER(c_int32)),
+                                 POINTER(c_int32), POINTER(POINTER(c_int32)), POINTER(c_int32),
+                                 POINTER(POINTER(c_float)), POINTER(c_int32), POINTER(POINTER(c_char)), c_int32)(
+    ("simxGetObjectGroupData", libsimx))
+c_GetObjectVelocity = CFUNCTYPE(c_int32, c_int32, c_int32, POINTER(c_float), POINTER(c_float), c_int32)(
+    ("simxGetObjectVelocity", libsimx))
 
-#API functions
+
+# API functions
 def simxGetJointPosition(clientID, jointHandle, operationMode):
-    '''
+    """
     Please have a look at the function description/documentation in the V-REP user manual
-    '''
+    """
     position = c_float()
     return c_GetJointPosition(clientID, jointHandle, byref(position), operationMode), position.value
 
+
 def simxSetJointPosition(clientID, jointHandle, position, operationMode):
-    '''
+    """
     Please have a look at the function description/documentation in the V-REP user manual
-    '''
+    """
 
     return c_SetJointPosition(clientID, jointHandle, position, operationMode)
 
+
 def simxGetJointMatrix(clientID, jointHandle, operationMode):
-    '''
+    """
     Please have a look at the function description/documentation in the V-REP user manual
-    '''
-    matrix = (c_float*12)()
-    ret = c_GetJointMatrix(clientID, jointHandle, matrix, operationMode)	
+    """
+    matrix = (c_float * 12)()
+    ret = c_GetJointMatrix(clientID, jointHandle, matrix, operationMode)
     arr = []
     for i in range(12):
-        arr.append(matrix[i])	
+        arr.append(matrix[i])
     return ret, arr
 
+
 def simxSetSphericalJointMatrix(clientID, jointHandle, matrix, operationMode):
-    '''
+    """
     Please have a look at the function description/documentation in the V-REP user manual
-    '''
-    matrix = (c_float*12)(*matrix)
+    """
+    matrix = (c_float * 12)(*matrix)
     return c_SetSphericalJointMatrix(clientID, jointHandle, matrix, operationMode)
+
 
 def simxSetJointTargetVelocity(clientID, jointHandle, targetVelocity, operationMode):
     '''
@@ -194,12 +263,14 @@ def simxSetJointTargetVelocity(clientID, jointHandle, targetVelocity, operationM
 
     return c_SetJointTargetVelocity(clientID, jointHandle, targetVelocity, operationMode)
 
+
 def simxSetJointTargetPosition(clientID, jointHandle, targetPosition, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_SetJointTargetPosition(clientID, jointHandle, targetPosition, operationMode)
+
 
 def simxJointGetForce(clientID, jointHandle, operationMode):
     '''
@@ -208,6 +279,7 @@ def simxJointGetForce(clientID, jointHandle, operationMode):
     force = c_float()
     return c_GetJointForce(clientID, jointHandle, byref(force), operationMode), force.value
 
+
 def simxGetJointForce(clientID, jointHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -215,27 +287,30 @@ def simxGetJointForce(clientID, jointHandle, operationMode):
     force = c_float()
     return c_GetJointForce(clientID, jointHandle, byref(force), operationMode), force.value
 
+
 def simxSetJointForce(clientID, jointHandle, force, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     return c_SetJointForce(clientID, jointHandle, force, operationMode)
 
+
 def simxReadForceSensor(clientID, forceSensorHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     state = c_ubyte()
-    forceVector  = (c_float*3)()
-    torqueVector = (c_float*3)()
+    forceVector = (c_float * 3)()
+    torqueVector = (c_float * 3)()
     ret = c_ReadForceSensor(clientID, forceSensorHandle, byref(state), forceVector, torqueVector, operationMode)
     arr1 = []
     for i in range(3):
-        arr1.append(forceVector[i])	
+        arr1.append(forceVector[i])
     arr2 = []
     for i in range(3):
-        arr2.append(torqueVector[i])	
-    return ret, ord(state.value), arr1, arr2 
+        arr2.append(torqueVector[i])
+    return ret, ord(state.value), arr1, arr2
+
 
 def simxBreakForceSensor(clientID, forceSensorHandle, operationMode):
     '''
@@ -243,28 +318,31 @@ def simxBreakForceSensor(clientID, forceSensorHandle, operationMode):
     '''
     return c_BreakForceSensor(clientID, forceSensorHandle, operationMode)
 
+
 def simxReadVisionSensor(clientID, sensorHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     detectionState = c_ubyte()
-    auxValues      = pointer(c_float())
+    auxValues = pointer(c_float())
     auxValuesCount = pointer(c_int())
-    ret = c_ReadVisionSensor(clientID, sensorHandle, byref(detectionState), byref(auxValues), byref(auxValuesCount), operationMode)
-    
+    ret = c_ReadVisionSensor(clientID, sensorHandle, byref(detectionState), byref(auxValues), byref(auxValuesCount),
+                             operationMode)
+
     auxValues2 = []
     if ret == 0:
         s = 0
         for i in range(auxValuesCount[0]):
-            auxValues2.append(auxValues[s:s+auxValuesCount[i+1]])
-            s += auxValuesCount[i+1]
+            auxValues2.append(auxValues[s:s + auxValuesCount[i + 1]])
+            s += auxValuesCount[i + 1]
 
-        #free C buffers
+        # free C buffers
         c_ReleaseBuffer(auxValues)
         c_ReleaseBuffer(auxValuesCount)
 
-    return ret, bool(detectionState.value!=0), auxValues2 
+    return ret, bool(detectionState.value != 0), auxValues2
+
 
 def simxGetObjectHandle(clientID, objectName, operationMode):
     '''
@@ -273,59 +351,65 @@ def simxGetObjectHandle(clientID, objectName, operationMode):
     handle = c_int()
     return c_GetObjectHandle(clientID, objectName, byref(handle), operationMode), handle.value
 
+
 def simxGetVisionSensorImage(clientID, sensorHandle, options, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
-    resolution = (c_int*2)()
-    c_image  = pointer(c_byte())
+    resolution = (c_int * 2)()
+    c_image = pointer(c_byte())
     bytesPerPixel = 3
     if (options and 1) != 0:
-        bytesPerPixel = 1	
+        bytesPerPixel = 1
     ret = c_GetVisionSensorImage(clientID, sensorHandle, resolution, byref(c_image), options, operationMode)
 
     reso = []
     image = []
-    if (ret == 0):	
-        image = [None]*resolution[0]*resolution[1]*bytesPerPixel
+    if (ret == 0):
+        image = [None] * resolution[0] * resolution[1] * bytesPerPixel
         for i in range(resolution[0] * resolution[1] * bytesPerPixel):
             image[i] = c_image[i]
         for i in range(2):
             reso.append(resolution[i])
     return ret, reso, image
 
+
 def simxSetVisionSensorImage(clientID, sensorHandle, image, options, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     size = len(image)
-    image_bytes  = (c_byte*size)(*image)
+    image_bytes = (c_byte * size)(*image)
     return c_SetVisionSensorImage(clientID, sensorHandle, image_bytes, size, options, operationMode)
+
 
 def simxGetVisionSensorDepthBuffer(clientID, sensorHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    c_buffer  = pointer(c_float())
-    resolution = (c_int*2)()
+    c_buffer = pointer(c_float())
+    resolution = (c_int * 2)()
     ret = c_GetVisionSensorDepthBuffer(clientID, sensorHandle, resolution, byref(c_buffer), operationMode)
     reso = []
     buffer = []
-    if (ret == 0):	
-        buffer = [None]*resolution[0]*resolution[1]
+    if (ret == 0):
+        buffer = [None] * resolution[0] * resolution[1]
         for i in range(resolution[0] * resolution[1]):
             buffer[i] = c_buffer[i]
         for i in range(2):
             reso.append(resolution[i])
     return ret, reso, buffer
 
+
 def simxGetObjectChild(clientID, parentObjectHandle, childIndex, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     childObjectHandle = c_int()
-    return c_GetObjectChild(clientID, parentObjectHandle, childIndex, byref(childObjectHandle), operationMode), childObjectHandle.value
+    return c_GetObjectChild(clientID, parentObjectHandle, childIndex, byref(childObjectHandle),
+                            operationMode), childObjectHandle.value
+
 
 def simxGetObjectParent(clientID, childObjectHandle, operationMode):
     '''
@@ -333,7 +417,9 @@ def simxGetObjectParent(clientID, childObjectHandle, operationMode):
     '''
 
     parentObjectHandle = c_int()
-    return c_GetObjectParent(clientID, childObjectHandle, byref(parentObjectHandle), operationMode), parentObjectHandle.value
+    return c_GetObjectParent(clientID, childObjectHandle, byref(parentObjectHandle),
+                             operationMode), parentObjectHandle.value
+
 
 def simxReadProximitySensor(clientID, sensorHandle, operationMode):
     '''
@@ -342,16 +428,18 @@ def simxReadProximitySensor(clientID, sensorHandle, operationMode):
 
     detectionState = c_ubyte()
     detectedObjectHandle = c_int()
-    detectedPoint  = (c_float*3)()
-    detectedSurfaceNormalVector = (c_float*3)()
-    ret = c_ReadProximitySensor(clientID, sensorHandle, byref(detectionState), detectedPoint, byref(detectedObjectHandle), detectedSurfaceNormalVector, operationMode)
+    detectedPoint = (c_float * 3)()
+    detectedSurfaceNormalVector = (c_float * 3)()
+    ret = c_ReadProximitySensor(clientID, sensorHandle, byref(detectionState), detectedPoint,
+                                byref(detectedObjectHandle), detectedSurfaceNormalVector, operationMode)
     arr1 = []
     for i in range(3):
-        arr1.append(detectedPoint[i])	
+        arr1.append(detectedPoint[i])
     arr2 = []
     for i in range(3):
-        arr2.append(detectedSurfaceNormalVector[i])	
-    return ret, bool(detectionState.value!=0), arr1, detectedObjectHandle.value, arr2
+        arr2.append(detectedSurfaceNormalVector[i])
+    return ret, bool(detectionState.value != 0), arr1, detectedObjectHandle.value, arr2
+
 
 def simxLoadModel(clientID, modelPathAndName, options, operationMode):
     '''
@@ -359,6 +447,7 @@ def simxLoadModel(clientID, modelPathAndName, options, operationMode):
     '''
     baseHandle = c_int()
     return c_LoadModel(clientID, modelPathAndName, options, byref(baseHandle), operationMode), baseHandle.value
+
 
 def simxLoadUI(clientID, uiPathAndName, options, operationMode):
     '''
@@ -368,15 +457,16 @@ def simxLoadUI(clientID, uiPathAndName, options, operationMode):
     count = c_int()
     uiHandles = pointer(c_int())
     ret = c_LoadUI(clientID, uiPathAndName, options, byref(count), byref(uiHandles), operationMode)
-    
+
     handles = []
     if ret == 0:
         for i in range(count.value):
             handles.append(uiHandles[i])
-        #free C buffers
+        # free C buffers
         c_ReleaseBuffer(uiHandles)
 
     return ret, handles
+
 
 def simxLoadScene(clientID, scenePathAndName, options, operationMode):
     '''
@@ -385,12 +475,14 @@ def simxLoadScene(clientID, scenePathAndName, options, operationMode):
 
     return c_LoadScene(clientID, scenePathAndName, options, operationMode)
 
+
 def simxStartSimulation(clientID, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_StartSimulation(clientID, operationMode)
+
 
 def simxPauseSimulation(clientID, operationMode):
     '''
@@ -399,12 +491,14 @@ def simxPauseSimulation(clientID, operationMode):
 
     return c_PauseSimulation(clientID, operationMode)
 
+
 def simxStopSimulation(clientID, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_StopSimulation(clientID, operationMode)
+
 
 def simxGetUIHandle(clientID, uiName, operationMode):
     '''
@@ -414,6 +508,7 @@ def simxGetUIHandle(clientID, uiName, operationMode):
     handle = c_int()
     return c_GetUIHandle(clientID, uiName, byref(handle), operationMode), handle.value
 
+
 def simxGetUISlider(clientID, uiHandle, uiButtonID, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -422,6 +517,7 @@ def simxGetUISlider(clientID, uiHandle, uiButtonID, operationMode):
     position = c_int()
     return c_GetUISlider(clientID, uiHandle, uiButtonID, byref(position), operationMode), position.value
 
+
 def simxSetUISlider(clientID, uiHandle, uiButtonID, position, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -429,18 +525,20 @@ def simxSetUISlider(clientID, uiHandle, uiButtonID, position, operationMode):
 
     return c_SetUISlider(clientID, uiHandle, uiButtonID, position, operationMode)
 
+
 def simxGetUIEventButton(clientID, uiHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     uiEventButtonID = c_int()
-    auxValues = (c_int*2)()
+    auxValues = (c_int * 2)()
     ret = c_GetUIEventButton(clientID, uiHandle, byref(uiEventButtonID), auxValues, operationMode)
     arr = []
     for i in range(2):
-        arr.append(auxValues[i])	
+        arr.append(auxValues[i])
     return ret, uiEventButtonID.value, arr
+
 
 def simxGetUIButtonProperty(clientID, uiHandle, uiButtonID, operationMode):
     '''
@@ -450,12 +548,14 @@ def simxGetUIButtonProperty(clientID, uiHandle, uiButtonID, operationMode):
     prop = c_int()
     return c_GetUIButtonProperty(clientID, uiHandle, uiButtonID, byref(prop), operationMode), prop.value
 
+
 def simxSetUIButtonProperty(clientID, uiHandle, uiButtonID, prop, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    
+
     return c_SetUIButtonProperty(clientID, uiHandle, uiButtonID, prop, operationMode)
+
 
 def simxAddStatusbarMessage(clientID, message, operationMode):
     '''
@@ -464,29 +564,33 @@ def simxAddStatusbarMessage(clientID, message, operationMode):
 
     return c_AddStatusbarMessage(clientID, message, operationMode)
 
-def simxAuxiliaryConsoleOpen(clientID, title, maxLines, mode, position, size, textColor, backgroundColor, operationMode):
+
+def simxAuxiliaryConsoleOpen(clientID, title, maxLines, mode, position, size, textColor, backgroundColor,
+                             operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     consoleHandle = c_int()
     if position != None:
-        c_position = (c_int*2)(*position)
+        c_position = (c_int * 2)(*position)
     else:
         c_position = None
     if size != None:
-        c_size = (c_int*2)(*size)
+        c_size = (c_int * 2)(*size)
     else:
         c_size = None
     if textColor != None:
-        c_textColor = (c_float*3)(*textColor)
+        c_textColor = (c_float * 3)(*textColor)
     else:
         c_textColor = None
     if backgroundColor != None:
-        c_backgroundColor = (c_float*3)(*backgroundColor)
+        c_backgroundColor = (c_float * 3)(*backgroundColor)
     else:
         c_backgroundColor = None
-    return c_AuxiliaryConsoleOpen(clientID, title, maxLines, mode, c_position, c_size, c_textColor, c_backgroundColor, byref(consoleHandle), operationMode), consoleHandle.value
+    return c_AuxiliaryConsoleOpen(clientID, title, maxLines, mode, c_position, c_size, c_textColor, c_backgroundColor,
+                                  byref(consoleHandle), operationMode), consoleHandle.value
+
 
 def simxAuxiliaryConsoleClose(clientID, consoleHandle, operationMode):
     '''
@@ -495,12 +599,14 @@ def simxAuxiliaryConsoleClose(clientID, consoleHandle, operationMode):
 
     return c_AuxiliaryConsoleClose(clientID, consoleHandle, operationMode)
 
+
 def simxAuxiliaryConsolePrint(clientID, consoleHandle, txt, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_AuxiliaryConsolePrint(clientID, consoleHandle, txt, operationMode)
+
 
 def simxAuxiliaryConsoleShow(clientID, consoleHandle, showState, operationMode):
     '''
@@ -509,43 +615,48 @@ def simxAuxiliaryConsoleShow(clientID, consoleHandle, showState, operationMode):
 
     return c_AuxiliaryConsoleShow(clientID, consoleHandle, showState, operationMode)
 
+
 def simxGetObjectOrientation(clientID, objectHandle, relativeToObjectHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    eulerAngles = (c_float*3)()
+    eulerAngles = (c_float * 3)()
     ret = c_GetObjectOrientation(clientID, objectHandle, relativeToObjectHandle, eulerAngles, operationMode)
     arr = []
     for i in range(3):
-        arr.append(eulerAngles[i])	
+        arr.append(eulerAngles[i])
     return ret, arr
+
 
 def simxGetObjectPosition(clientID, objectHandle, relativeToObjectHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    position = (c_float*3)()
+    position = (c_float * 3)()
     ret = c_GetObjectPosition(clientID, objectHandle, relativeToObjectHandle, position, operationMode)
     arr = []
     for i in range(3):
-        arr.append(position[i])	
+        arr.append(position[i])
     return ret, arr
+
 
 def simxSetObjectOrientation(clientID, objectHandle, relativeToObjectHandle, eulerAngles, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
-    angles = (c_float*3)(*eulerAngles)
+    angles = (c_float * 3)(*eulerAngles)
     return c_SetObjectOrientation(clientID, objectHandle, relativeToObjectHandle, angles, operationMode)
+
 
 def simxSetObjectPosition(clientID, objectHandle, relativeToObjectHandle, position, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
-    c_position = (c_float*3)(*position)
+    c_position = (c_float * 3)(*position)
     return c_SetObjectPosition(clientID, objectHandle, relativeToObjectHandle, c_position, operationMode)
+
 
 def simxSetObjectParent(clientID, objectHandle, parentObject, keepInPlace, operationMode):
     '''
@@ -554,6 +665,7 @@ def simxSetObjectParent(clientID, objectHandle, parentObject, keepInPlace, opera
 
     return c_SetObjectParent(clientID, objectHandle, parentObject, keepInPlace, operationMode)
 
+
 def simxSetUIButtonLabel(clientID, uiHandle, uiButtonID, upStateLabel, downStateLabel, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -561,15 +673,16 @@ def simxSetUIButtonLabel(clientID, uiHandle, uiButtonID, upStateLabel, downState
 
     return c_SetUIButtonLabel(clientID, uiHandle, uiButtonID, upStateLabel, downStateLabel, operationMode)
 
+
 def simxGetLastErrors(clientID, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    errors =[]
+    errors = []
     errorCnt = c_int()
     errorStrings = pointer(c_char())
     ret = c_GetLastErrors(clientID, byref(errorCnt), byref(errorStrings), operationMode)
-    
+
     if ret == 0:
         s = 0
         for i in range(errorCnt.value):
@@ -577,30 +690,33 @@ def simxGetLastErrors(clientID, operationMode):
             while errorStrings[s] != '\0':
                 a.append(errorStrings[s])
                 s += 1
-                
-            s += 1 #skip null
+
+            s += 1  # skip null
             errors.append(str(a))
 
     return ret, errors
+
 
 def simxGetArrayParameter(clientID, paramIdentifier, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    paramValues = (c_float*3)()
+    paramValues = (c_float * 3)()
     ret = c_GetArrayParameter(clientID, paramIdentifier, paramValues, operationMode)
     arr = []
     for i in range(3):
-        arr.append(paramValues[i])	
+        arr.append(paramValues[i])
     return ret, arr
+
 
 def simxSetArrayParameter(clientID, paramIdentifier, paramValues, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
-    c_paramValues = (c_float*3)(*paramValues)
+    c_paramValues = (c_float * 3)(*paramValues)
     return c_SetArrayParameter(clientID, paramIdentifier, c_paramValues, operationMode)
+
 
 def simxGetBooleanParameter(clientID, paramIdentifier, operationMode):
     '''
@@ -608,7 +724,9 @@ def simxGetBooleanParameter(clientID, paramIdentifier, operationMode):
     '''
 
     paramValue = c_ubyte()
-    return c_GetBooleanParameter(clientID, paramIdentifier, byref(paramValue), operationMode), bool(paramValue.value!=0)
+    return c_GetBooleanParameter(clientID, paramIdentifier, byref(paramValue), operationMode), bool(
+        paramValue.value != 0)
+
 
 def simxSetBooleanParameter(clientID, paramIdentifier, paramValue, operationMode):
     '''
@@ -616,6 +734,7 @@ def simxSetBooleanParameter(clientID, paramIdentifier, paramValue, operationMode
     '''
 
     return c_SetBooleanParameter(clientID, paramIdentifier, paramValue, operationMode)
+
 
 def simxGetIntegerParameter(clientID, paramIdentifier, operationMode):
     '''
@@ -625,12 +744,14 @@ def simxGetIntegerParameter(clientID, paramIdentifier, operationMode):
     paramValue = c_int()
     return c_GetIntegerParameter(clientID, paramIdentifier, byref(paramValue), operationMode), paramValue.value
 
+
 def simxSetIntegerParameter(clientID, paramIdentifier, paramValue, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_SetIntegerParameter(clientID, paramIdentifier, paramValue, operationMode)
+
 
 def simxGetFloatingParameter(clientID, paramIdentifier, operationMode):
     '''
@@ -640,6 +761,7 @@ def simxGetFloatingParameter(clientID, paramIdentifier, operationMode):
     paramValue = c_float()
     return c_GetFloatingParameter(clientID, paramIdentifier, byref(paramValue), operationMode), paramValue.value
 
+
 def simxSetFloatingParameter(clientID, paramIdentifier, paramValue, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -647,21 +769,23 @@ def simxSetFloatingParameter(clientID, paramIdentifier, paramValue, operationMod
 
     return c_SetFloatingParameter(clientID, paramIdentifier, paramValue, operationMode)
 
+
 def simxGetStringParameter(clientID, paramIdentifier, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     paramValue = pointer(c_char())
     ret = c_GetStringParameter(clientID, paramIdentifier, byref(paramValue), operationMode)
-    
+
     a = bytearray()
     if ret == 0:
         i = 0
         while paramValue[i] != '\0':
             a.append(paramValue[i])
-            i=i+1
+            i += 1
 
     return ret, str(a)
+
 
 def simxGetCollisionHandle(clientID, collisionObjectName, operationMode):
     '''
@@ -671,6 +795,7 @@ def simxGetCollisionHandle(clientID, collisionObjectName, operationMode):
     handle = c_int()
     return c_GetCollisionHandle(clientID, collisionObjectName, byref(handle), operationMode), handle.value
 
+
 def simxGetDistanceHandle(clientID, distanceObjectName, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -679,12 +804,15 @@ def simxGetDistanceHandle(clientID, distanceObjectName, operationMode):
     handle = c_int()
     return c_GetDistanceHandle(clientID, distanceObjectName, byref(handle), operationMode), handle.value
 
+
 def simxReadCollision(clientID, collisionObjectHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     collisionState = c_ubyte()
-    return c_ReadCollision(clientID, collisionObjectHandle, byref(collisionState), operationMode), bool(collisionState.value!=0)
+    return c_ReadCollision(clientID, collisionObjectHandle, byref(collisionState), operationMode), bool(
+        collisionState.value != 0)
+
 
 def simxReadDistance(clientID, distanceObjectHandle, operationMode):
     '''
@@ -694,12 +822,14 @@ def simxReadDistance(clientID, distanceObjectHandle, operationMode):
     minimumDistance = c_float()
     return c_ReadDistance(clientID, distanceObjectHandle, byref(minimumDistance), operationMode), minimumDistance.value
 
+
 def simxRemoveObject(clientID, objectHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_RemoveObject(clientID, objectHandle, operationMode)
+
 
 def simxRemoveModel(clientID, objectHandle, operationMode):
     '''
@@ -708,6 +838,7 @@ def simxRemoveModel(clientID, objectHandle, operationMode):
 
     return c_RemoveModel(clientID, objectHandle, operationMode)
 
+
 def simxRemoveUI(clientID, uiHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -715,12 +846,14 @@ def simxRemoveUI(clientID, uiHandle, operationMode):
 
     return c_RemoveUI(clientID, uiHandle, operationMode)
 
+
 def simxCloseScene(clientID, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_CloseScene(clientID, operationMode)
+
 
 def simxGetObjects(clientID, objectType, operationMode):
     '''
@@ -744,17 +877,20 @@ def simxDisplayDialog(clientID, titleText, mainText, dialogType, initialText, ti
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     if titleColors != None:
-        c_titleColors  = (c_float*6)(*titleColors)
+        c_titleColors = (c_float * 6)(*titleColors)
     else:
-        c_titleColors  = None
+        c_titleColors = None
     if dialogColors != None:
-        c_dialogColors  = (c_float*6)(*dialogColors)
+        c_dialogColors = (c_float * 6)(*dialogColors)
     else:
-        c_dialogColors  = None
+        c_dialogColors = None
 
     c_dialogHandle = c_int()
     c_uiHandle = c_int()
-    return c_DisplayDialog(clientID, titleText, mainText, dialogType, initialText, c_titleColors, c_dialogColors, byref(c_dialogHandle), byref(c_uiHandle), operationMode), c_dialogHandle.value, c_uiHandle.value
+    return c_DisplayDialog(clientID, titleText, mainText, dialogType, initialText, c_titleColors, c_dialogColors,
+                           byref(c_dialogHandle), byref(c_uiHandle),
+                           operationMode), c_dialogHandle.value, c_uiHandle.value
+
 
 def simxEndDialog(clientID, dialogHandle, operationMode):
     '''
@@ -763,20 +899,21 @@ def simxEndDialog(clientID, dialogHandle, operationMode):
 
     return c_EndDialog(clientID, dialogHandle, operationMode)
 
+
 def simxGetDialogInput(clientID, dialogHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     inputText = pointer(c_char())
     ret = c_GetDialogInput(clientID, dialogHandle, byref(inputText), operationMode)
-    
+
     a = bytearray()
     if ret == 0:
         i = 0
         while inputText[i] != '\0':
             a.append(inputText[i])
-            i = i+1
-			
+            i += 1
+
     return ret, str(a)
 
 
@@ -787,14 +924,16 @@ def simxGetDialogResult(clientID, dialogHandle, operationMode):
     result = c_int()
     return c_GetDialogResult(clientID, dialogHandle, byref(result), operationMode), result.value
 
+
 def simxCopyPasteObjects(clientID, objectHandles, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    c_objectHandles  = (c_int*len(objectHandles))(*objectHandles)
-    newObjectCount   = c_int()
+    c_objectHandles = (c_int * len(objectHandles))(*objectHandles)
+    newObjectCount = c_int()
     newObjectHandles = pointer(c_int())
-    ret = c_CopyPasteObjects(clientID, c_objectHandles, len(objectHandles), byref(newObjectHandles), byref(newObjectCount), operationMode)
+    ret = c_CopyPasteObjects(clientID, c_objectHandles, len(objectHandles), byref(newObjectHandles),
+                             byref(newObjectCount), operationMode)
 
     newobj = []
     if ret == 0:
@@ -808,7 +947,7 @@ def simxGetObjectSelection(clientID, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    objectCount   = c_int()
+    objectCount = c_int()
     objectHandles = pointer(c_int())
     ret = c_GetObjectSelection(clientID, byref(objectHandles), byref(objectCount), operationMode)
 
@@ -820,14 +959,14 @@ def simxGetObjectSelection(clientID, operationMode):
     return ret, newobj
 
 
-
 def simxSetObjectSelection(clientID, objectHandles, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
-    c_objectHandles  = (c_int*len(objectHandles))(*objectHandles)
+    c_objectHandles = (c_int * len(objectHandles))(*objectHandles)
     return c_SetObjectSelection(clientID, c_objectHandles, len(objectHandles), operationMode)
+
 
 def simxClearFloatSignal(clientID, signalName, operationMode):
     '''
@@ -836,6 +975,7 @@ def simxClearFloatSignal(clientID, signalName, operationMode):
 
     return c_ClearFloatSignal(clientID, signalName, operationMode)
 
+
 def simxClearIntegerSignal(clientID, signalName, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -843,12 +983,14 @@ def simxClearIntegerSignal(clientID, signalName, operationMode):
 
     return c_ClearIntegerSignal(clientID, signalName, operationMode)
 
+
 def simxClearStringSignal(clientID, signalName, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_ClearStringSignal(clientID, signalName, operationMode)
+
 
 def simxGetFloatSignal(clientID, signalName, operationMode):
     '''
@@ -858,6 +1000,7 @@ def simxGetFloatSignal(clientID, signalName, operationMode):
     signalValue = c_float()
     return c_GetFloatSignal(clientID, signalName, byref(signalValue), operationMode), signalValue.value
 
+
 def simxGetIntegerSignal(clientID, signalName, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -865,6 +1008,7 @@ def simxGetIntegerSignal(clientID, signalName, operationMode):
 
     signalValue = c_int()
     return c_GetIntegerSignal(clientID, signalName, byref(signalValue), operationMode), signalValue.value
+
 
 def simxGetStringSignal(clientID, signalName, operationMode):
     '''
@@ -881,7 +1025,8 @@ def simxGetStringSignal(clientID, signalName, operationMode):
             a.append(signalValue[i])
 
     return ret, str(a)
-	
+
+
 def simxGetAndClearStringSignal(clientID, signalName, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -897,7 +1042,8 @@ def simxGetAndClearStringSignal(clientID, signalName, operationMode):
             a.append(signalValue[i])
 
     return ret, str(a)
-	
+
+
 def simxReadStringStream(clientID, signalName, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -913,13 +1059,15 @@ def simxReadStringStream(clientID, signalName, operationMode):
             a.append(signalValue[i])
 
     return ret, str(a)
-	
+
+
 def simxSetFloatSignal(clientID, signalName, signalValue, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_SetFloatSignal(clientID, signalName, signalValue, operationMode)
+
 
 def simxSetIntegerSignal(clientID, signalName, signalValue, operationMode):
     '''
@@ -928,12 +1076,14 @@ def simxSetIntegerSignal(clientID, signalName, signalValue, operationMode):
 
     return c_SetIntegerSignal(clientID, signalName, signalValue, operationMode)
 
+
 def simxSetStringSignal(clientID, signalName, signalValue, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_SetStringSignal(clientID, signalName, signalValue, len(signalValue), operationMode)
+
 
 def simxAppendStringSignal(clientID, signalName, signalValue, operationMode):
     '''
@@ -942,6 +1092,7 @@ def simxAppendStringSignal(clientID, signalName, signalValue, operationMode):
 
     return c_AppendStringSignal(clientID, signalName, signalValue, len(signalValue), operationMode)
 
+
 def simxWriteStringStream(clientID, signalName, signalValue, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -949,13 +1100,16 @@ def simxWriteStringStream(clientID, signalName, signalValue, operationMode):
 
     return c_WriteStringStream(clientID, signalName, signalValue, len(signalValue), operationMode)
 
+
 def simxGetObjectFloatParameter(clientID, objectHandle, parameterID, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    
+
     parameterValue = c_float()
-    return c_GetObjectFloatParameter(clientID, objectHandle, parameterID, byref(parameterValue), operationMode), parameterValue.value 
+    return c_GetObjectFloatParameter(clientID, objectHandle, parameterID, byref(parameterValue),
+                                     operationMode), parameterValue.value
+
 
 def simxSetObjectFloatParameter(clientID, objectHandle, parameterID, parameterValue, operationMode):
     '''
@@ -964,13 +1118,16 @@ def simxSetObjectFloatParameter(clientID, objectHandle, parameterID, parameterVa
 
     return c_SetObjectFloatParameter(clientID, objectHandle, parameterID, parameterValue, operationMode)
 
+
 def simxGetObjectIntParameter(clientID, objectHandle, parameterID, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
-    parameterValue = c_int() 
-    return c_GetObjectIntParameter(clientID, objectHandle, parameterID, byref(parameterValue), operationMode), parameterValue.value
+    parameterValue = c_int()
+    return c_GetObjectIntParameter(clientID, objectHandle, parameterID, byref(parameterValue),
+                                   operationMode), parameterValue.value
+
 
 def simxSetObjectIntParameter(clientID, objectHandle, parameterID, parameterValue, operationMode):
     '''
@@ -979,12 +1136,14 @@ def simxSetObjectIntParameter(clientID, objectHandle, parameterID, parameterValu
 
     return c_SetObjectIntParameter(clientID, objectHandle, parameterID, parameterValue, operationMode)
 
+
 def simxGetModelProperty(clientID, objectHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     prop = c_int()
     return c_GetModelProperty(clientID, objectHandle, byref(prop), operationMode), prop.value
+
 
 def simxSetModelProperty(clientID, objectHandle, prop, operationMode):
     '''
@@ -993,12 +1152,16 @@ def simxSetModelProperty(clientID, objectHandle, prop, operationMode):
 
     return c_SetModelProperty(clientID, objectHandle, prop, operationMode)
 
-def simxStart(connectionAddress, connectionPort, waitUntilConnected, doNotReconnectOnceDisconnected, timeOutInMs, commThreadCycleInMs):
+
+def simxStart(connectionAddress, connectionPort, waitUntilConnected, doNotReconnectOnceDisconnected, timeOutInMs,
+              commThreadCycleInMs):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
-    return c_Start(connectionAddress, connectionPort, waitUntilConnected, doNotReconnectOnceDisconnected, timeOutInMs, commThreadCycleInMs)
+    return c_Start(connectionAddress, connectionPort, waitUntilConnected, doNotReconnectOnceDisconnected, timeOutInMs,
+                   commThreadCycleInMs)
+
 
 def simxFinish(clientID):
     '''
@@ -1007,12 +1170,14 @@ def simxFinish(clientID):
 
     return c_Finish(clientID)
 
+
 def simxGetPingTime(clientID):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     pingTime = c_int()
     return c_GetPingTime(clientID, byref(pingTime)), pingTime.value
+
 
 def simxGetLastCmdTime(clientID):
     '''
@@ -1021,12 +1186,14 @@ def simxGetLastCmdTime(clientID):
 
     return c_GetLastCmdTime(clientID)
 
+
 def simxSynchronousTrigger(clientID):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_SynchronousTrigger(clientID)
+
 
 def simxSynchronous(clientID, enable):
     '''
@@ -1035,12 +1202,14 @@ def simxSynchronous(clientID, enable):
 
     return c_Synchronous(clientID, enable)
 
+
 def simxPauseCommunication(clientID, enable):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_PauseCommunication(clientID, enable)
+
 
 def simxGetInMessageInfo(clientID, infoType):
     '''
@@ -1049,12 +1218,14 @@ def simxGetInMessageInfo(clientID, infoType):
     info = c_int()
     return c_GetInMessageInfo(clientID, infoType, byref(info)), info.value
 
+
 def simxGetOutMessageInfo(clientID, infoType):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
     info = c_int()
     return c_GetOutMessageInfo(clientID, infoType, byref(info)), info.value
+
 
 def simxGetConnectionId(clientID):
     '''
@@ -1063,12 +1234,14 @@ def simxGetConnectionId(clientID):
 
     return c_GetConnectionId(clientID)
 
+
 def simxCreateBuffer(bufferSize):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_CreateBuffer(bufferSize)
+
 
 def simxReleaseBuffer(buffer):
     '''
@@ -1077,12 +1250,14 @@ def simxReleaseBuffer(buffer):
 
     return c_ReleaseBuffer(buffer)
 
+
 def simxTransferFile(clientID, filePathAndName, fileName_serverSide, timeOut, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
     return c_TransferFile(clientID, filePathAndName, fileName_serverSide, timeOut, operationMode)
+
 
 def simxEraseFile(clientID, fileName_serverSide, operationMode):
     '''
@@ -1091,6 +1266,7 @@ def simxEraseFile(clientID, fileName_serverSide, operationMode):
 
     return c_EraseFile(clientID, fileName_serverSide, operationMode)
 
+
 def simxCreateDummy(clientID, size, color, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
@@ -1098,10 +1274,11 @@ def simxCreateDummy(clientID, size, color, operationMode):
 
     handle = c_int()
     if color != None:
-        c_color = (c_ubyte*12)(*color)
+        c_color = (c_ubyte * 12)(*color)
     else:
         c_color = None
     return c_CreateDummy(clientID, size, c_color, byref(handle), operationMode), handle.value
+
 
 def simxQuery(clientID, signalName, signalValue, retSignalName, timeOutInMs):
     '''
@@ -1111,7 +1288,8 @@ def simxQuery(clientID, signalName, signalValue, retSignalName, timeOutInMs):
     retSignalLength = c_int();
     retSignalValue = pointer(c_ubyte())
 
-    ret = c_Query(clientID, signalName, signalValue, len(signalValue), retSignalName, byref(retSignalValue), byref(retSignalLength), timeOutInMs)
+    ret = c_Query(clientID, signalName, signalValue, len(signalValue), retSignalName, byref(retSignalValue),
+                  byref(retSignalLength), timeOutInMs)
 
     a = bytearray()
     if ret == 0:
@@ -1120,15 +1298,16 @@ def simxQuery(clientID, signalName, signalValue, retSignalName, timeOutInMs):
 
     return ret, str(a)
 
+
 def simxGetObjectGroupData(clientID, objectType, dataType, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
 
-    handles =[]
-    intData =[]
-    floatData =[]
-    stringData =[]
+    handles = []
+    intData = []
+    floatData = []
+    stringData = []
     handlesC = c_int()
     handlesP = pointer(c_int())
     intDataC = c_int()
@@ -1137,8 +1316,10 @@ def simxGetObjectGroupData(clientID, objectType, dataType, operationMode):
     floatDataP = pointer(c_float())
     stringDataC = c_int()
     stringDataP = pointer(c_char())
-    ret = c_GetObjectGroupData(clientID, objectType, dataType, byref(handlesC), byref(handlesP), byref(intDataC), byref(intDataP), byref(floatDataC), byref(floatDataP), byref(stringDataC), byref(stringDataP), operationMode)
-    
+    ret = c_GetObjectGroupData(clientID, objectType, dataType, byref(handlesC), byref(handlesP), byref(intDataC),
+                               byref(intDataP), byref(floatDataC), byref(floatDataP), byref(stringDataC),
+                               byref(stringDataP), operationMode)
+
     if ret == 0:
         for i in range(handlesC.value):
             handles.append(handlesP[i])
@@ -1152,58 +1333,63 @@ def simxGetObjectGroupData(clientID, objectType, dataType, operationMode):
             while stringDataP[s] != '\0':
                 a.append(stringDataP[s])
                 s += 1
-            s += 1 #skip null
+            s += 1  # skip null
             stringData.append(str(a))
- 
+
     return ret, handles, intData, floatData, stringData
+
 
 def simxGetObjectVelocity(clientID, objectHandle, operationMode):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    linearVel  = (c_float*3)()
-    angularVel = (c_float*3)()
+    linearVel = (c_float * 3)()
+    angularVel = (c_float * 3)()
     ret = c_GetObjectVelocity(clientID, objectHandle, linearVel, angularVel, operationMode)
     arr1 = []
     for i in range(3):
-        arr1.append(linearVel[i])	
+        arr1.append(linearVel[i])
     arr2 = []
     for i in range(3):
-        arr2.append(angularVel[i])	
-    return ret, arr1, arr2 
+        arr2.append(angularVel[i])
+    return ret, arr1, arr2
+
 
 def simxPackInts(intList):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    s=''
+    s = ''
     for i in range(len(intList)):
-        s+=struct.pack('<i',intList[i])
+        s += struct.pack('<i', intList[i])
     return s
+
 
 def simxUnpackInts(intsPackedInString):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    b=[]	
-    for i in range(len(intsPackedInString)/4):
-        b.append(struct.unpack('<i',intsPackedInString[4*i:4*(i+1)])[0])
+    b = []
+    for i in range(old_div(len(intsPackedInString), 4)):
+        b.append(struct.unpack('<i', intsPackedInString[4 * i:4 * (i + 1)])[0])
     return b
+
 
 def simxPackFloats(floatList):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    s=''
+    s = ''
     for i in range(len(floatList)):
-        s+=struct.pack('<f',floatList[i])
+        s += struct.pack('<f', floatList[i])
     return s
+
 
 def simxUnpackFloats(floatsPackedInString):
     '''
     Please have a look at the function description/documentation in the V-REP user manual
     '''
-    b=[]	
-    for i in range(len(floatsPackedInString)/4):
-        b.append(struct.unpack('<f',floatsPackedInString[4*i:4*(i+1)])[0])
+    b = []
+    for i in range(old_div(len(floatsPackedInString), 4)):
+        b.append(struct.unpack('<f', floatsPackedInString[4 * i:4 * (i + 1)])[0])
     return b

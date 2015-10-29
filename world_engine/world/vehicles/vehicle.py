@@ -3,12 +3,13 @@
 The quadrotor class can be used to place various vehicles on a map.
 The class keeps track of the vehicles starting point, and its current location
 """
-from math import cos, sin, acos
+from __future__ import absolute_import, division, print_function, unicode_literals
+from builtins import object
 from uuid import uuid4
-from abc import ABCMeta, abstractmethod, abstractproperty
-from world.mapping.map import Map
-from engine.server.server_conf import settings
+from abc import ABCMeta, abstractproperty
 
+from world.mapping.map import Map
+from future.utils import with_metaclass
 
 """
 The vehicle, above all else, is our physical implement. It must understand its surroundings, and also how it's dynamics
@@ -19,13 +20,12 @@ a vehicle's point mass translates, and how the possible paths it may take are li
 """
 
 
-class Vehicle(object):
+class Vehicle(with_metaclass(ABCMeta, object)):
     """
 
     Vehicle provides the abstract base for both flying and ground vehicles
 
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, initial_coords):
         self.initial_coordinates = initial_coords
@@ -155,7 +155,7 @@ class Quadrotor(Vehicle):
         physical model which will provide this routine with a method for determining acceleration and
          """
         self.coordinates, temp = Map.vinc_dir(0.00335281068118, 6378137.0, self.coordinates, track_angle,
-                                             ellipsoidal_distance)
+                                              ellipsoidal_distance)
         self.altitude = rocd * fpm_to_fps * dt
 
     def vehicle_type(self):

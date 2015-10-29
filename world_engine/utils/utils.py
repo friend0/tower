@@ -1,14 +1,34 @@
-from itertools import izip, tee, izip_longest
-from itertools import cycle
+from __future__ import absolute_import, division, print_function, unicode_literals
+from builtins import next
+from builtins import zip
+from builtins import object
+
+__metaclass__ = type
+
+try:
+    # Python 2
+    from itertools import izip
+except ImportError:
+    # Python 3
+    izip = zip
+
+try:
+    # Python 2
+    from itertools import izip_longest
+except ImportError:
+    # Python 3
+    from itertools import zip_longest
+
+from itertools import tee
 from threading import Timer
-from time import strftime
+
 
 def pairwise(iterable):
-    "s -> (s0,s1), (s2,s3), (s4, s5), ..."
+    """s -> (s0,s1), (s2,s3), (s4, s5), ..."""
     a, b = tee(iterable)
     next(b, None)
     a = iter(iterable)
-    return izip(a, b)
+    return list(zip(a, b))
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -22,10 +42,10 @@ def grouper(iterable, n, fillvalue=None):
     """
 
     args = [iter(iterable)] * n
-    return izip_longest(fillvalue=fillvalue, *args)
+    return zip_longest(fillvalue=fillvalue, *args)
+
 
 class Interrupt(object):
-
     def __init__(self, interval, function, *args, **kwargs):
         self._timer = None
         self.interval = interval

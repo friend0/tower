@@ -12,6 +12,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from __future__ import print_function
 import sys
 import os
 
@@ -33,7 +34,7 @@ import os
 # print os.path.abspath('.')
 from mock import Mock as MagicMock
 
-print os.path.abspath('../')
+print(os.path.abspath('../'))
 # print os.path.abspath('../../')
 # print os.path.abspath('../world_engine/docs/img/')
 # print os.path.abspath('../world_engine/world_engine/mapping/')

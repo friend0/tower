@@ -1,7 +1,13 @@
-import numpy as np
+from __future__ import absolute_import
+from __future__ import division
+from builtins import object
+from past.utils import old_div
 import math
 from math import pi
-from initialize import Tstep as Ts
+
+import numpy as np
+
+from .initialize import Tstep as Ts
 
 """ Controller Constants"""
 m = .028
@@ -19,8 +25,8 @@ def sat(x, lower, upper):
         x = upper
     return x
 
-class pid_controller(object):
 
+class pid_controller(object):
     def __init__(self):
         self.kix = 0  # u(t-1)
         self.kiy = 0
@@ -37,6 +43,7 @@ class pid_controller(object):
         def decorate(func):
             setattr(func, varname, value)
             return func
+
         return decorate
 
     def forward_euler(self, axis, lower=None, upper=None):
@@ -51,11 +58,10 @@ class pid_controller(object):
         self.kiy = 0
         self.kiz = 0
 
-
     def update(self, m, g, kp, kd, pR, pR_dot, pR_double_dot, p, p_punto):
 
-        sat_T = 1.8*m*g         # max thrust to almost double of weight
-        sat_roll_pitch = pi/4   # max roll and pitch angle
+        sat_T = 1.8 * m * g  # max thrust to almost double of weight
+        sat_roll_pitch = old_div(pi, 4)  # max roll and pitch angle
 
         e3 = np.matrix('0 0 1')
 
@@ -73,19 +79,19 @@ class pid_controller(object):
 
         K = - kd * p_tilde_dot - kp * p_tilde + iVec
 
-        if np.linalg.norm(K) > m*g*0.95:
-            K = K/np.linalg.norm(K)*m*g*0.95
+        if np.linalg.norm(K) > m * g * 0.95:
+            K = K / np.linalg.norm(K) * m * g * 0.95
 
-        vc = m*g*e3 - m*pR_duepunti - K
+        vc = m * g * e3 - m * pR_duepunti - K
 
-        if np.linalg.norm(vc) < m*g*0.05:
-            vc = vc/np.linalg.norm(vc)*m*g*0.05
+        if np.linalg.norm(vc) < m * g * 0.05:
+            vc = vc / np.linalg.norm(vc) * m * g * 0.05
 
         thrust = np.linalg.norm(vc)
-        theta = math.asin((vc(1))/thrust)
+        theta = math.asin(old_div((vc(1)), thrust))
         phi = math.atan2(-vc(2), vc(3))
 
         thrust = sat(thrust, -sat_T, sat_T)
-        thrust = thrust/sat_T * 100 # scale to fit 0:100
+        thrust = thrust / sat_T * 100  # scale to fit 0:100
 
         return phi, theta, thrust

@@ -1,15 +1,15 @@
-from scipy import signal
-from scipy.signal import TransferFunction
 from math import pi
 
+from scipy import signal
+
 Tstep_GS = 0.01
-Tstep=Tstep_GS
+Tstep = Tstep_GS
 
-N_dP = 2 #VELOCITY XY
-wc_dP = 30*2*pi #rad/s
+N_dP = 2  # VELOCITY XY
+wc_dP = 30 * 2 * pi  # rad/s
 
-#[NB_dP,DB_dP] = besself(N_dP,wc_dP)
-NB_dP,DB_dP = signal.bessel(N_dP, wc_dP)
+# [NB_dP,DB_dP] = besself(N_dP,wc_dP)
+NB_dP, DB_dP = signal.bessel(N_dP, wc_dP)
 
 
 # BF_dP = c2d(tf(NB_dP,DB_dP),Tstep,'zoh',wc_dP)
@@ -46,4 +46,3 @@ NB_dP,DB_dP = signal.bessel(N_dP, wc_dP)
 # p = 100 # 20
 # Gsmooth = c2d(tf(p,[1 p]),Tstep_GS,'zoh')
 # [Nsmooth,Dsmooth] = tfdata(Gsmooth,'v')
-

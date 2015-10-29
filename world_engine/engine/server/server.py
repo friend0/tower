@@ -1,30 +1,28 @@
 """
-The server module is responsible for managng the threaded UDP socket server.
-This server is used to communicate with Matlab/Simulink simulations, but can also be used in the implementation of other
-decision making algorithms.
-"""
 
-import SocketServer
-import numpy as np
-import sys
+The server module is responsible for managng the threaded UDP socket server.
+This server is used to communicate with Matlab/Simulink simulations. It will be renamed appropriately soon
+
+@todo: rename this module to indicate it's role in any Matlab connections
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
+import socketserver
 import re
 import struct
-import logging
-import requests
-import utils
-from threading import Thread
 from re import split
 from ast import literal_eval
 from threading import Timer
-from server_conf import settings
-from world.mapping.map_interface import MapInterface
 from time import strftime
-from message_passing.zmq.zmq_workers import ZMQ_Worker, ZMQ_Worker_Sub
-import Queue
-import matplotlib.pyplot as plt
-import zmq
-import pymatbridge as pymat
-from pymatbridge import Matlab
+
+import numpy as np
+import requests
+
+import utils
+from world.mapping.map_interface import MapInterface
+from world_engine.engine.server.server_conf.config import settings
 
 HOST = 'localhost'
 PORT = 2002
@@ -36,7 +34,7 @@ class CommandNotFound(Exception):
     pass
 
 
-class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
+class ThreadedUDPServer(socketserver.ThreadingMixIn, socketserver.UDPServer):
     """
     Threaded UDP server for receiving and responding to requests from client applications. We can run the server safely
     by doing:
@@ -67,12 +65,12 @@ class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
         @todo make this Python3 compatible by using superclasses. Will need to update socketServer package
         :return:
         """
-        (data, self.socket), client_addr = SocketServer.UDPServer.get_request(self)
+        (data, self.socket), client_addr = socketserver.UDPServer.get_request(self)
         logger.info("Server connected to by:{}".format(client_addr))
         return (data, self.socket), client_addr
 
 
-class UDP_Interrupt(SocketServer.BaseRequestHandler):
+class UDP_Interrupt(socketserver.BaseRequestHandler):
     """
     This class works similar to the TCP handler class, except that
     self.request consists of a pair of data and client sockets, and since
@@ -101,10 +99,9 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         data = self.request[0].strip()
         logger.info("Address {} at {} wrote: '{}'".format(self.client_address[1], self.client_address[0], data))
         cmd_strn, ret = self.command_service(data)
-        print ret
+        print(ret)
         self.command_response(cmd_strn, ret, self.request[1], self.client_address[0],
                               self.mapInterface.router[cmd_strn])
-
 
     def command_service(self, rawCommand):
         """
@@ -122,7 +119,7 @@ class UDP_Interrupt(SocketServer.BaseRequestHandler):
         logger.info("Command '{}' run with args {}".format(raw_cmd, argDict))
         return raw_cmd, ret
 
-    def command_response(self, cmd_name, returned_data, socket, client_ip, client_address):
+    def command_response(self, returned_data, socket, client_ip, client_address):
         """
         Parse raw input and execute specified function with args
 
@@ -194,116 +191,7 @@ def call_request(url=None, data=None, headers=None):
     url = 'http://httpbin.org/post'
     headers = {'content-type': 'application/json'}
     time_stamp = strftime("%Y-%m-%d %H:%M:%S")
-    data = {'flightId': 0001, 'time': time_stamp, 'latitude': 36, 'longitude': -120, 'altitude': 50, 'speed': 100,
+    data = {'flightId': 0o001, 'time': time_stamp, 'latitude': 36, 'longitude': -120, 'altitude': 50, 'speed': 100,
             'heading': 0, 'hasLanded': False, 'dataSource': "UCSC"}
     r = requests.post(url, json=data, headers=headers)
-    print r.status_code
-
-#  @todo: remove executable from server file into a workflow_manager.py file
-if __name__ == "__main__":
-
-    logger = logging.getLogger('py_map_server')
-    logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler('../../logs/spam.log')
-    fh.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-    logger.info('Creating an instance of pyMapServer...')
-    map_server = ThreadedUDPServer((HOST, PORT), UDP_Interrupt)
-    server_thread = None
-    logger.info('Instantiation succesful')
-
-    zmq_result = Queue.Queue()
-
-    # terminate with Ctrl-C
-    try:
-        """ Threaded UDP server ought to be a process"""
-        server_thread = Thread(target=map_server.serve_forever)
-        server_thread.daemon = False
-        logger.info("Threaded server loop running in: {}".format(server_thread.name))
-        print("Threaded server loop running in: {}".format(server_thread.name))
-        server_thread.start()
-
-        """ Interrupt used to update AMES every ~5s """
-        #rt = Interrupt(5, call_request, url=None, data=None, headers=None)  # it auto-starts, no need of rt.start()
-
-
-        # @todo: need to think about how to get ZMQ tasks up and running
-        context = zmq.Context()
-        zmq_worker_qgis = ZMQ_Worker_Sub(zmq_result)
-        zmq_worker_qgis.start()
-
-        logger.info("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
-        print("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
-
-        """ Instance of Matlab Engine should be  process"""
-        mlab = Matlab()          # Matlab Bridge
-        try:
-            pass
-            # mlab.start()
-        except:
-            pass
-
-        """ remove wihle loops, processes remain persistent in their own threads"""
-        while(1):
-            if not zmq_result.empty():
-                val = zmq_result.get()
-                path_info = val
-                elevations = path_info['elevation']
-                distances = path_info['distance']
-                lat_distance = path_info['latDistance']
-                lon_distance = path_info['lonDistance']
-
-                elevations = elevations[:-1]
-                distances = [elem*1000 for elem in distances]
-                lat_distance = [elem*1000 for elem in lat_distance]
-                lon_distance = [elem*1000 for elem in lon_distance]
-
-                distances = [sum(distances[:idx]) for idx, elem in enumerate(distances)]
-                lat_distance = [sum(lat_distance[:idx]) for idx, elem in enumerate(lat_distance)]
-                lon_distance = [sum(lon_distance[:idx]) for idx, elem in enumerate(lon_distance)]
-
-                print len(distances), len(elevations), len(lat_distance), len(lon_distance)
-                print distances
-                print elevations
-                print lat_distance
-                print lon_distance
-
-                """ Send to Matlab/trigger simulink """
-
-                """ Get variables into workspace"""
-                np.asarray(distances, dtype=np.float32)
-                np.asarray(elevations, dtype=np.float32)
-                np.asarray(lat_distance, dtype=np.float32)
-                np.asarray(lon_distance, dtype=np.float32)
-
-                print("Putting Control Variables Into Workspace..")
-                #mlab.set_variable('elevations', elevations)
-                #mlab.set_variable('distances', distances)
-                #mlab.set_variable('lat_distances', lat_distance)
-                #mlab.set_variable('lon_distances', lon_distance)
-                print "Done\n"
-                """ Run the simulink model, which takes the new workspace variables as inputs"""
-
-                print("Getting Variables Back From Workspace:")
-                #print 'elevations', mlab.get_variable('elevations')
-                #print 'distances', mlab.get_variable('distances')
-                #print 'lat_distances', mlab.get_variable('lat_distances')
-                #print 'lon_distances', mlab.get_variable('lon_distances')
-                # calculate polynomial
-                z = np.polyfit(distances, elevations, 3)
-                f = np.poly1d(z)
-
-                # calculate new x's and y's
-                x_new = np.linspace(distances[0], distances[-1], len(distances))
-                y_new = f(x_new)
-
-                plt.plot(distances, elevations, 'o', x_new, y_new)
-                plt.xlim([distances[0]-1, distances[-1] + 1 ])
-                plt.show()
-
-    except KeyboardInterrupt:
-        server_thread.kill()
-        map_server.shutdown()
-        sys.exit(0)
+    print(r.status_code)

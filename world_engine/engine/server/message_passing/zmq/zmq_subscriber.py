@@ -1,10 +1,11 @@
+from __future__ import print_function
+from builtins import range
 #
 #   Weather update client
 #   Connects SUB socket to tcp://localhost:5556
 #   Collects weather updates and finds avg temp in zipcode
 #
 
-import time
 import zmq
 
 #  Socket to talk to server
@@ -19,5 +20,4 @@ socket.setsockopt(zmq.SUBSCRIBE, '')
 total_temp = 0
 for update_nbr in range(5):
     string = socket.recv_string()
-    print string
-
+    print(string)

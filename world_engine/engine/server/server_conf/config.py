@@ -39,5 +39,5 @@ settings = {
     'PORT': 2002,
     'WEB_REST_API': 'http://nasaforwarding.appspot.com/nasaforwarding/default/api',
     'MAP_PORT': 5555,
-    'MODEL_PORT': 5555+256
+    'MODEL_PORT': 5555 + 256
 }

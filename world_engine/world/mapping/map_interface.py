@@ -1,9 +1,11 @@
+from __future__ import print_function
 from world.mapping.map import Map
 
 
 class AddVehicleException(Exception):
     """If vehicle has invlaid UUID (name) or does not exist
     """
+
     def __init__(self, value):
         self.value = value
 
@@ -23,12 +25,12 @@ class MapInterface(Map):
         self.commands = {'get_point_elevation': super(MapInterface, self).get_point_elevation,
                          'get_surrounding_elevation': super(MapInterface, self).get_surrounding_elevation,
                          'get_elevation_along_path': super(MapInterface, self).get_elevation_along_path_csv
-        }
+                         }
 
         self.router = {'get_point_elevation': 24995,
                        'get_surrounding_elevation': 25000,
                        'get_elevation_along_path': 25005
-        }
+                       }
 
     def add_vehicle(self, vehicle):
         """
@@ -58,9 +60,9 @@ class MapInterface(Map):
                                                                          self.initialCoordinates.y, self.north_pixels,
                                                                          self.east_pixels)
             except:
-                print "Problem initializing coordinates"
+                print("Problem initializing coordinates")
         else:
-            print "Currently initial coordinates may only be set once"
+            print("Currently initial coordinates may only be set once")
 
     def update_position(self, xCoords, yCoords, vehicleName=None):
         """
@@ -79,5 +81,3 @@ class MapInterface(Map):
         self.currentCoordinates.y = yCoords
         self.adjacentElevations = self.get_vicinity(self.currentCoordinates.x, self.currentCoordinates.y,
                                                     self.north_pixels, self.east_pixels)
-
-

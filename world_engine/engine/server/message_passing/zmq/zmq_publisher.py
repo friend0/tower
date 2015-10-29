@@ -4,9 +4,10 @@
 #   Publishes random weather updates
 #
 
-import zmq
 from random import randrange
 import time
+
+import zmq
 
 context = zmq.Context()
 socket = context.socket(zmq.PUB)

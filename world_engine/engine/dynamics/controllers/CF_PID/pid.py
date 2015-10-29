@@ -26,21 +26,26 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA  02110-1301, USA.
 
-import math
-import zmq
+from __future__ import division
+from builtins import object
+from past.utils import old_div
 import time
+
+import zmq
+
 
 class PID_V(object):
     """
     Discrete PID control
     """
 
-    def __init__(self, p=1, i=1, d=1, set_point=1, set_point_max=1, set_point_min=-1, saturate_max=None, saturate_min = None):
+    def __init__(self, p=1, i=1, d=1, set_point=1, set_point_max=1, set_point_min=-1, saturate_max=None,
+                 saturate_min=None):
         self.kp = p
         self.ki = i
         self.kd = d
-        self._Ti = self.kp / self.ki
-        self._Td = self.kd / self.kp
+        self._Ti = old_div(self.kp, self.ki)
+        self._Td = old_div(self.kd, self.kp)
 
         self.saturate_max = saturate_max
         self.saturate_min = saturate_min
@@ -68,8 +73,8 @@ class PID_V(object):
         self.prev_t = time.time()
         self.et = self.set_point - feedback
         self.ut = self.ut_1 + self.kp * (
-            (1 + self.dt / self._Ti + self._Td / self.dt) * self.et - (1 + 2 * self._Td / self.dt) * self.et_1
-            + (self._Td * self.et_2) / self.dt)
+            (1 + old_div(self.dt, self._Ti) + old_div(self._Td, self.dt)) * self.et - (1 + 2 * self._Td / self.dt) * self.et_1
+            + old_div((self._Td * self.et_2), self.dt))
         self.et_2 = self.et_1
         self.et_1 = self.et
         self.ut_1 = self.ut
@@ -109,6 +114,7 @@ class PID_V(object):
         self._Ti = self.kp / self.ki
         self._Td = self._kd / self.kp
     """
+
     @property
     def set_point(self):
         return self._set_point
@@ -140,26 +146,25 @@ class PID_V(object):
             elif self.saturate_min and ut < self.saturate_min:
                 self._ut = self.saturate_min
 
-class PID:
 
+class PID(object):
     def __init__(self, name="N/A", P=1.0, I=0.0, D=10.0, Derivator=0, Integrator=0,
                  Integrator_max=300, Integrator_min=-200, set_point=0.0,
                  power=1.0, zmq_connection=None):
         self._zmq = zmq_connection
-        self.Kp=P
-        self.Ki=I
-        self.Kd=D
-        self.Derivator=Derivator
+        self.Kp = P
+        self.Ki = I
+        self.Kd = D
+        self.Derivator = Derivator
         self.power = power
-        self.Integrator=Integrator
-        self.Integrator_max=Integrator_max
-        self.Integrator_min=Integrator_min
+        self.Integrator = Integrator
+        self.Integrator_max = Integrator_max
+        self.Integrator_min = Integrator_min
         self.last_error = 0.0
         self.last_value = 0.0
 
-        self.set_point=set_point
-        self.error=0.0
-
+        self.set_point = set_point
+        self.error = 0.0
 
         self._z_data = {
             "name": name,
@@ -172,8 +177,7 @@ class PID:
             }
         }
 
-
-    def update(self,current_value):
+    def update(self, current_value):
         """
         Calculate PID output value for given reference input and feedback
         """
@@ -192,11 +196,11 @@ class PID:
             self.I_value = (self.Integrator * self.Ki)
 
 
-        #self.D_value = self.Kd * ( self.error - self.Derivator)
+        # self.D_value = self.Kd * ( self.error - self.Derivator)
         self.D_value = self.Kd * change
         self.Derivator = self.error
 
-        self.Integrator = self.Integrator + self.error
+        self.Integrator += self.error
 
         if self.Integrator > self.Integrator_max:
             self.Integrator = self.Integrator_max
@@ -223,33 +227,33 @@ class PID:
 
         return PID
 
-    def set_point(self,set_point):
+    def set_point(self, set_point):
         """Initilize the setpoint of PID"""
         self.set_point = set_point
-        self.Integrator=0
-        self.Derivator=0
+        self.Integrator = 0
+        self.Derivator = 0
 
-class PID_RP:
 
+class PID_RP(object):
     def __init__(self, name="N/A", P=1.0, I=0.0, D=10.0, Derivator=0, Integrator=0,
                  Integrator_max=20000, Integrator_min=-20000, set_point=0.0,
                  power=1.0, zmq_connection=None):
 
         self._zmq = zmq_connection
-        self.Kp=P
-        self.Ki=I
-        self.Kd=D
+        self.Kp = P
+        self.Ki = I
+        self.Kd = D
         self.name = name
-        self.Derivator=Derivator
+        self.Derivator = Derivator
         self.power = power
-        self.Integrator=Integrator
-        self.Integrator_max=Integrator_max
-        self.Integrator_min=Integrator_min
+        self.Integrator = Integrator
+        self.Integrator_max = Integrator_max
+        self.Integrator_min = Integrator_min
         self.last_error = 0.0
         self.last_value = 0.0
 
-        self.set_point=set_point
-        self.error=0.0
+        self.set_point = set_point
+        self.error = 0.0
 
         self.prev_t = 0
 
@@ -282,11 +286,11 @@ class PID_RP:
 
         self.I_value = self.Integrator * self.Ki * dt
 
-        #self.D_value = self.Kd * ( self.error - self.Derivator)
+        # self.D_value = self.Kd * ( self.error - self.Derivator)
         self.D_value = self.Kd * change / dt
         self.Derivator = self.error
 
-        self.Integrator = self.Integrator + self.error
+        self.Integrator += self.error
 
         if self.Integrator > self.Integrator_max:
             self.Integrator = self.Integrator_max
@@ -296,7 +300,7 @@ class PID_RP:
         self.last_error = self.error
         self.last_value = current_value
 
-        #print "{}: P={}, I={}, D={}".format(self.name, self.P_value, self.I_value, self.D_value)
+        # print "{}: P={}, I={}, D={}".format(self.name, self.P_value, self.I_value, self.D_value)
 
         PID = self.P_value + self.I_value + self.D_value
 
@@ -315,11 +319,10 @@ class PID_RP:
 
         return PID
 
-    def set_point(self,set_point):
+    def set_point(self, set_point):
         """
         Initilize the setpoint of PID
         """
         self.set_point = set_point
-        self.Integrator=0
-        self.Derivator=0
-
+        self.Integrator = 0
+        self.Derivator = 0
