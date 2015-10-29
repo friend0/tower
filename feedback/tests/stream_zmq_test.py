@@ -20,7 +20,8 @@ while 1:
 
     res = euler_from_quaternion([filtered[4], filtered[5], filtered[6], filtered[3]], axes='sxzy')
     res = [elem*(180/math.pi) for elem in res]
-    print res, filtered[-1], filtered[-2]
+    print filtered[0], filtered[1], filtered[2]
+    #print res, filtered[-1], filtered[-2]
 
     """
     Rbn = np.matrix([[q[1]**2 + q[2]**2 - q[3]**2 - q[4]**2,  2*(q[2] * q[3] - q[1] * q[4]), 2*(q[1] * q[3] + q[2] * q[4])],

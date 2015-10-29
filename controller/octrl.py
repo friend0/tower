@@ -84,14 +84,14 @@ yaw_sp = 0
 r_pid = PID_RP(name="roll", P= 0, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
 p_pid = PID_RP(name="pitch", P= 10, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
 y_pid = PID_RP(name="yaw", P= 0, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
-t_pid = PID_RP(name="thrust", P=20, I=0, D=0, set_point=1.75, Integrator_max=0.01,
+t_pid = PID_RP(name="thrust", P=30, I=5*0.035, D=8*0.035, set_point=.05, Integrator_max=0.01,
                Integrator_min=-0.01/0.035, zmq_connection=pid_viz_conn)
 
 
 """ Vertical position and velocity PID loops """
-v_pid = PID_RP(name="position", P=.5, D=0.0, I=0, Integrator_max=100/0.035, Integrator_min=-100/0.035, set_point= .5,
+v_pid = PID_RP(name="position", P=.5, D=0.0, I=0.28, Integrator_max=100/0.035, Integrator_min=-100/0.035, set_point= .1,
                zmq_connection=pid_viz_conn)
-vv_pid = PID_RP(name="velocity", P=.75, D=0, I=0, Integrator_max=5/0.035, Integrator_min=-5/0.035,
+vv_pid = PID_RP(name="velocity", P=.35, D=0, I=0, Integrator_max=5/0.035, Integrator_min=-5/0.035,
                 set_point=0, zmq_connection=pid_viz_conn)
 
 
@@ -158,7 +158,6 @@ signal.signal(signal.SIGINT, signal_handler)
 """
 Ramp up CF Motors to avoid current surge
 """
-
 
 try:
     print("Spinning up motors...")
