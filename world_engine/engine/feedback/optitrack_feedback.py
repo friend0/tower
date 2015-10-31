@@ -1,0 +1,24 @@
+"""
+
+This file is used to listen to UDP packets multicast from the Motive server.
+Right now there we set up a ZMQ.REQ connection to communicate between the Windows machine running Motive,
+and the OSX machine running the controllers.
+
+With proper UDP multicasting over the network, this scipt can be made to pass feedback to controllers directly.
+
+"""
+import zmq
+from  optitrack_client import OptitrackProcessor as optitrack
+import json
+import msgpack
+
+context = zmq.Context()
+socket = context.socket(zmq.REQ)
+socket.connect('tcp://204.102.224.3:5000')
+
+processor = optitrack()
+
+while (1):
+    position, orientation = processor.recv_data(rigid_body_ids=[1])
+    socket.send(msgpack.packb(position + orientation))
+    msg_in = socket.recv()
