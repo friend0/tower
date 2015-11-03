@@ -8,13 +8,13 @@ from builtins import input
 from builtins import object
 import zmq
 
-from .engine.server.server import ThreadedUDPServer, UDP_Interrupt
-from .engine.server.server_conf.config import settings
-from engine.server.message_passing import ZmqSubWorker
-from .world.mapping import map
-from .utils import logging_thread
-from .utils.utils import Interrupt
-from .engine.server.web_services.web_update import web_post
+from world_engine.engine.server.server import ThreadedUDPServer, UDP_Interrupt
+from world_engine.engine.server.server_conf.config import settings
+from world_engine.engine.server.message_passing import ZmqSubWorker
+from world_engine.world.mapping import map
+from world_engine.utils import logging_thread
+from world_engine.utils.utils import Interrupt
+from world_engine.engine.server.web_services.web_update import web_post
 
 KILL_COMMAND = 'DEATH'
 
