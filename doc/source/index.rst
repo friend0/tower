@@ -43,7 +43,7 @@ Contents:
 ==================
 
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 2
 
     self
     world_engine
