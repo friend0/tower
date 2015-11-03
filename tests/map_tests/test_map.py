@@ -9,6 +9,8 @@ from geopy.distance import vincenty
 
 from world.mapping.map import PixelPair, Coordinate, Map
 
+from engine.server.server_conf.config import settings
+
 
 def timeit(func):
     @functools.wraps(func)
@@ -22,7 +24,6 @@ def timeit(func):
     return newfunc
 
 
-from engine.server.server_conf import settings
 
 coordinate_a = Coordinate(lat=36.974117, lon=-122.030796)
 coordinate_b = Coordinate(lat=37.411891, lon=-122.052183)

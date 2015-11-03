@@ -13,3 +13,5 @@ python:
 install: "pip install -r requirements.txt"
 
 # Figure out how to interface travis with our test suite
+
+script: python tests/map_tests/test_map.py
