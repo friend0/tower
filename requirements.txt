@@ -1,98 +1,18 @@
---allow-all-external
-
-Babel==2.0
-Beaker==1.7.0
-Cython==0.23.1
-FireWorks==1.1.3
-Flask==0.10.1
-Jinja2==2.7.3
-Mako==1.0.2
-MarkupSafe==0.23
-OWSLib==0.9.0
-Pillow==2.9.0
-PyOpenGL==3.1.0
-PyOpenGL-accelerate==3.1.0
-PySDL2==0.9.3
-PyYAML==3.11
-Pygments==2.0.2
-Quaternion==0.03.1
-Shapely==1.5.11
-Sphinx==1.3.1
-Twisted==15.4.0
-Werkzeug==0.10.4
-affine==1.2.0
-alabaster==0.7.2
-altgraph==0.12
-awscli==1.7.22
-backports.ssl-match-hostname==3.4.0.2
-bcdoc==0.13.0
-botocore==0.103.0
-certifi==2015.9.6.2
-click==4.1
-cligj==0.2.0
-colorama==0.3.3
-decorator==4.0.2
-docutils==0.12
-ecdsa==0.13
-enum34==1.0.4
-flask-paginate==0.3.2
-funcsigs==0.4
-functools32==3.2.3-2
-future==0.15.2
-geographiclib==1.44
-geopy==1.11.0
-gnureadline==6.3.3
-ipython==3.2.1
-itsdangerous==0.24
-jmespath==0.6.2
-jsonschema==2.5.1
-lxml==3.4.1
-macholib==1.7
-mistune==0.5
-mock==1.0.1
-modulegraph==0.12.1
-monty==0.6.5
-msgpack-python==0.4.6
-networkx==1.10
-nose==1.3.1
-optirx==0.3
-paramiko==1.15.2
-pbr==1.8.0
-pep8==1.6.2
-protobuf==2.6.1
-py==1.4.30
-py2app==0.9
-pyasn1==0.1.8
-pycrypto==2.6.1
-pymatbridge==0.5.2
-pymongo==3.0.3
-pyobjc-core==3.0.1
-pyobjc-framework-Cocoa==3.0.1
-pyparsing==2.0.3
-pypid==0.4
-pyqtgraph==0.9.10
-pyserial==2.7
-pyshp==1.2.1
-pytest==2.8.0
-python-dateutil==2.4.2
-pytz==2015.4
-pyusbg2==2.0.0-a1
-pyzmq==14.7.0
-rasterio==0.25.0
-requests==2.7.0
-roman==2.0.0
-rsa==3.1.4
-scapy==2.3.1
-scipy==0.16.0
-simplejson==3.8.0
-six==1.9.0
-snowballstemmer==1.2.0
-snuggs==1.3.1
-sphinx-rtd-theme==0.1.7
-tornado==4.2.1
-virtualenv==13.0.3
-wsgiref==0.1.2
-zope.interface==4.1.2
+future == 0.15.2
+geographiclib == 1.44
+geopy == 1.11.0
+mock == 1.0.1
+optirx == 0.3
+future == 0.15.2
+pytest == 2.8.0
+rasterio == 0.25.0
+requests == 2.7.0
+scipy == 0.16.0
+simplejson == 3.8.0
+Quaternion == 0.03.1
+msgpack_python == 0.4.6
+pynmea == 0.6.0
+pyzmq == 14.7.0
 
 
 # Need to install these by hand!
