@@ -10,7 +10,7 @@ backports.ssl-match-hostname==3.4.0.2
 bcdoc==0.13.0
 Beaker==1.7.0
 botocore==0.103.0
-Cartopy===0.12.x
+--allow-unverified Cartopy===0.12.x
 certifi==2015.9.6.2
 click==4.1
 cligj==0.2.0
