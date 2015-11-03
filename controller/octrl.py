@@ -81,17 +81,17 @@ ctrl_conn.connect("tcp://127.0.0.1:5124")
 yaw_sp = 0
 
 """ Roll, Pitch and Yaw PID controllers """
-r_pid = PID_RP(name="roll", P= 0, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
-p_pid = PID_RP(name="pitch", P= 10, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
-y_pid = PID_RP(name="yaw", P= 0, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
-t_pid = PID_RP(name="thrust", P=30, I=5*0.035, D=8*0.035, set_point=.05, Integrator_max=0.01,
+r_pid = PID_RP(name="roll", P=25, I=0.28, D=7, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
+p_pid = PID_RP(name="pitch", P=25, I=0.28, D=7, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
+y_pid = PID_RP(name="yaw", P=5, I=0, D=0.35, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
+t_pid = PID_RP(name="thrust", P=10, I=5*0.035, D=8*0.035, set_point=.150, Integrator_max=0.01,
                Integrator_min=-0.01/0.035, zmq_connection=pid_viz_conn)
 
 
 """ Vertical position and velocity PID loops """
-v_pid = PID_RP(name="position", P=.5, D=0.0, I=0.28, Integrator_max=100/0.035, Integrator_min=-100/0.035, set_point= .1,
+v_pid = PID_RP(name="position", P=.5, D=0.0, I=0.28, Integrator_max=100/0.035, Integrator_min=-100/0.035, set_point= .150,
                zmq_connection=pid_viz_conn)
-vv_pid = PID_RP(name="velocity", P=.35, D=0, I=0, Integrator_max=5/0.035, Integrator_min=-5/0.035,
+vv_pid = PID_RP(name="velocity", P=0.35, D=0.00315, I=0.28, Integrator_max=5/0.035, Integrator_min=-5/0.035,
                 set_point=0, zmq_connection=pid_viz_conn)
 
 
@@ -111,8 +111,11 @@ dt = 0
 midi_acc = 0
 
 last_detect_ts = 0
-detect_threas_ms = 1
 on_detect_counter = 0
+max_step = 11   # ms
+min_step = 5    # ms
+ctrl_time = 0
+detect_ts = 0
 
 rp_p = r_pid.Kp
 rp_i = r_pid.Ki
@@ -174,12 +177,33 @@ except:
 print("Motor spin-up complete")
 client_conn.send_json(cmd)
 
+
+def quat2euler(q):
+    """
+
+    Function for returning a set of Euler angles from a given quaternion. Uses a fixed rotation sequence.
+
+    :param q:
+    :return:
+
+    """
+    qx, qy, qz, qw = q
+    sqx, sqy, sqz, sqw = q ** 2
+    invs = 1.0 / (sqx + sqy + sqz + sqw)
+
+    yaw = np.arctan2(2.0 * (qx * qz + qy * qw) * invs, (sqx - sqy - sqz + sqw) * invs)
+    pitch = -np.arcsin(2.0 * (qx * qy - qz * qw) * invs)
+    roll = np.arctan2(2.0 * (qy * qz + qx * qw) * invs, (-sqx + sqy - sqz + sqw) * invs)
+
+    return np.array((yaw, pitch, roll))
+
 while True:
 
     try:
+
         packet = optitrack_conn.recv()
         unpackd = msgpack.unpackb(packet)
-        optitrack_conn.send(b'Ack', zmq.NOBLOCK)
+        optitrack_conn.send(b'Ack')
 
         # Position Feedback given in meters
         # Forward is + pitch, Right is + roll
@@ -193,23 +217,19 @@ while True:
         z = unpackd[2]
 
         # Swap Z and Y axes since Y axis is 'up' w/ Optitrack
-        y, z = z, y
+        y, z = -z, y
 
         # Orientation Feedback: quaternion given as (qx, qy, qz, qw)
         qx, qy, qz, qw = unpackd[3], unpackd[4], unpackd[5], unpackd[6]
         q = np.array([qx, qy, qz, qw])
         np.linalg.norm(q)
-        print(q)
+        #print(q)
         #print("X:{}, Y:{}, Z:{}".format(x, y, z))
-        #orientation = euler_from_quaternion([unpackd[3], unpackd[4], unpackd[5], unpackd[6]], axes='sxzy')
-        orientation = euler_from_quaternion(q, axes='syzx')
+        orientation = euler_from_quaternion(q, axes='syxz')
         orientation = [elem*(180/math.pi) for elem in orientation]
-        print(orientation)
 
-
-        # Are these correct?
-        roll = orientation[0]
-        yaw = orientation[1]
+        yaw = orientation[0]
+        roll = orientation[1]
         pitch = orientation[2]
 
 
@@ -218,8 +238,10 @@ while True:
         """
         detected = unpackd[-1]
         if detected:
-            last_detect_ts = time.time()
+            detect_ts = int(round(time.time() * 1000))
             delta = unpackd[-2]
+        else:
+            print("Not Tracking!!")
 
 
         # Get the set-points (if there are any)
@@ -236,8 +258,19 @@ while True:
         #print "RP P/I/D={}/{}/{}".format(rp_p, rp_i, rp_d)
         x_r = (x/f_x) * z
         y_r = (y/f_y) * z
-        if time.time() - last_detect_ts < detect_threas_ms:
-            if on_detect_counter >= 5:
+
+        """
+        Run the controller if we are getting a frame rate better than 100fps. Do not run if we are running faster than
+        ~130 fps
+        """
+        step = detect_ts - last_detect_ts
+        if (max_step > step > min_step) and detected:
+            """
+            check to see if we have been tracking the vehicle for more than 5 frames, e.g. if we are just starting or
+            if we've lost tracking and are regaining it.
+            """
+            if on_detect_counter >= 0:
+                ctrl_time = int(round(time.time() * 1000))
                 print "IN  : x={:4.2f}, y={:4.2f}, z={:4.2f}, yaw={:4.2f}".format(x, y, z, yaw)
                 print "CORR: x={:5.4f}, y={:5.4f}, z={:5.4f}".format(x_r, y_r, z)
 
@@ -308,6 +341,7 @@ while True:
             on_detect_counter = 0
 
         client_conn.send_json(cmd)
+        last_detect_ts = detect_ts
 
     except simplejson.scanner.JSONDecodeError as e:
         print e

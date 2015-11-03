@@ -5,6 +5,7 @@ import numpy as np
 import math
 from collections import namedtuple
 from feedback.transformations import euler_from_quaternion
+import time
 
 context = zmq.Context()
 optitrack_conn = context.socket(zmq.REP)
@@ -18,9 +19,11 @@ while 1:
 
     EulerAngles = namedtuple('EulerAngles', 'pitch roll yaw')
 
-    res = euler_from_quaternion([filtered[4], filtered[5], filtered[6], filtered[3]], axes='sxzy')
+    res = euler_from_quaternion([filtered[3], filtered[4], filtered[5], filtered[6]], axes='syxz')
     res = [elem*(180/math.pi) for elem in res]
-    print filtered[0], filtered[1], filtered[2]
+    print filtered[0], filtered[1], filtered[2], res
+    #time.sleep(.5)
+
     #print res, filtered[-1], filtered[-2]
 
     """
