@@ -8,7 +8,7 @@ With proper UDP multicasting over the network, this scipt can be made to pass fe
 
 """
 import zmq
-from  optitrack_client import OptitrackProcessor as optitrack
+from optitrack_client import OptitrackProcessor as optitrack
 import json
 import msgpack
 
@@ -19,6 +19,7 @@ socket.connect('tcp://204.102.224.3:5000')
 processor = optitrack()
 
 while (1):
+    # todo: need to fix multicast and get this running directly instead of being forwarded from Windows
     position, orientation = processor.recv_data(rigid_body_ids=[1])
-    socket.send(msgpack.packb(position + orientation))
-    msg_in = socket.recv()
+    socket.send(msgpack.packb(position + orientation))  # Used to comm optitrack fdbk from second computer
+    msg_in = socket.recv()  # Ack packet recv

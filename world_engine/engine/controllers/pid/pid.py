@@ -1,42 +1,21 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-#     ||          ____  _ __
-#  +------+      / __ )(_) /_______________ _____  ___
-#  | 0xBC |     / __  / / __/ ___/ ___/ __ `/_  / / _ \
-#  +------+    / /_/ / / /_/ /__/ /  / /_/ / / /_/  __/
-#   ||  ||    /_____/_/\__/\___/_/   \__,_/ /___/\___/
-#
-#  Copyright (C) 2013 Bitcraze AB
-#
-#  Crazyflie Nano Quadcopter Client
-#
-#  This program is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either version 2
-#  of the License, or (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
+"""
 
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#  MA  02110-1301, USA.
+Pure Python discrete time PID controllers
 
+"""
 from __future__ import division
-from builtins import object
-from past.utils import old_div
 import time
 
+from builtins import object
+from past.utils import old_div
 import zmq
 
 
 class PID_V(object):
     """
-    Discrete PID control
+
+    Discrete PID control: the so-called `velocity` controller
+
     """
 
     def __init__(self, p=1, i=1, d=1, set_point=1, set_point_max=1, set_point_min=-1, saturate_max=None,
@@ -73,8 +52,8 @@ class PID_V(object):
         self.prev_t = time.time()
         self.et = self.set_point - feedback
         self.ut = self.ut_1 + self.kp * (
-            (1 + old_div(self.dt, self._Ti) + old_div(self._Td, self.dt)) * self.et - (1 + 2 * self._Td / self.dt) * self.et_1
-            + old_div((self._Td * self.et_2), self.dt))
+            (1 + old_div(self.dt, self._Ti) + old_div(self._Td, self.dt)) * self.et - (1 + 2 * self._Td / self.dt)
+            * self.et_1 + old_div((self._Td * self.et_2), self.dt))
         self.et_2 = self.et_1
         self.et_1 = self.et
         self.ut_1 = self.ut

@@ -22,7 +22,7 @@ from geographiclib.geodesic import Geodesic
 from numpy import NaN, math
 from osgeo import gdal, osr
 from utils.utils import pairwise, grouper
-from engine.server.message_passing.zmq.zmq_workers import ZmqSubWorker
+from engine.server.message_passing import ZmqSubWorker
 
 Coordinate = namedtuple("Coordinate", ['lat', 'lon'], verbose=False)
 PixelPair = namedtuple("PixelPair", ['x', 'y'], verbose=False)
@@ -839,7 +839,7 @@ class MapProcess(Map, multiprocessing.Process):
 
         """ Start ZMQ processes here"""
         """
-         @todo: eventually, we want to find a way where we can have n zmq processes and k map processes and each map
+         @todo: eventually, we want to find a way where we can have n zmq_messaging processes and k map processes and each map
          process listens for API calls with coordinates
         """
 

@@ -4,38 +4,13 @@ import multiprocessing
 import zmq
 import msgpack
 
-"""
-def worker_routine(worker_ip='tcp://127.0.0.1:{}', worker_port=5555, context=None):
-    # Worker routine
-    context = context or zmq.Context.instance()
-    # Socket to talk to dispatcher
-    socket = context.socket(zmq.REP)
-    if worker_ip is None:
-        worker_ip = 'tcp://127.0.0.1:{}'
-    socket.bind(worker_ip.format(worker_port))
-    map = MapInterface(settings['FILE_CONFIG']['filename'])
-    while True:
-        msg = socket.recv()
-        lat_lon_array = msgpack.unpackb(msg)
-        #print "Got", lat_lon_array
-        #for lat, lon in grouper(lat_lon_array, 2):
-        #    print lat, lon
-        #coordinate_pairs = [Coordinate(lat=lat, lon=lon) for lon, lat in
-        #                           grouper(lat_lon_array, 2)]
-        #print coordinate_pairs
-        #path_info = map.get_elevation_along_path(coordinate_pairs)
-
-        #print len(x), len(y)
-
-
-        # do some 'work'
-        time.sleep(1)
-        #send reply back to client
-        socket.send(b"Ack")
-"""
-
 
 class ZMQ_Worker(threading.Thread):
+    """
+
+    A ZMQ worker base class
+
+    """
     def __init__(self, q):
         self.q = q
         # self.map = MapInterface(settings['FILE_CONFIG']['filename'])

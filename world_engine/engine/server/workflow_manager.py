@@ -12,7 +12,7 @@ import numpy as np
 
 from .server import ThreadedUDPServer, UDP_Interrupt
 from .server_conf import settings
-from .message_passing.zmq.zmq_workers import ZmqSubWorker
+from engine.server.message_passing import ZmqSubWorker
 from mapping import map_interface, map
 from utils import logging_thread
 from utils.utils import Interrupt, web_post

@@ -40,7 +40,7 @@ Motivating Examples
     None
 
 Contents:
-
+===========
 .. toctree::
     :maxdepth: 2
 

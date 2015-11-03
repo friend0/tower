@@ -2,16 +2,15 @@
 
 """
 from __future__ import print_function
-from builtins import input
-from builtins import object
-from __future__ import (absolute_import, division, print_function, unicode_literals)
 from multiprocessing import Process, Queue
 
+from builtins import input
+from builtins import object
 import zmq
 
 from .engine.server.server import ThreadedUDPServer, UDP_Interrupt
 from .engine.server.server_conf.config import settings
-from .engine.server.message_passing.zmq.zmq_workers import ZmqSubWorker
+from engine.server.message_passing import ZmqSubWorker
 from .world.mapping import map
 from .utils import logging_thread
 from .utils.utils import Interrupt
