@@ -34,7 +34,6 @@ lxml==3.4.1
 macholib==1.7
 Mako==1.0.2
 MarkupSafe==0.23
-matlabengineforpython===R2015a
 matplotlib==1.4.3
 mistune==0.5
 mock==1.0.1
@@ -106,5 +105,6 @@ virtualenv==13.0.3
 Werkzeug==0.10.4
 zope.interface==4.1.2
 
-# Need to install this by hand!
+# Need to install these by hand!
 # GDAL==2.0.0
+# matlabengineforpython===R2015a
