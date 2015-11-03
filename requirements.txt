@@ -4,7 +4,7 @@ alabaster==0.7.2
 altgraph==0.12
 awscli==1.7.22
 Babel==2.0
-backports==1.0
+backports==1.0 --allow-unverified
 backports.ssl-match-hostname==3.4.0.2
 bcdoc==0.13.0
 Beaker==1.7.0
