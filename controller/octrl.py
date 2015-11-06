@@ -232,77 +232,143 @@ b, a = butter_lowpass(cutoff, fs, order=order)
 
 buffer, frame = np.array([0, 0, 0, 0, 0, 0]), np.array(None)
 
-
 class Frame(object):
 
-    def __init__(self, frame_data=None):
-        self.data = frame_data
+    def __init__(self, value=None):
+        self.frame_data = np.array(value)
         self.time_stamp = time.time()
 
     @property
-    def data(self):
-        return self.data
+    def frame_data(self):
+        if self.frame_data is not None:
+            return self.data
+        else: return None
 
-    @data.setter
-    def data(self, value):
+    @frame_data.setter
+    def frame_data(self, value):
         self._data = np.array(value)
         self.time_stamp = time.time()
 
-ll_frame, l_frame, frame = Frame(), Frame(), Frame()
+    @property
+    def detected(self):
+        if self.frame_data is not None:
+            return self.frame_data[-1]
+        else: return None
 
+    @property
+    def state(self):
+        if self.frame_data is not None:
+            return self.frame_data[:5]
+        else: return None
+
+class FrameHistory(object):
+
+    def __init__(self, extrapolation_max = 5):
+        self.extrapolation_max = extrapolation_max
+        self.smooth_operator = np.array([0, 0, 0, 0, 0, 0])  # no need to ask...
+        self.current_frame  = None
+        self.l_frame = None
+        self.ll_frame = None
+        self.filtered_frame = None
+        self.extrapolation_count = 0
+        self.prev_time = time.time()
+
+    @property
+    def filtered_frame(self):
+        if self.filtered_frame is not None:
+            return self.filtered_frame
+        else: return None
+
+    @filtered_frame.setter
+    def filtered_frame(self, value):
+        self.ll_frame = self.l_frame
+        self.l_frame = self.__filtered_frame
+        self.__filtered_frame = value
+
+
+
+    def decode_packet(self, packet):
+        detected = packet[-1]
+        delta = packet[-2]
+        x, y, z = packet[0], packet[1], packet[2]
+        y, z = -z, y
+        q = np.linalg.norm(np.array([packet[3], packet[4], packet[5], packet[6]]))  # (qx, qy, qz, qw)
+        # print("X:{}, Y:{}, Z:{}".format(x, y, z))
+        orientation = [elem * (180 / math.pi) for elem in euler_from_quaternion(q, axes='syxz')]
+        yaw, roll, pitch = orientation[0], orientation[1], orientation[2]
+        return [x, y, z, yaw, roll, pitch, detected]
+
+    def can_extrapolate(self):
+        # we can extrapolate position if we at least have two previous, consecutive data points.
+        # if we've extrapolated for more then 4 or 5 frames, we should not continue to extrapolate
+
+        if self.l_frame is not None and self.ll_frame is not None and self.extrapolation_count < self.extrapolation_max:
+            return True
+        else: return False
+
+    def extrapolate(self):
+        if self.can_extrapolate:
+            self.extrapolation_count += 1
+            dt = time.time() - self.prev_time # current time - last time we added a state to smooth operator
+            frame_velocity = (self.l_frame - self.ll_frame)/(self.l_frame.time_stamp - self. ll_frame.time_stamp)
+            state = self.l_frame.state + frame_velocity*dt
+            return state
+        else:
+            self.extrapolation_count = 0
+            return None
+
+
+    def update(self, packet):
+        # Check if body is being tracked by cameras
+        self.current_frame = Frame(self.decode_packet(packet))
+
+        if self.current_frame.detected:  # Unpack position, orientation add it to current frame, update frame history
+            state = self.current_frame.state
+            self.extrapolation_count = 0
+        else:  # extrapolate
+            state = self.extrapolate()
+
+        if state is not None:  # not None if frame is valid, or we could extrapolate
+            self.smooth_operator = np.vstack(self.smooth_operator, state)
+            self.prev_time = time.time()
+
+            if self.smooth_operator.shape[0] > 5:
+                self.smooth_operator = np.delete(self.smooth_operator, 0, 0)
+                # Filter
+                filtered_frame = []
+                for column in range(len(self.current_frame.state)):
+                    filt = butter_lowpass(b, a, self.smooth_operator[:, column], cutoff, fs, order)
+                    filtered_frame.append(filt)
+
+                self.filtered_frame = Frame(filtered_frame + self.current_frame.frame_data[-1])
+
+                return self.filtered_frame  # indicate success in updating
+
+        return None  # id frame was not valid, and we cannot extrapolate
+
+
+
+
+
+
+
+
+
+frame_history = FrameHistory()
+wind_up_motors() # Prime Motors with a ramp up period
+# Start gathering feedback, running controller
+x, y, z, yaw, roll, pitch = 0, 0, 0, 0, 0, 0
 while True:
 
     try:
         # Receive Packet over ZMQ, unpack it
         packet = optitrack_conn.recv()
-        unpackd = msgpack.unpackb(packet)
+        frame_data = msgpack.unpackb(packet)
         optitrack_conn.send(b'Ack')
+        if frame_history.update(frame_data) is None:
+            continue
 
-        # Check if body is being tracked by cameras
-        detected = unpackd[-1]
-        if detected:  # Unpack position, orientation
-            delta = unpackd[-2]
-            x, y, z = unpackd[0], unpackd[1], unpackd[2]
-            y, z = -z, y
-            q = np.linalg.norm(np.array([unpackd[3], unpackd[4], unpackd[5], unpackd[6]]))  # (qx, qy, qz, qw)
-            # print("X:{}, Y:{}, Z:{}".format(x, y, z))
-            orientation = [elem * (180 / math.pi) for elem in euler_from_quaternion(q, axes='syxz')]
-            yaw, roll, pitch = orientation[0], orientation[1], orientation[2]
-            ll_frame = l_frame
-            l_frame = frame
-            frame.data = [x, y, z, yaw, roll, pitch]
-
-
-        else:  # extrapolate
-            # determine if we can extrapolate
-            # do we have valid l_frame and ll_frame + not exceeding max extrapolation?
-            if l_frame is not None and ll_frame is not None:
-                ll_frame = l_frame
-                frame = l_frame
-            if l_frame is not None and ll_frame is not None:
-                dt = time.time() - prev_time
-                frame_velocity = (l_frame - ll_frame)/(l_frame.time_stamp - ll_frame.time_stamp)  # must divide by time step to give m/s or deg/s, but we want m, deg
-                ll_frame = l_frame
-                l_frame = frame
-                frame = l_frame + frame_velocity*dt
-            print("Not Tracking!!")
-
-        prev_time = time.time()
-
-        buffer = np.vstack(buffer, frame)
-
-        if buffer.shape[0] >= 5:
-            buffer = np.delete(buffer, 0, 0)
-
-            # Filter
-            filt_frame = []
-            for column in range(buffer.shape[1]):
-                filt = butter_lowpass(b, a, buffer[:, column], cutoff, fs, order)
-                filt_frame.append(filt)
-            # Save as current frame for extrapolation and PIDs
-            frame = filt_frame
-            x, y, z, yaw, roll, pitch = frame[0], frame[1], frame[2], frame[3], frame[4], frame[5]
-
+        [x, y, z, yaw, roll, pitch] = frame_history.filtered_frame.state
         # Get the set-points (if there are any)
         try:
             while True:
