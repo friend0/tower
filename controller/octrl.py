@@ -29,7 +29,7 @@ from pid import PID, PID_V, PID_RP
 import simplejson
 import numpy as np
 from feedback.transformations import euler_from_quaternion
-from scipy import signal
+from scipy import signal as sgnl
 
 
 # Roll/pitch limit
@@ -85,20 +85,18 @@ ctrl_conn.connect("tcp://127.0.0.1:5124")
 yaw_sp = 0
 
 """ Roll, Pitch and Yaw PID controllers """
-r_pid = PID_RP(name="roll", P=0, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0,
+r_pid = PID_RP(name="roll", P=25, I=0.28, D=7, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
+p_pid = PID_RP(name="pitch", P=25, I=0.28, D=7, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
+y_pid = PID_RP(name="yaw", P=10, I= 0, D= 0.35, Integrator_max=5, Integrator_min=-5, set_point=0,
                zmq_connection=pid_viz_conn)
-p_pid = PID_RP(name="pitch", P=100, I=0, D=0, Integrator_max=5, Integrator_min=-5, set_point=0,
-               zmq_connection=pid_viz_conn)
-y_pid = PID_RP(name="yaw", P=5, I=0, D=0.35, Integrator_max=5, Integrator_min=-5, set_point=0,
-               zmq_connection=pid_viz_conn)
-t_pid = PID_RP(name="thrust", P=20, I=5 * 0.035, D=8 * 0.035, set_point=.150, Integrator_max=0.01,
+t_pid = PID_RP(name="thrust", P=20, I=5 * 0.035, D=8 * 0.035, set_point=1.6, Integrator_max=0.01,
                Integrator_min=-0.01 / 0.035, zmq_connection=pid_viz_conn)
 
 """ Vertical position and velocity PID loops """
-v_pid = PID_RP(name="position", P=.5, D=0.0, I=0.28, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
-               set_point=.150,
+v_pid = PID_RP(name="position", P=0.5, D=0.0, I=0.28, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
+               set_point=.5,
                zmq_connection=pid_viz_conn)
-vv_pid = PID_RP(name="velocity", P=0.35, D=0.00315, I=0.28, Integrator_max=5 / 0.035, Integrator_min=-5 / 0.035,
+vv_pid = PID_RP(name="velocity", P=0.1, D=0.00315, I=0.28, Integrator_max=5 / 0.035, Integrator_min=-5 / 0.035,
                 set_point=0, zmq_connection=pid_viz_conn)
 
 f_x = 1000.0
@@ -115,7 +113,7 @@ dt = 0
 
 midi_acc = 0
 
-last_ts = 0
+last_ts = time.time()
 on_detect_counter = 0
 max_step = 11  # ms
 min_step = 5  # ms
@@ -208,20 +206,16 @@ def quat2euler(q):
 
 current_frame = None
 
-
-b, a = signal.butter(4, 100, 'low', analog=True)
-w, h = signal.freqs(b, a)
-
-
-def butter_lowpass(cutoff, fs, order=5):
+def butter_lowpass(cutoff, fs, order=4):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
-    b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
+    b, a = sgnl.butter(order, normal_cutoff, btype='low', analog=False)
     return b, a
 
+b, a = butter_lowpass(20, 240)
 
-def butter_lowpass_filter(b, a, data, cutoff, fs, order=5):
-    y = signal.lfilter(b, a, data)
+def butter_lowpass_filter(b, a, data):
+    y = sgnl.lfilter(b, a, data)
     return y
 
 
@@ -230,36 +224,38 @@ fs = 120
 order = 4
 b, a = butter_lowpass(cutoff, fs, order=order)
 
-buffer, frame = np.array([0, 0, 0, 0, 0, 0]), np.array(None)
-
 class Frame(object):
 
     def __init__(self, value=None):
-        self.frame_data = np.array(value)
+        self._frame_data = np.array(value)
         self.time_stamp = time.time()
 
     @property
     def frame_data(self):
-        if self.frame_data is not None:
-            return self.data
-        else: return None
+        if self._frame_data is not None:
+            return self._frame_data
+        else:
+            return None
 
     @frame_data.setter
     def frame_data(self, value):
-        self._data = np.array(value)
+        self._frame_data = np.array(value)
         self.time_stamp = time.time()
 
     @property
     def detected(self):
-        if self.frame_data is not None:
-            return self.frame_data[-1]
-        else: return None
+        if self._frame_data is not None:
+            return self._frame_data[-1]
+        else:
+            return None
 
     @property
     def state(self):
-        if self.frame_data is not None:
-            return self.frame_data[:5]
-        else: return None
+        if self._frame_data is not None:
+            return self._frame_data[:6]
+        else:
+            return None
+
 
 class FrameHistory(object):
 
@@ -269,30 +265,18 @@ class FrameHistory(object):
         self.current_frame  = None
         self.l_frame = None
         self.ll_frame = None
-        self.filtered_frame = None
+        self.filtered_frame = 0
         self.extrapolation_count = 0
         self.prev_time = time.time()
-
-    @property
-    def filtered_frame(self):
-        if self.filtered_frame is not None:
-            return self.filtered_frame
-        else: return None
-
-    @filtered_frame.setter
-    def filtered_frame(self, value):
-        self.ll_frame = self.l_frame
-        self.l_frame = self.__filtered_frame
-        self.__filtered_frame = value
-
 
 
     def decode_packet(self, packet):
         detected = packet[-1]
         delta = packet[-2]
         x, y, z = packet[0], packet[1], packet[2]
-        y, z = -z, y
-        q = np.linalg.norm(np.array([packet[3], packet[4], packet[5], packet[6]]))  # (qx, qy, qz, qw)
+        x, y, z = -x, z, y
+        q = np.array([packet[3], packet[4], packet[5], packet[6]])
+        #np.linalg.norm(q)  # (qx, qy, qz, qw)
         # print("X:{}, Y:{}, Z:{}".format(x, y, z))
         orientation = [elem * (180 / math.pi) for elem in euler_from_quaternion(q, axes='syxz')]
         yaw, roll, pitch = orientation[0], orientation[1], orientation[2]
@@ -304,7 +288,8 @@ class FrameHistory(object):
 
         if self.l_frame is not None and self.ll_frame is not None and self.extrapolation_count < self.extrapolation_max:
             return True
-        else: return False
+        else:
+            return False
 
     def extrapolate(self):
         if self.can_extrapolate:
@@ -329,35 +314,32 @@ class FrameHistory(object):
             state = self.extrapolate()
 
         if state is not None:  # not None if frame is valid, or we could extrapolate
-            self.smooth_operator = np.vstack(self.smooth_operator, state)
+            self.smooth_operator = np.vstack((self.smooth_operator, state))
             self.prev_time = time.time()
 
-            if self.smooth_operator.shape[0] > 5:
+            if self.smooth_operator.shape[0] > 100:
                 self.smooth_operator = np.delete(self.smooth_operator, 0, 0)
                 # Filter
-                filtered_frame = []
-                for column in range(len(self.current_frame.state)):
-                    filt = butter_lowpass(b, a, self.smooth_operator[:, column], cutoff, fs, order)
-                    filtered_frame.append(filt)
+                filtered = []
+                for column in range(len(self.current_frame.state + 1)):
+                    #print column, self.smooth_operator[:, column]
+                    filt = butter_lowpass_filter(b, a, self.smooth_operator[:, column])
+                    #print("Filt: ", filt)
+                    print("Last", filt[-1])
+                    filtered.append(filt[-1])
 
-                self.filtered_frame = Frame(filtered_frame + self.current_frame.frame_data[-1])
-
+                self.ll_frame = self.l_frame
+                self.l_frame = self.filtered_frame
+                self.filtered_frame = Frame(filtered)
+                print self.filtered_frame.frame_data
                 return self.filtered_frame  # indicate success in updating
 
         return None  # id frame was not valid, and we cannot extrapolate
 
-
-
-
-
-
-
-
-
 frame_history = FrameHistory()
-wind_up_motors() # Prime Motors with a ramp up period
 # Start gathering feedback, running controller
 x, y, z, yaw, roll, pitch = 0, 0, 0, 0, 0, 0
+motors_not_wound = True
 while True:
 
     try:
@@ -366,9 +348,17 @@ while True:
         frame_data = msgpack.unpackb(packet)
         optitrack_conn.send(b'Ack')
         if frame_history.update(frame_data) is None:
+            print("Cont")
             continue
 
-        [x, y, z, yaw, roll, pitch] = frame_history.filtered_frame.state
+        if motors_not_wound:
+            motors_not_wound = False
+            wind_up_motors()  # Prime Motors with a ramp up period
+
+        state = frame_history.filtered_frame.state
+        print("State: ", state)
+        x, y, z, angle, roll, pitch = state[0], state[1], state[2], state[3], state[4], state[5]
+        print x, y, z, angle, roll, pitch
         # Get the set-points (if there are any)
         try:
             while True:
@@ -380,17 +370,15 @@ while True:
         except zmq.error.Again:
             pass
 
-        # print "RP P/I/D={}/{}/{}".format(rp_p, rp_i, rp_d)
-        x_r = (x / f_x) * z
-        y_r = (y / f_y) * z
 
         """
         Run the controller if we are getting a frame rate better than 100fps. Do not run if we are running faster than
         ~150 fps
         """
-        step = ts - last_ts
+        step = time.time() - last_ts
+        print(step)
         #if (max_step > step > min_step) and detected:
-        if (max_step > step > min_step):
+        if (.009 >= step >= .007):
 
             """
             check to see if we have been tracking the vehicle for more than 5 frames, e.g. if we are just starting or
@@ -398,23 +386,21 @@ while True:
             """
             if on_detect_counter >= 0:
                 ctrl_time = int(round(time.time() * 1000))
-                print "IN  : x={:4.2f}, y={:4.2f}, z={:4.2f}, yaw={:4.2f}".format(x, y, z, yaw)
-                print "CORR: x={:5.4f}, y={:5.4f}, z={:5.4f}".format(x_r, y_r, z)
+                print "IN  : x={:4.2f}, y={:4.2f}, z={:4.2f}, yaw={:4.2f}".format(x, y, z, angle)
 
                 safety = 10
-                roll = 0.0  # r_pid.update(x)
+                roll = r_pid.update(x)
                 pitch = p_pid.update(y)
-                t_pid.update(z)
-                y_pid.update(((yaw - yaw_sp + 360 + 180) % 360) - 180)
+                thrust = t_pid.update(z)
+                # angle is the yaw, yaw_sp is set to a constant zero (we can change if we like)
+                yaw = y_pid.update(((angle - yaw_sp + 360 + 180) % 360) - 180)
 
                 roll_sp = roll
                 pitch_sp = pitch
                 yaw_out = yaw
-                # thrust_sp = thrust+0.73
 
                 velocity = v_pid.update(z)
                 velocity = max(min(velocity, 10), -10)  # Limit vertical velocity between -1 and 1 m/sec
-                # velocity = midi_acc
                 vv_pid.set_point = velocity
                 dt = (time.time() - prev_t)
                 curr_velocity = (z - prev_z) / dt
@@ -428,7 +414,7 @@ while True:
                 prev_vz = curr_velocity
                 prev_t = time.time()
                 """ Thrust was being generated as a decimal value instead of as percent in other examples """
-                thrust_sp = 100 * max(min(thrust_sp, .90), 0.40)
+                thrust_sp = max(min(thrust_sp, 1), 0.40)
 
                 # thrust_sp = max(min(thrust_sp, 0.90), 0.40)
 
@@ -437,8 +423,8 @@ while True:
                 if yaw_out > YAW_CAP:
                     yaw_out = YAW_CAP
 
-                pitch_corr = pitch_sp * math.cos(math.radians(-yaw)) - roll_sp * math.sin(math.radians(-yaw))
-                roll_corr = pitch_sp * math.sin(math.radians(-yaw)) + roll_sp * math.cos(math.radians(-yaw))
+                pitch_corr = pitch_sp * math.cos(math.radians(-angle)) - roll_sp * math.sin(math.radians(-angle))
+                roll_corr = pitch_sp * math.sin(math.radians(-angle)) + roll_sp * math.cos(math.radians(-angle))
 
                 print "OUT: roll={:2.2f}, pitch={:2.2f}, thrust={:5.2f}, dt={:0.3f}, fps={:2.1f}".format(roll_corr,
                                                                                                          pitch_corr,
@@ -448,9 +434,9 @@ while True:
                                                                                                          dt, 1 / dt,
                                                                                                          curr_velocity)
                 # print "dt={:0.3f}, fps={:2.1f}".format(dt, 1/dt)
-                cmd["ctrl"]["roll"] = roll_corr / 30.0
-                cmd["ctrl"]["pitch"] = pitch_corr / 30.0
-                cmd["ctrl"]["thrust"] = thrust_sp
+                cmd["ctrl"]["roll"] = roll_corr
+                cmd["ctrl"]["pitch"] = pitch_corr
+                cmd["ctrl"]["thrust"] = thrust_sp * 100
                 cmd["ctrl"]["yaw"] = yaw_out
             else:
                 on_detect_counter += 1
@@ -473,7 +459,7 @@ while True:
             on_detect_counter = 0
 
         client_conn.send_json(cmd)
-        last_ts = ts
+        last_ts = time.time()
 
     except simplejson.scanner.JSONDecodeError as e:
         print e
