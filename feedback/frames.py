@@ -152,7 +152,7 @@ class FrameHistory(object):
                 # Filter
                 for column in range(len(self.current_frame.state + 1)):
                     filt = butter_lowpass_filter(self._b, self._a, self.smooth_operator[:, column])
-                    print("Last", filt[-1])
+                    #print("Last", filt[-1])
                     filtered.append(filt[-1])
                 return filtered
         return None
