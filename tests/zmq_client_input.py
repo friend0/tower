@@ -42,7 +42,7 @@ sender.send_json(cmdmess)
 for i in range(2500, 4500, 1):
     cmdmess["ctrl"]["thrust"] = i / 100.0
     sender.send_json(cmdmess)
-    time.sleep(0.01)
+    time.sleep(0.001)
 
 cmdmess["ctrl"]["thrust"] = 0
 sender.send_json(cmdmess)

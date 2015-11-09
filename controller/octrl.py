@@ -11,22 +11,31 @@ import math
 import msgpack
 from pid import PID, PID_V, PID_RP
 import simplejson
-import numpy as np
 from feedback.frames import FrameHistory
 import zmq
 import time
+import logging
 
-# Roll/pitch limit
-CAP = 15000.0
-# Thrust limit - 15%
-TH_CAP = 55000
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M',
+                    filename='./logs/octrl.log',
+                    filemode='w')
+
+formatter = logging.Formatter('%(asctime)s %(name)-8s %(levelname)-8s %(message)s')
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+logger.info('Logging Initialized')
 
 YAW_CAP = 200
 
 sp_x = 0
 sp_y = 0
 sp_z = 100
-
 
 cmd = {
     "version": 1,
@@ -66,21 +75,26 @@ ctrl_conn.connect("tcp://127.0.0.1:5124")
 
 yaw_sp = 0
 
+logger.info('ZMQ context set, connections configured')
+
 """ Roll, Pitch and Yaw PID controllers """
-r_pid = PID_RP(name="roll", P=25, I=0.28, D=7, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
-p_pid = PID_RP(name="pitch", P=25, I=0.28, D=7, Integrator_max=5, Integrator_min=-5, set_point=0, zmq_connection=pid_viz_conn)
-y_pid = PID_RP(name="yaw", P=10, I= 0, D= 0.35, Integrator_max=5, Integrator_min=-5, set_point=0,
+r_pid = PID_RP(name="roll", P=27.5, I=0.30, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
                zmq_connection=pid_viz_conn)
-t_pid = PID_RP(name="thrust", P=20, I=5 * 0.035, D=8 * 0.035, set_point=1.6, Integrator_max=0.01,
+p_pid = PID_RP(name="pitch", P=27.5, I=0.30, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
+               zmq_connection=pid_viz_conn)
+y_pid = PID_RP(name="yaw", P=5, I=0, D=0.35, Integrator_max=5, Integrator_min=-5, set_point=0,
+               zmq_connection=pid_viz_conn)
+t_pid = PID_RP(name="thrust", P=40, I=5 * 0.035, D=10 * 0.035, set_point=1.75, Integrator_max=0.01,
                Integrator_min=-0.01 / 0.035, zmq_connection=pid_viz_conn)
 
 """ Vertical position and velocity PID loops """
-v_pid = PID_RP(name="position", P=0.5, D=0.0, I=0.28, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
+v_pid = PID_RP(name="position", P=0.5, D=0.0, I=0.3, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
                set_point=.5,
                zmq_connection=pid_viz_conn)
-vv_pid = PID_RP(name="velocity", P=0.1, D=0.00315, I=0.28, Integrator_max=5 / 0.035, Integrator_min=-5 / 0.035,
+vv_pid = PID_RP(name="velocity", P=0.15, D=0.0015, I=0.15, Integrator_max=5 / 0.035, Integrator_min=-5 / 0.035,
                 set_point=0, zmq_connection=pid_viz_conn)
 
+logger.info('PIDs Initialized')
 
 prev_z = 0
 prev_t, last_ts = time.time(), time.time()
@@ -122,16 +136,16 @@ def signal_handler(signal, frame):
     print 'Vehicle Killed'
     sys.exit(0)
 
+
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def wind_up_motors(time=1e-3):
+def wind_up_motors(time=1e-2):
     """
 
     Ramp up CF Motors to avoid current surge
 
     """
-
     try:
         print("Spinning up motors...")
         for i in range(2500, 4500, 1):
@@ -148,9 +162,10 @@ def wind_up_motors(time=1e-3):
     client_conn.send_json(cmd)
 
 
-frame_history = FrameHistory()
+frame_history = FrameHistory(filtering=False)
 x, y, z, yaw, roll, pitch = 0, 0, 0, 0, 0, 0
 motors_not_wound = True
+logger.info('FrameHistory Initialized')
 while True:
 
     try:
@@ -161,15 +176,21 @@ while True:
         if frame_history.update(frame_data) is None:
             print("Cont")
             continue
+        detected = bool(frame_data[-1])
+        logger.debug('Received: ', frame_data)
 
         if motors_not_wound:
+            logger.info('Motors winding up...')
             motors_not_wound = False
-            wind_up_motors()  # Prime Motors with a ramp up period
+            wind_up_motors(.01)  # Prime Motors with a ramp up period
+            logger.info('Motors wound.')
 
         state = frame_history.filtered_frame.state
-        print("State: ", state)
+        logger.debug("Processed State: x:{} y:{} z:{} yaw:{} roll:{} pitch:{}".format(state[0], state[1], state[2],
+                                                                                      state[3], state[4], state[5]))
+        print("State Feedback: x:{} y:{} z:{} yaw:{} roll:{} pitch:{}".format(state[0], state[1], state[2],
+                                                                              state[3], state[4], state[5]))
         x, y, z, angle, roll, pitch = state[0], state[1], state[2], state[3], state[4], state[5]
-        print x, y, z, angle, roll, pitch
 
         # Get the set-points (if there are any)
         try:
@@ -179,11 +200,14 @@ while True:
                 r_pid.set_point = ctrl_sp["set-points"]["roll"]
                 p_pid.set_point = ctrl_sp["set-points"]["pitch"]
                 midi_acc = ctrl_sp["set-points"]["velocity"]
+                logger.debug("Set Points: yaw_sp:{} roll_sp:{} pitch_sp{} midi_acc{}".format(yaw_sp, r_pid.set_point,
+                                                                                             p_pid.set_point, midi_acc))
         except zmq.error.Again:
             pass
 
         step = time.time() - last_ts
-        if (.009 >= step >= .007):
+        logger.debug("Time Step: {}s".format(step))
+        if (.009 >= step >= .007) and detected:
 
             """
             check to see if we have been tracking the vehicle for more than 5 frames, e.g. if we are just starting or
@@ -194,15 +218,10 @@ while True:
                 print "IN  : x={:4.2f}, y={:4.2f}, z={:4.2f}, yaw={:4.2f}".format(x, y, z, angle)
 
                 safety = 10
-                roll = r_pid.update(x)
-                pitch = p_pid.update(y)
+                roll_sp = roll = r_pid.update(x)
+                pitch_sp = pitch = p_pid.update(y)
                 thrust = t_pid.update(z)
-                # angle is the yaw, yaw_sp is set to a constant zero (we can change if we like)
-                yaw = y_pid.update(((angle - yaw_sp + 360 + 180) % 360) - 180)
-
-                roll_sp = roll
-                pitch_sp = pitch
-                yaw_out = yaw
+                yaw_out = yaw = y_pid.update(((angle - yaw_sp + 360 + 180) % 360) - 180)
 
                 velocity = v_pid.update(z)
                 velocity = max(min(velocity, 10), -10)  # Limit vertical velocity between -1 and 1 m/sec
@@ -238,7 +257,16 @@ while True:
                 print "OUT: alt={:1.4f}, thrust={:5.2f}, dt={:0.3f}, fps={:2.1f}, speed={:+0.4f}".format(z, thrust_sp,
                                                                                                          dt, 1 / dt,
                                                                                                          curr_velocity)
-                # print "dt={:0.3f}, fps={:2.1f}".format(dt, 1/dt)
+
+                logger.debug("Control Output: roll={:2.2f}, pitch={:2.2f}, yaw={:2.2f}, \
+                             thrust={:5.2f}, speed_z={:5.2f}, dt={:0.3f}, fps={:2.1f}".format(roll_corr,
+                                                                                              pitch_corr,
+                                                                                              yaw_out,
+                                                                                              thrust_sp,
+                                                                                              curr_velocity,
+                                                                                              dt,
+                                                                                              1 / dt))
+
                 cmd["ctrl"]["roll"] = roll_corr
                 cmd["ctrl"]["pitch"] = pitch_corr
                 cmd["ctrl"]["thrust"] = thrust_sp * 100
@@ -246,7 +274,7 @@ while True:
             else:
                 on_detect_counter += 1
         else:
-            # print "No detect"
+            # todo: let's make this a function
             cmd["ctrl"]["roll"] = 0
             cmd["ctrl"]["pitch"] = 0
             cmd["ctrl"]["thrust"] = 0

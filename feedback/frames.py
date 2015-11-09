@@ -4,13 +4,11 @@ import time
 import math
 from feedback.transformations import euler_from_quaternion
 
-def butter_lowpass(cutoff, fs, order=4):
+def butter_lowpass(cutoff, fs, order=3):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
-    b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
+    b, a = signal.butter(order, normal_cutoff, btype='low', analog=True)
     return b, a
-
-b, a = butter_lowpass(20, 240)
 
 def butter_lowpass_filter(b, a, data):
     y = signal.lfilter(b, a, data)
@@ -73,7 +71,7 @@ class FrameHistory(object):
 
     def __init__(self, extrapolating=False, filtering=False, **kwargs):
         self.extrapolation_max = kwargs.get('extrapolation_max', 5)
-        self._cutoff, self._fs, self._order = kwargs.get('cutoff', 8), kwargs.get('fs', 120), kwargs.get('order', 4)
+        self._cutoff, self._fs, self._order = kwargs.get('cutoff', 20), kwargs.get('fs', 120), kwargs.get('order', 4)
         self.smooth_operator = np.array([0, 0, 0, 0, 0, 0])  # no need to ask...
         self.current_frame = None
         self.l_frame = None
@@ -83,8 +81,9 @@ class FrameHistory(object):
         self.prev_time = time.time()
 
         self.filtering = filtering
+        self.extrapolating = extrapolating
         if filtering:
-            self._b, self._a = butter_lowpass(self.cutoff, self.fs, order=self.order)
+            self._b, self._a = butter_lowpass(self._cutoff, self._fs, order=self._order)
 
     @property
     def cutoff(self):
@@ -147,20 +146,16 @@ class FrameHistory(object):
         if state is not None:  # not None if frame is valid, or we could extrapolate
             self.smooth_operator = np.vstack((self.smooth_operator, state))
             self.prev_time = time.time()
-
-            if self.smooth_operator.shape[0] > 100:
+            filtered = []
+            if self.smooth_operator.shape[0] > 250:
                 self.smooth_operator = np.delete(self.smooth_operator, 0, 0)
                 # Filter
-                filtered = []
                 for column in range(len(self.current_frame.state + 1)):
-                    #print column, self.smooth_operator[:, column]
                     filt = butter_lowpass_filter(self._b, self._a, self.smooth_operator[:, column])
-                    #print("Filt: ", filt)
                     print("Last", filt[-1])
                     filtered.append(filt[-1])
-            return filtered
-        else:
-            return None
+                return filtered
+        return None
 
     def decode_packet(self, packet):
         """
@@ -194,12 +189,11 @@ class FrameHistory(object):
         """
         # Check if body is being tracked by cameras
         self.current_frame = Frame(self.decode_packet(packet))
-
         if self.current_frame.detected:  # Unpack position, orientation add it to current frame, update frame history
             state = self.current_frame.state
             self.extrapolation_count = 0
         else:  # extrapolate
-            if self.extrapolate:
+            if self.extrapolating:
                 state = self.extrapolate()
             else:
                 state = None
@@ -207,12 +201,14 @@ class FrameHistory(object):
         if state is not None:
             if self.filtering:
                 state = self.filter(state)
+                print(state)
             else:
                 pass
 
-            self.filtered_frame = Frame(state)
-            # print self.filtered_frame.frame_data
-            return self.filtered_frame  # indicate success in updating
+            if state is not None:
+                self.filtered_frame = Frame(state)
+                # print self.filtered_frame.frame_data
+                return self.filtered_frame  # indicate success in updating
 
         else:
             return None  # id frame was not valid, and we cannot extrapolate
