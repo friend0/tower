@@ -88,18 +88,18 @@ y_pid = PID_RP(name="yaw", P=5, I=0, D=0.35, Integrator_max=5, Integrator_min=-5
                zmq_connection=pid_viz_conn)
 
 # Vertical position and velocity PID loops
-#v_pid = PID_RP(name="position", P=0.6, D=0.0075, I=0.25, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
-#               set_point= .5,
-#               zmq_connection=pid_viz_conn)
+v_pid = PID_RP(name="position", P=0.6, D=0.0075, I=0.25, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
+              set_point= .5,
+              zmq_connection=pid_viz_conn)
 
 # todo: Testing velocity controller in position role, in effect the thurst controller
-v_pid = PID_V(name="position", p=0.6, i=0.0075, d=0.25, set_point=.5)
+#v_pid = PID_V(name="position", p=0.6, i=0.0075, d=0.25, set_point=.5)
 
-#vv_pid = PID_RP(name="velocity", P=0.2, D=0.0005, I=0.15, Integrator_max=5 / 0.035, Integrator_min=-5 / 0.035,
-#                set_point=0, zmq_connection=pid_viz_conn)
+vv_pid = PID_RP(name="velocity", P=0.2, D=0.0005, I=0.15, Integrator_max=5 / 0.035, Integrator_min=-5 / 0.035,
+               set_point=0, zmq_connection=pid_viz_conn)
 
 # todo: Testing Velocity Control on Velocity """
-vv_pid = PID_V(name="velocity", p=0.2, i=0.0005, d=0.15, set_point=0)
+#vv_pid = PID_V(name="velocity", p=0.2, i=0.0005, d=0.15, set_point=0)
 
 logger.info('PIDs Initialized')
 
@@ -130,7 +130,13 @@ def signal_handler(signal, frame):
     y_pid.Integrator = 0.0
     on_detect_counter = 0
     client_conn.send_json(cmd, zmq.NOBLOCK)
+
     print 'Vehicle Killed'
+
+
+
+
+
     sys.exit(0)
 
 
@@ -271,7 +277,6 @@ if __name__ == '__main__':
                                                                                                   curr_velocity,
                                                                                                   dt,
                                                                                                   1 / dt))
-
                     cmd["ctrl"]["roll"] = roll_corr
                     cmd["ctrl"]["pitch"] = pitch_corr
                     cmd["ctrl"]["thrust"] = thrust_sp * 100
