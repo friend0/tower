@@ -13,6 +13,7 @@ pyzmq == 14.7.0
 numpy==1.9.2
 scipy == 0.16.0
 rasterio == 0.25.0
+GDAL==2.0.0
 # Need to install these by hand!
 # GDAL==2.0.0
 # matlabengineforpython===R2015a
