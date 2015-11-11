@@ -4,5 +4,9 @@ test:
 
 dependencies:
     pre:
-      -  pip install pytest
+        -  pip install pytest
+        - sudo apt-get install gdal-bin libgdal1-dev
+
+        - export CPLUS_INCLUDE_PATH=/usr/include/gdal; export C_INCLUDE_PATH=/usr/include/gdal; pip install gdal
+        - python setup.py install
 
