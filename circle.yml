@@ -8,8 +8,6 @@ dependencies:
         - sudo apt-get install gdal-bin libgdal1-dev
         - sudo apt-get install gcc
         - export CPLUS_INCLUDE_PATH=/usr/include/gdal; export C_INCLUDE_PATH=/usr/include/gdal;
-        - pip install --no-install GDAL
-        - cd build/GDAL; python setup.py build_ext --gdal-config=/usr/local/bin/gdal-config --include-dirs=/usr/local/include/ --library-dirs=/usr/local/lib/
-        - pip install --no-download GDAL
+        - pip install gdal --install-option="--include-dirs=/usr/include/gdal/"
         - python setup.py install
 
