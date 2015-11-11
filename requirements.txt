@@ -10,13 +10,14 @@ Quaternion == 0.03.1
 msgpack_python == 0.4.6
 pynmea == 0.6.0
 pyzmq == 14.7.0
-
+numpy==1.9.2
+scipy == 0.16.0
 
 # Need to install these by hand!
 # GDAL==2.0.0
 # matlabengineforpython===R2015a
 # matplotlib==1.4.3
-# numpy==1.9.2
+#
 # rasterio == 0.25.0
-# scipy == 0.16.0
+#
 
