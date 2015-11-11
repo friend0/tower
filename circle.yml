@@ -5,7 +5,6 @@ test:
 dependencies:
     pre:
         -  pip install pytest
-        - sudo add-apt-repository ppa:ubuntugis/ppa; sudo apt-get update
         - sudo apt-get install python-numpy libgdal1h gdal-bin libgdal-dev
         - sudo apt-get install python-gdal
         - sudo apt-get install build-essential python-all-dev
