@@ -1,0 +1,2 @@
+{"timestamp": "2015-11-11T07:45:53.344466Z", "logger": "__main__", "event": "Logging Initialized", "level": "info"}
+{"timestamp": "2015-11-11T07:45:53.344978Z", "logger": "__main__", "event": "Setting up ZMQ context, sockets, connections...", "level": "info"}
