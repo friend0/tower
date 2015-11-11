@@ -32,8 +32,7 @@ settings = {
 
     'FILE_CONFIG':
         {'filename':
-             r'/Users/empire/Academics/UCSC/nasaResearch/californiaNed30m/elevation_NED30M_ca_2925289_01/' \
-             r'virtRasterCalifornia.vrt'},
+             r'/Users/empire/Documents/GitHub/world_engine/tests/map_tests/bayArea.tif'},
 
     'HOST': 'localhost',
     'PORT': 2002,
