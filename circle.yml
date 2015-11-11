@@ -5,7 +5,7 @@ test:
 machine:
   environment:
         LD_LIBRARY_PATH:/usr/local/lib
-        GDALVERSION:"2.0.0"
+        GDALVERSION:2.0.0
 
 dependencies:
     pre:
