@@ -9,34 +9,64 @@ import sys
 import signal
 import math
 import msgpack
-from pid import PID_V, PID_RP
 import simplejson
-from feedback.frames import FrameHistory
 import zmq
 import time
 
-
+import datetime
 import logging
-from pythonjsonlogger import jsonlogger
+from logging import handlers
+import structlog
 
-from feedback.frames import FrameHistory
-from pid import PID_RP
+import feedback
+import pid
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    datefmt='%m-%d %H:%M',
-                    filename='./logs/octrl.log',
-                    filemode='w')
+def add_timestamp(_, __, event_dict):
+    event_dict['timestamp'] = datetime.datetime.utcnow()
+    return event_dict
 
-logHandler = logging.StreamHandler()
-formatter = jsonlogger.JsonFormatter()
-formatter = logging.Formatter()
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
+# todo: will need to make sure a zmq context is created already? Will getcontext handle this?
+def zmq_processor(_, __, event_dict):
+    return event_dict
 
-logger = logging.getLogger()
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt='iso'),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.JSONRenderer(),
+        zmq_processor
+    ],
+    context_class=dict,
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
+)
+logger = structlog.getLogger()
 logger.setLevel(logging.DEBUG)
-logger.addHandler(handler)
+# create file handler which logs messages down to the debug level to a file for postprocessing
+latest_experiment = logging.FileHandler('./logs/octrl.log', mode='w')
+latest_experiment.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+console = logging.StreamHandler(stream=sys.stderr)
+console.setLevel(logging.WARNING)
+
+rotating = handlers.RotatingFileHandler('./logs/experiment_history.log', mode='w', maxBytes=128e+6, backupCount=5, delay=True)
+rotating.doRollover()
+rotating.setLevel(logging.DEBUG)
+
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console.setFormatter(formatter)
+# add the handlers to logger
+logger.addHandler(latest_experiment)
+logger.addHandler(console)
+logger.addHandler(rotating)
+
 logger.info('Logging Initialized')
 
 YAW_CAP = 200
@@ -56,6 +86,8 @@ cmd = {
 """
 ZMQ setup
 """
+logger.info('Setting up ZMQ context, sockets, connections...')
+
 context = zmq.Context()
 
 client_conn = context.socket(zmq.PUSH)
@@ -83,26 +115,20 @@ yaw_sp = 0
 # todo: All PID loops ought to be organized by a dictionary or an array. They can be looped through or updated by key
 logger.info('ZMQ context set, connections configured')
 # Roll, Pitch and Yaw PID controllers
-r_pid = PID_RP(name="roll", P=35, I=0.3, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
+r_pid = pid.PID_RP(name="roll", P=35, I=0.3, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
                zmq_connection=pid_viz_conn)
-p_pid = PID_RP(name="pitch", P=35, I=0.3, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
+p_pid = pid.PID_RP(name="pitch", P=35, I=0.3, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
                zmq_connection=pid_viz_conn)
-y_pid = PID_RP(name="yaw", P=5, I=0, D=0.35, Integrator_max=5, Integrator_min=-5, set_point=0,
+y_pid = pid.PID_RP(name="yaw", P=5, I=0, D=0.35, Integrator_max=5, Integrator_min=-5, set_point=0,
                zmq_connection=pid_viz_conn)
 
 # Vertical position and velocity PID loops
-v_pid = PID_RP(name="position", P=0.6, D=0.0075, I=0.25, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
-               set_point= .5,
+v_pid = pid.PID_RP(name="position", P=0.6, D=0.0075, I=0.25, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
+               set_point=.5,
                zmq_connection=pid_viz_conn)
 
-# todo: Testing velocity controller in position role, in effect the thurst controller
-#v_pid = PID_V(name="position", p=0.6, i=0.0075, d=0.25, set_point=.5)
-
-#vv_pid = PID_RP(name="velocity", P=0.2, D=0.0005, I=0.15, Integrator_max=5 / 0.035, Integrator_min=-5 / 0.035,
-#                set_point=0, zmq_connection=pid_viz_conn)
-
 # todo: Testing Velocity Control on Velocity """
-vv_pid = PID_V(name="velocity", p=0.25, i=1e-10, d=1e-10, set_point=0)
+vv_pid = pid.PID_V(name="velocity", p=0.25, i=1e-10, d=1e-10, set_point=0)
 
 logger.info('PIDs Initialized')
 
@@ -172,11 +198,11 @@ def signal_handler(signal, frame):
 if __name__ == "__main__":
 
     signal.signal(signal.SIGINT, signal_handler)
-    frame_history = FrameHistory(filtering=False)
+    frame_history = feedback.FrameHistory(filtering=False)
     x, y, z, yaw, roll, pitch = 0, 0, 0, 0, 0, 0
     ts, dt, prev_z, prev_vz, midi_acc, on_detect_counter, ctrl_time = 0, 0, 0, 0, 0, 0, 0
     prev_t, last_ts = time.time(), time.time()
-    min_step, max_step = 7e-3, 9e-3 # s
+    min_step, max_step = 7e-3, 9e-3  # s
     motors_not_wound = True
     logger.info('FrameHistory Initialized')
 
@@ -197,12 +223,12 @@ if __name__ == "__main__":
             if motors_not_wound:
                 logger.info('Motors winding up...')
                 motors_not_wound = False
-                wind_up_motors(.01)  # Prime Motors with a ramp up period
+                wind_up_motors(.001)  # Prime Motors with a ramp up period
                 logger.info('Motors wound.')
 
             state = frame_history.filtered_frame.state
-            logger.debug({'type': 'state', 'x': state[0], 'y': state[1], 'z': state[2], 'yaw': state[3],
-                          'roll': state[4], 'pitch': state[5]})
+            logger.debug('state', x=state[0], y=state[1], z=state[2], yaw=state[3],
+                         roll=state[4], pitch=state[5])
             print("State Feedback: x:{} y:{} z:{} yaw:{} roll:{} pitch:{}".format(state[0], state[1], state[2],
                                                                                   state[3], state[4], state[5]))
             x, y, z, angle, roll, pitch = state[0], state[1], state[2], state[3], state[4], state[5]
@@ -215,23 +241,24 @@ if __name__ == "__main__":
                     r_pid.set_point = ctrl_sp["set-points"]["roll"]
                     p_pid.set_point = ctrl_sp["set-points"]["pitch"]
                     midi_acc = ctrl_sp["set-points"]["velocity"]
-                    logger.debug({'type': 'set_points', 'yaw_sp': yaw_sp, 'roll_sp': r_pid.set_point,
-                                  'pitch_sp': p_pid.set_point, 'midi_acc': midi_acc})
+                    logger.debug('set_points', yaw_sp=yaw_sp, roll_sp=r_pid.set_point,
+                                 pitch_sp=p_pid.set_point, midi_acc=midi_acc)
             except zmq.error.Again:
                 pass
 
             step = time.time() - last_ts
-            logger.debug("Time Step: {}s".format(step))
+            logger.debug('time_step', dt=step)
 
             if (max_step >= step >= min_step) and detected:
 
                 """
-                check to see if we have been tracking the vehicle for more than 5 frames, e.g. if we are just starting or
+                check to see if we have been tracking the vehicle for more than 5 frames, e.g. if we are just
+                starting or
                 if we've lost tracking and are regaining it.
                 """
                 if on_detect_counter >= 0:
                     ctrl_time = int(round(time.time() * 1000))
-                    #print "IN  : x={:4.2f}, y={:4.2f}, z={:4.2f}, yaw={:4.2f}".format(x, y, z, angle)
+                    # print "IN  : x={:4.2f}, y={:4.2f}, z={:4.2f}, yaw={:4.2f}".format(x, y, z, angle)
 
                     # Roll, Pitch, Yaw
                     roll_sp = roll = r_pid.update(x)
@@ -239,14 +266,14 @@ if __name__ == "__main__":
                     yaw_out = yaw = y_pid.update(((angle - yaw_sp + 360 + 180) % 360) - 180)
 
                     velocity = v_pid.update(z)
-                    logger.debug("V_PID: {}".format(velocity))
+                    logger.debug('pid', name='v_pid', output=velocity)
                     velocity = max(min(velocity, 10), -10)  # Limit vertical velocity between -1 and 1 m/sec
                     vv_pid.set_point = velocity
                     dt = (time.time() - prev_t)
                     curr_velocity = (z - prev_z) / dt
                     curr_acc = (curr_velocity - prev_vz) / dt
                     thrust_sp = vv_pid.update(curr_velocity) + 0.50
-                    logger.debug("VV_PID: Out:{}".format(velocity))
+                    logger.debug('pid', name='vv_pid', output=velocity)
 
 
                     # print "TH={:.2f}".format(thrust_sp)
@@ -268,19 +295,19 @@ if __name__ == "__main__":
                     pitch_corr = pitch_sp * math.cos(math.radians(-angle)) - roll_sp * math.sin(math.radians(-angle))
                     roll_corr = pitch_sp * math.sin(math.radians(-angle)) + roll_sp * math.cos(math.radians(-angle))
 
-                    print "OUT: roll={:2.2f}, pitch={:2.2f}, thrust={:5.2f}, dt={:0.3f}, fps={:2.1f}".format( roll_corr,
-                                                                                                              pitch_corr,
-                                                                                                              thrust_sp,
-                                                                                                              dt,
-                                                                                                              1 / dt )
-                    print "OUT: alt={:1.4f}, thrust={:5.2f}, dt={:0.3f}, fps={:2.1f}, speed={:+0.4f}".format( z,
-                                                                                                              thrust_sp,
-                                                                                                              dt,
-                                                                                                              1 / dt,
-                                                                                                              curr_velocity)
+                    print "OUT: roll={:2.2f}, pitch={:2.2f}, thrust={:5.2f}, dt={:0.3f}, fps={:2.1f}".format(roll_corr,
+                                                                                                             pitch_corr,
+                                                                                                             thrust_sp,
+                                                                                                             dt,
+                                                                                                             1 / dt)
+                    print "OUT: alt={:1.4f}, thrust={:5.2f}, dt={:0.3f}, fps={:2.1f}, speed={:+0.4f}".format(z,
+                                                                                                             thrust_sp,
+                                                                                                             dt,
+                                                                                                             1 / dt,
+                                                                                                             curr_velocity)
 
-                    logger.debug({'type': 'output', 'roll': roll_corr, 'pitch': pitch_corr, 'yaw': yaw_out, \
-                                   'thrust': thrust_sp, 'velocity': curr_velocity, 'dt': dt, 'fps': 1 / dt} )
+                    logger.debug('output', roll=roll_corr, pitch=pitch_corr, yaw=yaw_out, \
+                                 thrust=thrust_sp, velocity=curr_velocity, dt=dt, fps=1 / dt)
 
                     cmd["ctrl"]["roll"] = roll_corr
                     cmd["ctrl"]["pitch"] = pitch_corr
@@ -288,7 +315,7 @@ if __name__ == "__main__":
                     cmd["ctrl"]["yaw"] = yaw_out
                 else:
                     on_detect_counter += 1
-                    logger.debug("Incremented 'on_detect_counter to: {}".format(on_detect_counter))
+                    logger.debug('Increment on_detect_counter', value=on_detect_counter)
             else:
                 # todo: let's make this a function
                 cmd["ctrl"]["roll"] = 0
@@ -299,14 +326,14 @@ if __name__ == "__main__":
                 p_pid.reset_dt()
                 y_pid.reset_dt()
                 v_pid.reset_dt()
-                #vv_pid.reset_dt()
+                # vv_pid.reset_dt()
 
-                #vv_pid.Integrator = 0.0
+                # vv_pid.Integrator = 0.0
                 r_pid.Integrator = 0.0
                 p_pid.Integrator = 0.0
                 y_pid.Integrator = 0.0
                 on_detect_counter = 0
-                logger.debug("Reset 'on_detect_counter' to 0, either lost tracking or fps out of bounds")
+                logger.debug('Reset on_detect_counter', value=0)
             client_conn.send_json(cmd)
             last_ts = time.time()
 
