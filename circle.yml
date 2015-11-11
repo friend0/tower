@@ -5,16 +5,16 @@ test:
 machine:
   environment:
         LD_LIBRARY_PATH:/usr/local/lib
-        GDALVERSION:2.0.0
+        #GDALVERSION:2.0.0
 
 dependencies:
     pre:
         -  pip install pytest
-        - sudo apt-get install libgdal1h gdal-bin libgdal-dev
-        - sudo apt-get install libgdal-dev
+        - sudo apt-get install gdal-bin libgdal1-dev
+        #- sudo apt-get install libgdal-dev
         - sudo apt-get install python-gdal
         - sudo apt-get install build-essential python-all-dev
-        - sudo sh circInst.sh
+        - export CPLUS_INCLUDE_PATH=/usr/include/gdal; export C_INCLUDE_PATH=/usr/include/gdal; pip install gdal
         - "pip install --upgrade --force-reinstall --global-option=build_ext --global-option='-I$GDALINST/gdal-$GDALVERSION/include' --global-option='-L$GDALINST/gdal-$GDALVERSION/lib' --global-option='-R$GDALINST/gdal-$GDALVERSION/lib' -e ."
         #- wget http://download.osgeo.org/gdal/2.0.0/gdal-2.0.0.tar.gz; tar xvfz gdal-2.0.0.tar.gz; cd gdal-2.0.0; ./configure --with-python; sudo make; sudo make install
         - python setup.py install
