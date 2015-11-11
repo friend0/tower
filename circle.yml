@@ -5,6 +5,7 @@ test:
 dependencies:
     pre:
         -  pip install pytest
+        - export LD_LIBRARY_PATH = /usr/local/lib
         - sudo apt-get install gdal-bin libgdal1-dev
         - sudo apt-get install libgdal-dev
         - sudo apt-get install python-gdal
