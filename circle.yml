@@ -6,5 +6,3 @@ dependencies:
     pre:
       -  pip install pytest
 
-general:
-  build_dir: world_engine
