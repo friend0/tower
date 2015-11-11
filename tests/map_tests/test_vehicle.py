@@ -4,13 +4,11 @@ import timeit
 import functools
 import time
 import math
+import pytest
 from collections import namedtuple
 
-import pytest
-
-from world.vehicles.vehicle import Quadrotor
-from world.mapping.map import Coordinate
-
+from world_engine.world.vehicles.vehicle import Quadrotor
+from world_engine.world.mapping.map import Coordinate
 coordinate_a = Coordinate(lat=36.974117, lon=-122.030796)
 coordinate_b = Coordinate(lat=37.411891, lon=-122.052183)
 
@@ -28,7 +26,7 @@ def timeit(func):
 
 
 Coordinate = namedtuple("Coordinate", ['lat', 'lon'], verbose=False)
-vehicle = Quadrotor(Coordinate(0, 0))
+vehicle = Quadrotor(None, Coordinate(0, 0))
 
 
 @timeit
@@ -40,9 +38,10 @@ def test_speed_conversion():
     assert vehicle.speed_conversion(1, 'km/h', 'm/s') == 0.277778
 
 
+#todo: need to test quadrotor with dynamics class implementred
 @timeit
 def test_quadrotor_class():
-    quadrotor = Quadrotor(Coordinate(0, 0))
+    quadrotor = Quadrotor(None, Coordinate(0, 0))
     with pytest.raises(ValueError):
         quadrotor.coordinates = Coordinate(-91, 0)
     with pytest.raises(ValueError):

@@ -8,7 +8,7 @@ from builtins import object
 from uuid import uuid4
 from abc import ABCMeta, abstractproperty
 
-from world.mapping.map import Map
+from world_engine.world.mapping.map import Map
 from future.utils import with_metaclass
 
 """
@@ -88,8 +88,8 @@ class Quadrotor(Vehicle):
 
     """
 
-    def __init__(self, initial_coords, designation='crazyflie', rnge=0):
-        super(Quadrotor, self).__init__(initial_coords)
+    def __init__(self, dynamics, initial_coords, designation='crazyflie', rnge=0):
+        super(Quadrotor, self).__init__(dynamics, initial_coords)
         self.battery = 100
         self.has_landed = False
         self.altitude = 0

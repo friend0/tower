@@ -21,8 +21,8 @@ from collections import namedtuple
 from geographiclib.geodesic import Geodesic
 from numpy import NaN, math
 from osgeo import gdal, osr
-from utils.utils import pairwise, grouper
-from engine.server.message_passing.zmq_workers import ZmqSubWorker
+from world_engine.utils.utils import pairwise, grouper
+from world_engine.engine.server.message_passing.zmq_workers import ZmqSubWorker
 Coordinate = namedtuple("Coordinate", ['lat', 'lon'], verbose=False)
 PixelPair = namedtuple("PixelPair", ['x', 'y'], verbose=False)
 

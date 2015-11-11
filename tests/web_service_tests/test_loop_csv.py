@@ -6,7 +6,7 @@ from time import strftime
 
 import requests
 
-from utils.utils import Interrupt
+from world_engine.utils.utils import Interrupt
 
 data_loop = [
     {'flightId': '00428', 'time': strftime("%Y-%m-%d %H:%M:%S"), 'latitude': 37.001170, 'longitude': -122.063043,

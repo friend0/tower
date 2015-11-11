@@ -49,7 +49,7 @@ def test_pixel_to_lat_lon():
 
 @timeit
 def test_distance_on_unit_sphere():
-    assert (_map.distance_on_unit_sphere(coordinate_a, coordinate_b, mode='km') - 48.622 < .05 * 48.622)
+    assert (_map.distance_on_unit_sphere(coordinate_a, coordinate_b, units='km') - 48.622 < .05 * 48.622)
 
 
 @timeit
