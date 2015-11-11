@@ -1,4 +1,8 @@
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
 import sys
 from setuptools.command.test import test as TestCommand
 
@@ -41,10 +45,10 @@ setup(
     package_dir={'': 'world_engine'},
     tests_require=['pytest'],
     cmdclass = {'test': PyTest},
-    test_suite='tests',
     url='',
     license='MIT',
     author='Ryan A. Rodriguez',
     author_email='ryarodri@ucsc.edu',
     description=''
 )
+

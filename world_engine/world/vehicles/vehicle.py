@@ -27,7 +27,8 @@ class Vehicle(with_metaclass(ABCMeta, object)):
 
     """
 
-    def __init__(self, initial_coords):
+    def __init__(self, dynamics, initial_coords):
+        self.dynamics = dynamics
         self.initial_coordinates = initial_coords
         self.coordinates = self.initial_coordinates
         self.heading = 0

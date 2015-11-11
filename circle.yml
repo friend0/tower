@@ -4,4 +4,8 @@ test:
 
 dependencies:
     pre:
-       -  pip install pytest
+      -  pip install -r requirements.txt
+      -  pip install pytest
+
+general:
+  build_dir: world_engine

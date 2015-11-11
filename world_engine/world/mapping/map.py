@@ -11,7 +11,7 @@ from builtins import object
 __metaclass__ = type
 import csv
 import inspect
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import multiprocessing
 import numpy as np
 import rasterio
@@ -22,8 +22,7 @@ from geographiclib.geodesic import Geodesic
 from numpy import NaN, math
 from osgeo import gdal, osr
 from utils.utils import pairwise, grouper
-from engine.server.message_passing import ZmqSubWorker
-
+from engine.server.message_passing.zmq_workers import ZmqSubWorker
 Coordinate = namedtuple("Coordinate", ['lat', 'lon'], verbose=False)
 PixelPair = namedtuple("PixelPair", ['x', 'y'], verbose=False)
 
@@ -708,8 +707,8 @@ class Map(MapFile):
 
         pass
 
+    '''
     def plot(self, **window):
-        # todo: turn this into a graph function
         """
         This function is not yet ready to call. Used to be executed in main after point and elevation samplings.
 
@@ -743,6 +742,9 @@ class Map(MapFile):
                 plt.show()
             except:
                 pass
+
+    '''
+
 
 
 class Coord(object):

@@ -4,7 +4,6 @@ from past.utils import old_div
 import time
 import functools
 import math
-
 from geopy.distance import vincenty
 
 from world_engine.world.mapping.map import PixelPair, Coordinate, Map
