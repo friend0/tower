@@ -23,7 +23,7 @@ class PyTest(TestCommand):
 
 setup(
     name='World Engine',
-    version='.1',
+    version='0.0.1',
     packages=['tests', 'tests.map_tests', 'tests.quaternion_tests', 'tests.web_service_tests',
               'tests.matlab_engine_tests', 'tests.message_passing_tests', 'world_engine', 'world_engine.utils',
               'world_engine.world', 'world_engine.world.mapping', 'world_engine.world.vehicles', 'world_engine.engine',
@@ -41,6 +41,7 @@ setup(
     package_dir={'': 'world_engine'},
     tests_require=['pytest'],
     cmdclass = {'test': PyTest},
+    test_suite='tests',
     url='',
     license='MIT',
     author='Ryan A. Rodriguez',
