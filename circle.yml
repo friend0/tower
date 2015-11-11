@@ -7,8 +7,9 @@ dependencies:
         -  pip install pytest
         - sudo apt-get install gdal-bin libgdal1-dev
         - sudo apt-get install libgdal-dev
+        - pip install –no-install GDAL
         - sudo apt-get install gcc
-        - export CPLUS_INCLUDE_PATH=/usr/include/gdal; export C_INCLUDE_PATH=/usr/include/gdal;
-        - pip install gdal --install-option="--include-dirs=/usr/include/gdal/"
+        - python setup.py build_ext –gdal-config=/usr/bin/gdal-config –library-dirs=/usr/lib –libraries=gdal –include-dirs=/usr/include/gdal
+        - pip install –no-download GDAL
         - python setup.py install
 
