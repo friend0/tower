@@ -1,6 +1,6 @@
 test:
     override:
-        - PYTHONPATH=`pwd` py.test ../tests/
+        - py.test tests/
 
 dependencies:
     pre:
