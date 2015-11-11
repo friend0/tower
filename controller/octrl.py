@@ -5,15 +5,18 @@ A simple PID control loop for crazyflie using a set of Optitrack Flex13's
 
 """
 
-import logging
-import math
-import signal
 import sys
+import signal
+import math
+import msgpack
+from pid import PID_V, PID_RP
+import simplejson
+from feedback.frames import FrameHistory
+import zmq
 import time
 
-import msgpack
-import simplejson
-import zmq
+
+import logging
 from pythonjsonlogger import jsonlogger
 
 from feedback.frames import FrameHistory
@@ -75,6 +78,8 @@ pid_viz_conn.connect("tcp://127.0.0.1:5123")
 ctrl_conn = context.socket(zmq.PULL)
 ctrl_conn.connect("tcp://127.0.0.1:5124")
 
+yaw_sp = 0
+
 logger.info('ZMQ context set, connections configured')
 logger.info('Initializing PIDs')
 
@@ -85,14 +90,20 @@ p_pid = PID_RP(name="pitch", P=27.5, I=0.30, D=8, Integrator_max=5, Integrator_m
                zmq_connection=pid_viz_conn)
 y_pid = PID_RP(name="yaw", P=5, I=0, D=0.35, Integrator_max=5, Integrator_min=-5, set_point=0,
                zmq_connection=pid_viz_conn)
-t_pid = PID_RP(name="thrust", P=40, I=5 * 0.035, D=10 * 0.035, set_point=1.75, Integrator_max=0.01,
-               Integrator_min=-0.01 / 0.035, zmq_connection=pid_viz_conn)
-""" Vertical position and velocity PID loops """
-v_pid = PID_RP(name="position", P=0.5, D=0.0, I=0.3, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
-               set_point=.5,
-               zmq_connection=pid_viz_conn)
-vv_pid = PID_RP(name="velocity", P=0.15, D=0.0015, I=0.15, Integrator_max=5 / 0.035, Integrator_min=-5 / 0.035,
-                set_point=0, zmq_connection=pid_viz_conn)
+
+# Vertical position and velocity PID loops
+#v_pid = PID_RP(name="position", P=0.6, D=0.0075, I=0.25, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
+#               set_point= .5,
+#               zmq_connection=pid_viz_conn)
+
+# todo: Testing velocity controller in position role, in effect the thurst controller
+v_pid = PID_V(name="position", p=0.6, i=0.0075, d=0.25, set_point=.5)
+
+#vv_pid = PID_RP(name="velocity", P=0.2, D=0.0005, I=0.15, Integrator_max=5 / 0.035, Integrator_min=-5 / 0.035,
+#                set_point=0, zmq_connection=pid_viz_conn)
+
+# todo: Testing Velocity Control on Velocity """
+vv_pid = PID_V(name="velocity", p=0.2, i=0.0005, d=0.15, set_point=0)
 
 logger.info('PIDs Initialized')
 
@@ -132,10 +143,12 @@ def signal_handler(signal, frame):
     """
 
     This signal handler function detects a keyboard interrupt and responds by sending kill command to CF via client
+
     :param signal:
     :param frame:
 
     """
+    logger.info('Kill Sequence Initiated')
     print 'Kill Command Detected...'
     cmd["ctrl"]["roll"] = 0
     cmd["ctrl"]["pitch"] = 0
@@ -178,6 +191,7 @@ if __name__ == "__main__":
             detected = bool(frame_data[-1])
             logger.debug('Received: ', frame_data)
 
+
             if motors_not_wound:
                 logger.info('Motors winding up...')
                 motors_not_wound = False
@@ -206,7 +220,8 @@ if __name__ == "__main__":
 
             step = time.time() - last_ts
             logger.debug("Time Step: {}s".format(step))
-            if (.009 >= step >= .007) and detected:
+
+            if (max_step >= step >= min_step) and detected:
 
                 """
                 check to see if we have been tracking the vehicle for more than 5 frames, e.g. if we are just starting or
@@ -214,12 +229,11 @@ if __name__ == "__main__":
                 """
                 if on_detect_counter >= 0:
                     ctrl_time = int(round(time.time() * 1000))
-                    print "IN  : x={:4.2f}, y={:4.2f}, z={:4.2f}, yaw={:4.2f}".format(x, y, z, angle)
+                    #print "IN  : x={:4.2f}, y={:4.2f}, z={:4.2f}, yaw={:4.2f}".format(x, y, z, angle)
 
-                    safety = 10
+                    # Roll, Pitch, Yaw
                     roll_sp = roll = r_pid.update(x)
                     pitch_sp = pitch = p_pid.update(y)
-                    thrust = t_pid.update(z)
                     yaw_out = yaw = y_pid.update(((angle - yaw_sp + 360 + 180) % 360) - 180)
 
                     velocity = v_pid.update(z)

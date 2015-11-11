@@ -24,6 +24,8 @@ class CrazyflieController(object):
         results = [pid.update(state) for pid in self.controllers]
         return results
 
-cf_controller = CrazyflieController(1)
-while 1:
-    print cf_controller.update_controllers(4)
+if __name__ == '__main__':
+
+    cf_controller = CrazyflieController(1)
+    while 1:
+        print cf_controller.update_controllers(4)
