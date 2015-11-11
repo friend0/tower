@@ -42,7 +42,7 @@ setup(
               'engine.server.matlab_engine', 'engine.server.message_passing', 'engine.dynamics',
               'engine.dynamics.rigid_body', 'engine.dynamics.quaternions', 'engine.feedback', 'engine.controllers',
               'engine.controllers.pid'],
-    package_dir={'': 'world_engine'},
+    package_dir={' ': 'world_engine'},
     tests_require=['pytest'],
     cmdclass = {'test': PyTest},
     url='',
