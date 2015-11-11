@@ -80,30 +80,29 @@ ctrl_conn.connect("tcp://127.0.0.1:5124")
 
 yaw_sp = 0
 
+# todo: All PID loops ought to be organized by a dictionary or an array. They can be looped through or updated by key
 logger.info('ZMQ context set, connections configured')
-logger.info('Initializing PIDs')
-
-""" Roll, Pitch and Yaw PID controllers """
-r_pid = PID_RP(name="roll", P=27.5, I=0.30, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
+# Roll, Pitch and Yaw PID controllers
+r_pid = PID_RP(name="roll", P=35, I=0.3, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
                zmq_connection=pid_viz_conn)
-p_pid = PID_RP(name="pitch", P=27.5, I=0.30, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
+p_pid = PID_RP(name="pitch", P=35, I=0.3, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
                zmq_connection=pid_viz_conn)
 y_pid = PID_RP(name="yaw", P=5, I=0, D=0.35, Integrator_max=5, Integrator_min=-5, set_point=0,
                zmq_connection=pid_viz_conn)
 
 # Vertical position and velocity PID loops
-#v_pid = PID_RP(name="position", P=0.6, D=0.0075, I=0.25, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
-#               set_point= .5,
-#               zmq_connection=pid_viz_conn)
+v_pid = PID_RP(name="position", P=0.6, D=0.0075, I=0.25, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
+               set_point= .5,
+               zmq_connection=pid_viz_conn)
 
 # todo: Testing velocity controller in position role, in effect the thurst controller
-v_pid = PID_V(name="position", p=0.6, i=0.0075, d=0.25, set_point=.5)
+#v_pid = PID_V(name="position", p=0.6, i=0.0075, d=0.25, set_point=.5)
 
 #vv_pid = PID_RP(name="velocity", P=0.2, D=0.0005, I=0.15, Integrator_max=5 / 0.035, Integrator_min=-5 / 0.035,
 #                set_point=0, zmq_connection=pid_viz_conn)
 
 # todo: Testing Velocity Control on Velocity """
-vv_pid = PID_V(name="velocity", p=0.2, i=0.0005, d=0.15, set_point=0)
+vv_pid = PID_V(name="velocity", p=0.25, i=1e-10, d=1e-10, set_point=0)
 
 logger.info('PIDs Initialized')
 
@@ -158,9 +157,9 @@ def signal_handler(signal, frame):
     p_pid.reset_dt()
     y_pid.reset_dt()
     v_pid.reset_dt()
-    vv_pid.reset_dt()
+    # vv_pid.reset_dt()
 
-    vv_pid.Integrator = 0.0
+    # vv_pid.Integrator = 0.0
     r_pid.Integrator = 0.0
     p_pid.Integrator = 0.0
     y_pid.Integrator = 0.0
@@ -175,6 +174,9 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     frame_history = FrameHistory(filtering=False)
     x, y, z, yaw, roll, pitch = 0, 0, 0, 0, 0, 0
+    ts, dt, prev_z, prev_vz, midi_acc, on_detect_counter, ctrl_time = 0, 0, 0, 0, 0, 0, 0
+    prev_t, last_ts = time.time(), time.time()
+    min_step, max_step = 7e-3, 9e-3 # s
     motors_not_wound = True
     logger.info('FrameHistory Initialized')
 
@@ -185,12 +187,12 @@ if __name__ == "__main__":
             packet = optitrack_conn.recv()
             frame_data = msgpack.unpackb(packet)
             optitrack_conn.send(b'Ack')
+
             if frame_history.update(frame_data) is None:
                 print("Cont")
                 continue
             detected = bool(frame_data[-1])
-            logger.debug('Received: ', frame_data)
-
+            logger.debug('Received: {}'.format(frame_data))
 
             if motors_not_wound:
                 logger.info('Motors winding up...')
@@ -237,12 +239,15 @@ if __name__ == "__main__":
                     yaw_out = yaw = y_pid.update(((angle - yaw_sp + 360 + 180) % 360) - 180)
 
                     velocity = v_pid.update(z)
+                    logger.debug("V_PID: {}".format(velocity))
                     velocity = max(min(velocity, 10), -10)  # Limit vertical velocity between -1 and 1 m/sec
                     vv_pid.set_point = velocity
                     dt = (time.time() - prev_t)
                     curr_velocity = (z - prev_z) / dt
                     curr_acc = (curr_velocity - prev_vz) / dt
                     thrust_sp = vv_pid.update(curr_velocity) + 0.50
+                    logger.debug("VV_PID: Out:{}".format(velocity))
+
 
                     # print "TH={:.2f}".format(thrust_sp)
                     # print "YAW={:.2f}".format(yaw)
@@ -283,6 +288,7 @@ if __name__ == "__main__":
                     cmd["ctrl"]["yaw"] = yaw_out
                 else:
                     on_detect_counter += 1
+                    logger.debug("Incremented 'on_detect_counter to: {}".format(on_detect_counter))
             else:
                 # todo: let's make this a function
                 cmd["ctrl"]["roll"] = 0
@@ -293,14 +299,14 @@ if __name__ == "__main__":
                 p_pid.reset_dt()
                 y_pid.reset_dt()
                 v_pid.reset_dt()
-                vv_pid.reset_dt()
+                #vv_pid.reset_dt()
 
-                vv_pid.Integrator = 0.0
+                #vv_pid.Integrator = 0.0
                 r_pid.Integrator = 0.0
                 p_pid.Integrator = 0.0
                 y_pid.Integrator = 0.0
                 on_detect_counter = 0
-
+                logger.debug("Reset 'on_detect_counter' to 0, either lost tracking or fps out of bounds")
             client_conn.send_json(cmd)
             last_ts = time.time()
 
