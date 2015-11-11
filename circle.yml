@@ -9,7 +9,7 @@ dependencies:
         - sudo apt-get install libgdal-dev
         - sudo apt-get install python-gdal
         - sudo apt-get install build-essential python-all-dev
-        - pip install --no-install GDAL
+        - wget http://download.osgeo.org/gdal/1.11.0/gdal-1.11.0.tar.gz; tar xvfz gdal-2.0.0.tar.gz; cd gdal-2.0.0; ./configure --with-python; make; sudo make install
         - sudo apt-get install gcc
         - python setup.py build_ext --gdal-config=/usr/bin/gdal-config --library-dirs=/usr/lib --libraries=gdal --include-dirs=/usr/include/gdal
         - python setup.py install
