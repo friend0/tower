@@ -23,8 +23,7 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy numpy future \
-                                                                              geographiclib \
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy numpy future\
                                                                               geopy \
                                                                               mock  \
                                                                               optirx \
@@ -39,7 +38,7 @@ install:
                                                                               scipy \
                                                                               gdal \
                                                                               rasterio
-
+  - conda install -c https://conda.anaconda.org/auto geographiclib
   - source activate test-environment
   - python setup.py install
 
