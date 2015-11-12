@@ -4,8 +4,7 @@ from past.utils import old_div
 import time
 import functools
 import math
-import geopy
-import geopy.distance
+from geopy.distance import vincenty
 from world_engine.world.mapping.map import PixelPair, Coordinate, Map
 
 from world_engine.engine.server.server_conf.config import settings
@@ -23,7 +22,7 @@ def timeit(func):
     return newfunc
 
 
-
+# todo: whats the best way to share these named tuples?
 coordinate_a = Coordinate(lat=36.974117, lon=-122.030796)
 coordinate_b = Coordinate(lat=37.411891, lon=-122.052183)
 
@@ -55,7 +54,7 @@ def test_distance_on_unit_sphere():
 @timeit
 def test_vinc_dist():
     assert (old_div(_map.vinc_inv(_map.flattening, _map.semimajor, coordinate_a, coordinate_b)["distance"], 1000) -
-            geopy.distance.vincenty((36.974117, -122.030796), (37.411891, -122.052183)).kilometers <= 1e-6)
+            vincenty((36.974117, -122.030796), (37.411891, -122.052183)).kilometers <= 1e-6)
 
 
 @timeit
