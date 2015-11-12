@@ -23,7 +23,11 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy numpy future mock pytest requests simplejson Quaternion msgpack_python pynmea pyzmq numpy scipy gdal rasterio
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy numpy future mock pytest requests numpy scipy gdal rasterio
+  - conda install -c https://conda.anaconda.org/distributions simplejson
+  - conda install -c https://conda.anaconda.org/conda-cluster msgpack-python
+  - pip install -i https://pypi.anaconda.org/pypi/simple pyzmq
+  - conda install -c https://conda.anaconda.org/auto pynmea
   - conda install -c https://conda.anaconda.org/moble quaternion
   - conda install -c https://conda.anaconda.org/auto geographiclib
   - conda install -c https://conda.anaconda.org/pdrops geopy
