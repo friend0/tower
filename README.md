@@ -3,7 +3,7 @@
 # World Engine
 
 <p align="center">
-  <img src="https://github.com/empireryan/world_engine/blob/master/doc/img/hslLogo.png" alt="Sublime's custom image"/>
+  <img src="https://github.com/empireryan/world_engine/blob/master/doc/img/hslLogo_current.png" alt="Sublime's custom image"/>
 </p>
 
 <p align="center">
