@@ -17,6 +17,8 @@ dependencies:
     cache_directories:
         - "~/world_engine/gdal-2.0.0"
 
+before_script:
+        - echo $TRAVIS_BUILD_DIR
 test:
     override:
         - py.test tests/
