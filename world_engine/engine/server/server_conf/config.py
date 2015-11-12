@@ -32,7 +32,7 @@ settings = {
 
     'FILE_CONFIG':
         {'filename':
-             os.path.abspath("../../../tests/bayArea.tif")},
+             os.path.abspath("/tests/bayArea.tif")},
 
     'HOST': 'localhost',
     'PORT': 2002,
