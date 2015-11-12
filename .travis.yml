@@ -26,12 +26,15 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy numpy future mock pytest requests numpy scipy gdal rasterio
   - conda install -c https://conda.anaconda.org/distributions simplejson
   - conda install -c https://conda.anaconda.org/conda-cluster msgpack-python
+  - conda install -c https://conda.anaconda.org/minrk zeromq
   - conda install -c https://conda.anaconda.org/minrk pyzmq
   - conda install -c https://conda.anaconda.org/auto pynmea
   - conda install -c https://conda.anaconda.org/moble quaternion
   - conda install -c https://conda.anaconda.org/auto geographiclib
   - conda install -c https://conda.anaconda.org/pdrops geopy
   - conda install -c https://conda.anaconda.org/empireryan optirx
+  - conda update zeromq
+  - conda update pyzmq
   - source activate test-environment
   - python setup.py install
 script: "python setup.py test"
