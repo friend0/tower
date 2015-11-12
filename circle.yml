@@ -5,7 +5,7 @@ test:
 dependencies:
     pre:
         -  pip install pytest
-        - sudo apt-get install gdal-bin libgdal1-dev
+        - sudo apt-get install gdal-bin libgdal-dev
         #- sudo apt-get install libgdal-dev
         - sudo apt-get install python-gdal
         - sudo apt-get install build-essential python-all-dev
