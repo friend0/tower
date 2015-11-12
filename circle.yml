@@ -1,6 +1,7 @@
-test:
-    override:
-        - py.test tests/
+env:
+  global:
+    - REPO="empireryan/world_engine"
+    - CI_HOME =`pwd`/$REPO
 
 dependencies:
     pre:
@@ -16,3 +17,6 @@ dependencies:
     cache_directories:
         - "~/world_engine/gdal-2.0.0"
 
+test:
+    override:
+        - py.test tests/
