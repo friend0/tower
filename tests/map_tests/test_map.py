@@ -4,6 +4,7 @@ from past.utils import old_div
 import time
 import functools
 import math
+import os
 #from geopy.distance import vincenty
 from world_engine.world.mapping.map import PixelPair, Coordinate, Map
 
@@ -26,12 +27,12 @@ def timeit(func):
 coordinate_a = Coordinate(lat=36.974117, lon=-122.030796)
 coordinate_b = Coordinate(lat=37.411891, lon=-122.052183)
 
-_map = Map(settings['FILE_CONFIG']['filename'])
+_map = Map(os.path.abspath("../bayArea.tif"))
 
 
 @timeit
 def test_map_instance():
-    map = Map(settings['FILE_CONFIG']['filename'])
+    map = Map(os.path.abspath("../bayArea.tif"))
 
 
 # todo: gimped this test for the sake of ci. write better tests.
