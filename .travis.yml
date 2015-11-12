@@ -33,7 +33,6 @@ install:
   - conda install -c https://conda.anaconda.org/auto geographiclib
   - conda install -c https://conda.anaconda.org/pdrops geopy
   - conda install -c https://conda.anaconda.org/empireryan optirx
-  - pip install zeromq
   - pip install update pyzmq
   - python setup.py install
 script: "python setup.py test"
