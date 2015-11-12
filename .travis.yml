@@ -35,7 +35,8 @@ install:
   - conda install -c https://conda.anaconda.org/auto pynmea
   - conda install -c https://conda.anaconda.org/moble quaternion
   - conda install -c https://conda.anaconda.org/auto geographiclib
-  - conda install -c https://conda.anaconda.org/pdrops geopy
+  #- conda install -c https://conda.anaconda.org/pdrops geopy
+  - pip install geopy
   - pip install optirx
   - source activate test-environment
   - python setup.py install
