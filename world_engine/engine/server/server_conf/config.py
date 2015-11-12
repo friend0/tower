@@ -32,7 +32,7 @@ settings = {
 
     'FILE_CONFIG':
         {'filename':
-             r'../../../../tests/map_tests/bayArea.tif'},
+             r'../../../../../tests/map_tests/bayArea.tif'},
 
     'HOST': 'localhost',
     'PORT': 2002,
