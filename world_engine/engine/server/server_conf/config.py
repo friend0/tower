@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+import os
 """
 
 Configuration file for the socket server; contains information about location of database, Host, Port, and etc.
@@ -32,7 +32,7 @@ settings = {
 
     'FILE_CONFIG':
         {'filename':
-             r'../../../../../tests/map_tests/bayArea.tif'},
+             os.path.abspath("../../../../tests/bayArea.tif")},
 
     'HOST': 'localhost',
     'PORT': 2002,
