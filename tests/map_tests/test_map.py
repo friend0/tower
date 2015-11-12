@@ -30,13 +30,13 @@ coordinate_b = Coordinate(lat=37.411891, lon=-122.052183)
 #print(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+r"/bayArea.tif")
 #_map = Map(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+r"/bayArea.tif")
 
-_map = Map(os.environ.get('TRAVIS_BUILD_DIR') + r"/tests/bayArea.tif")
+_map = Map(os.environ.get('TRAVIS_BUILD_DIR') + r"/tests/map_tests/bayArea.tif")
 
 
 
 @timeit
 def test_map_instance():
-    map = Map(os.environ.get('TRAVIS_BUILD_DIR') + r"/tests/bayArea.tif")
+    map = Map(os.environ.get('TRAVIS_BUILD_DIR') + r"/tests/map_tests/bayArea.tif")
 
 
 # todo: gimped this test for the sake of ci. write better tests.
