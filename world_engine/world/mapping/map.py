@@ -27,12 +27,13 @@ except ImportError:
     import osgeo.gdal as gdal
 
 try:
-    from osgeo import ogr
+    from osgeo import osr
 except ImportError:
-    import osgeo.gdal as ogr
+    import osgeo.gdal as osr
 
 from world_engine.utils.utils import pairwise, grouper
 from world_engine.engine.server.message_passing.zmq_workers import ZmqSubWorker
+
 Coordinate = namedtuple("Coordinate", ['lat', 'lon'], verbose=False)
 PixelPair = namedtuple("PixelPair", ['x', 'y'], verbose=False)
 
