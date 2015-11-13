@@ -15,7 +15,7 @@ class PID_V(object):
 
     """
 
-    def __init__(self, name="N/A", p=1, i=0, d=10, set_point=0, set_point_max=None, set_point_min=None,
+    def __init__(self, name="N/A", p=1, i=1, d=10, set_point=0, set_point_max=None, set_point_min=None,
                  saturate_max=None, saturate_min=None):
         """
 
@@ -78,12 +78,11 @@ class PID_V(object):
         self.prev_t = time.time()
 
     @property
-    def _kp(self):
+    def kp(self):
         return self._kp
 
-    @_kp.setter
-    def _kp(self, p):
-
+    @kp.setter
+    def kp(self, p):
         self._kp = p
         self._Ti = self._kp / self._ki
         self._Td = self._kd / self._kp
