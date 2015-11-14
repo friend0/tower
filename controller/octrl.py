@@ -66,7 +66,6 @@ console.setFormatter(formatter)
 logger.addHandler(latest_experiment)
 logger.addHandler(console)
 logger.addHandler(rotating)
-
 logger.info('Logging Initialized')
 
 YAW_CAP = 200
@@ -86,6 +85,7 @@ cmd = {
 """
 ZMQ setup
 """
+
 logger.info('Setting up ZMQ context, sockets, connections...')
 
 context = zmq.Context()
