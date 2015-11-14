@@ -4,6 +4,7 @@ import time
 import math
 from feedback.transformations import euler_from_quaternion
 
+# todo: make this more extensible
 def butter_lowpass(cutoff, fs, order=3):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
