@@ -1,5 +1,3 @@
-
-
 # World Engine
 
 <p align="center">
@@ -62,4 +60,3 @@ TODO: Write credits
 #### Ryan A. Rodriguez
 * Web: empireryan.com
 * Mail: ryarodri@ucsc.edu
-
