@@ -1,3 +1,10 @@
+"""
+
+The frames module is composed of two classes, the Frame, and the FrameBuffer.
+Each frame stores data on state, and the time the sample was received.
+The FrameBuffer is a collection of Frames that we use for filtering and extrapolation functions.
+
+"""
 import time
 import math
 
@@ -7,7 +14,7 @@ import numpy as np
 from engine.controllers.feedback.transformations import euler_from_quaternion
 
 
-# todo: make this more extensible
+# todo: make this more extensible, i.e. specify the type of filter that should be implemented
 def butter_lowpass(cutoff, fs, order=3):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
@@ -39,6 +46,12 @@ def quat2euler(q):
 
 
 class Frame(object):
+    """
+
+    The frame class is typically managed by a FrameBuffer, which instantiates a new Frame when it receives a call to update.
+    A call to update means a new sample has arrived, and should be added to the buffer.
+
+    """
 
     def __init__(self, value=None):
         self._frame_data = np.array(value)
@@ -71,7 +84,7 @@ class Frame(object):
             return None
 
 
-class FrameHistory(object):
+class FrameBuffer(object):
 
     def __init__(self, extrapolating=False, filtering=False, **kwargs):
         self.extrapolation_max = kwargs.get('extrapolation_max', 5)
@@ -91,20 +104,45 @@ class FrameHistory(object):
 
     @property
     def cutoff(self):
+        """
+
+        The cutoff frequency of the filter. Implementation dependent.
+        :return: the cutoff of the filter
+
+        """
         return self._cutoff
 
     @cutoff.setter
     def cutoff(self, value):
+        """
+
+        Cutoff property setter. Limit to positive frequencies, defualt to 8.
+
+        :param value: new value for cutoff
+
+        """
         if value > 0:
             self._cutoff = value
         else:
             self._cutoff = 8  # default
     @property
     def filtered_frame(self):
+        """
+
+        The filtered frame resulting from taking the latest value from filter output.
+        :return: the most current, filtered frame
+        """
         return self._filtered_frame
 
     @filtered_frame.setter
     def filtered_frame(self, value):
+        """
+
+        Filtered frame property setter. Updates last_frame (l_frame) and last last frame (ll_frame)
+
+        :param value: the new value for the filtered frame
+
+        """
         self.ll_frame = self.l_frame
         self.l_frame = self.filtered_frame
         self._filtered_frame = value
@@ -113,9 +151,11 @@ class FrameHistory(object):
     def can_extrapolate(self):
         """
 
-        Determine if extrapolation is valid based on given constraints
+        Determine if extrapolation is valid based on given constraints. Prevents us from extrapolating forever if we've
+        left the capture volume, and also prevents us from extrapolating if we do not have enough previous information.
 
         :return: True if we can extrapolate position, false if we cannot
+
         """
         return self.l_frame is not None and self.ll_frame is not None and self.extrapolation_count \
                                                                           < self.extrapolation_max
@@ -125,6 +165,7 @@ class FrameHistory(object):
 
         Used to estimate the position of a body during occlusion, or missed frame events.
         Based on the previous two valid frames, estimate velocity, and therefore position of the current dropped frame.
+
         :return: the estimated state of the body, or none is extrapolation cannot be completed
 
         """
@@ -141,7 +182,7 @@ class FrameHistory(object):
     def filter(self, state):
         """
 
-        Apply a Butterworth filter to input states
+        Apply a filter to input states. Currently implements Butterworth - will be extended to variety of filters.
 
         :param state: state array consisting of [x, y, z, yaw, roll, pitch]
         :return:
@@ -168,6 +209,7 @@ class FrameHistory(object):
 
         :param packet: Raw, serialized packet from ZMQ stream
         :return: The state of the vehicle is given in an array of the form [x, y, z, yaw, roll, pitch, detected(bool)]
+
         """
         detected = packet[-1]
         delta = packet[-2]
