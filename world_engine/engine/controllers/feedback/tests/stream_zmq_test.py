@@ -1,11 +1,10 @@
-import zmq
-from feedback import optitrack_feedback
-import msgpack
-import numpy as np
 import math
 from collections import namedtuple
+
+import zmq
+import msgpack
+
 from feedback.transformations import euler_from_quaternion
-import time
 
 context = zmq.Context()
 optitrack_conn = context.socket(zmq.REP)
