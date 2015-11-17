@@ -38,9 +38,6 @@ requirements = [
     # TODO: put package requirements here
 ]
 
-test_requirements = [
-    'pytest'
-]
 
 cmdclass = {'test': PyTest}
 
@@ -76,5 +73,4 @@ setup(
     ],
     tests_require=['pytest'],
     cmdclass = {'test': PyTest},
-    tests_require=test_requirements
 )
