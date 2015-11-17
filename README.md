@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-<img src="https://travis-ci.org/empireryan/world_engine.svg?branch=master"/>
+  <img src="https://travis-ci.org/friend0/tower.svg?branch=master">
 </p>
 
 World Engine is a Python GIS server for UAS path planning, and decision making algorithms. Stay tuned for a proper readme, but see my [Read The Docs](/Users/empire/Documents/GitHub/mapServer/docs/img/hslLogo.png) documentation page built with Sphinx.
