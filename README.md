@@ -4,9 +4,8 @@
   <img src="https://github.com/empireryan/world_engine/blob/master/doc/img/hslLogo_current.png" alt="Sublime's custom image"/>
 </p>
 
-<p align="center">
-  <img src="https://travis-ci.org/friend0/tower.svg?branch=master">
-</p>
+[![Build Status](https://travis-ci.org/friend0/tower.svg?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/tower-python/badge/?version=latest)](http://tower-python.readthedocs.org/en/latest/?badge=latest)
 
 World Engine is a Python GIS server for UAS path planning, and decision making algorithms. Stay tuned for a proper readme, but see my [Read The Docs](/Users/empire/Documents/GitHub/mapServer/docs/img/hslLogo.png) documentation page built with Sphinx.
 
