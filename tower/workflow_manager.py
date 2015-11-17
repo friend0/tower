@@ -1,21 +1,21 @@
+"""
+
+"""
 from __future__ import print_function
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
+from multiprocessing import Process, Queue
+
 from builtins import input
+
 from builtins import object
-from multiprocessing import Process
-import queue
-
 import zmq
-import numpy as np
 
-from .server import ThreadedUDPServer, UDP_Interrupt
-from .server_conf import settings
-from tower.server import ZmqSubWorker
-from mapping import map_interface, map
-from utils import logging_thread
-from utils.utils import Interrupt, web_post
+from world_engine.engine.server.server import ThreadedUDPServer, UDP_Interrupt
+from world_engine.engine.server.server_conf.config import settings
+from world_engine.engine.server.message_passing import ZmqSubWorker
+from tower.mapping import map
+from tower.utils import logging_thread
+from tower.utils import Interrupt
+from web_services import web_post
 
 KILL_COMMAND = 'DEATH'
 
@@ -25,21 +25,20 @@ PORT = 2002
 
 class WorkflowManager(object):
     def __init__(self):
-        np.matrix('1 1 1')
         # self.logger = logging.getLogger('py_map_server')
         self.processes = {}
         self.threads = {}
         self.context = zmq.Context()
-        self.zmq_result = queue.Queue()
-        self.commands = queue.Queue()
-        self.mapInterface = map_interface.MapInterface(settings['FILE_CONFIG']['filename'])
-        self.logger = queue.Queue()
+        self.zmq_result = Queue()
+        self.commands = Queue()
+        self.logger = Queue()
 
     def start_engine(self):
         self.start_logging()
         self.start_server_process()
+        # self.start_zmq_processes()
         self.start_map_process()
-        self.start_web_services()
+        # self.start_web_services()
 
     def init_model(self):
         pass
@@ -83,7 +82,7 @@ class WorkflowManager(object):
         @todo: This ought to be something other than a subscriber?
 
         """
-        map_process = map.Map_Process(settings['FILE_CONFIG']['filename'])
+        map_process = map.Tower(settings['FILE_CONFIG']['filename'])
         self.processes['map_process'] = map_process
         self.logger.put("{} beginning..".format(map_process.name))
         map_process.start()
@@ -96,7 +95,7 @@ class WorkflowManager(object):
         """
         zmq_worker_qgis = ZmqSubWorker(qin=self.commands, qout=self.zmq_result)
         zmq_worker_qgis.start()
-        self.processes['qgis_worker'] = zmq_worker_qgis
+        self.threads['qgis_worker'] = zmq_worker_qgis
         # self.logger.info("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
         self.logger.put("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
         print("ZMQ processes running in: '{}'".format(zmq_worker_qgis.name))
@@ -104,6 +103,7 @@ class WorkflowManager(object):
 
 # @todo: remove executable from server file into a workflow_manager file
 if __name__ == "__main__":
+
     try:
         subscriptions = []
         manager = WorkflowManager()

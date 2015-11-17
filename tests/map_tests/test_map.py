@@ -7,6 +7,7 @@ import os
 
 from past.utils import old_div
 
+
 #from geopy.distance import vincenty
 from tower.mapping import Coordinate, Map
 

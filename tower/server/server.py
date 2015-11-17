@@ -20,7 +20,7 @@ from time import strftime
 import numpy as np
 import requests
 
-import utils
+from tower import utils
 from tower.mapping.map_interface import MapInterface
 from server_conf.config import settings
 

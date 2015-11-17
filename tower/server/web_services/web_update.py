@@ -5,7 +5,7 @@ from builtins import next
 import requests
 
 from server_conf.config import settings
-from world_engine.utils.utils import cycle
+from tower.utils import cycle
 
 """ @todo: need to get this idea into a structure called 'trajectory', make methods to iterate over it.
 In the future, this can be used to link simulation data to the web service/Ames """

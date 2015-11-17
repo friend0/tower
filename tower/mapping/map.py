@@ -14,6 +14,7 @@ from builtins import range
 from builtins import object
 
 
+
 # import matplotlib.pyplot as plt
 import multiprocessing
 import numpy as np
@@ -34,7 +35,7 @@ try:
 except ImportError:
     import osgeo.gdal as osr
 
-from world_engine.utils.utils import pairwise, grouper
+from tower.utils import pairwise, grouper
 from tower.server import ZmqSubWorker
 
 Coordinate = namedtuple("Coordinate", ['lat', 'lon'], verbose=False)

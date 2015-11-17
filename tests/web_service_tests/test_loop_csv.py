@@ -1,12 +1,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
-from builtins import next
 import csv
 from itertools import cycle
 from time import strftime
 
+from builtins import next
 import requests
 
-from world_engine.utils.utils import Interrupt
+from tower.utils import Interrupt
 
 data_loop = [
     {'flightId': '00428', 'time': strftime("%Y-%m-%d %H:%M:%S"), 'latitude': 37.001170, 'longitude': -122.063043,

@@ -10,8 +10,6 @@ Tests for `tower` module.
 
 import unittest
 
-from tower import tower
-
 
 class TestTower(unittest.TestCase):
 

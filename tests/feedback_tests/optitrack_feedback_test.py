@@ -10,7 +10,7 @@ With proper UDP multicasting over the network, this scipt can be made to pass fe
 import zmq
 import msgpack
 
-from tower.controllers.feedback.optitrack import Optitrack as optitrack
+from tower.controllers.feedback import Optitrack as optitrack
 
 context = zmq.Context()
 socket = context.socket(zmq.REQ)
