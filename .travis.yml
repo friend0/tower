@@ -28,3 +28,4 @@ deploy:
     tags: true
     repo: friend0/tower
     condition: $TOXENV == py27
+
