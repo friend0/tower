@@ -74,6 +74,7 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
     ],
-    test_suite='tests',
+    tests_require=['pytest'],
+    cmdclass = {'test': PyTest},
     tests_require=test_requirements
 )
