@@ -2,7 +2,6 @@
 Tests for Tower module.
 """
 import pytest
-from tower import tower
 
 
 class TestTower:
