@@ -28,8 +28,8 @@ class PyTest(TestCommand):
 setup(
     name='World Engine',
     version='0.0.1',
-    packages=['tests', 'tests.map_tests', 'tests.quaternion_tests', 'tests.web_service_tests',
-              'tests.matlab_engine_tests', 'tests.message_passing_tests', 'world_engine', 'world_engine.utils',
+    packages=['controller_tests', 'controller_tests.map_tests', 'controller_tests.quaternion_tests', 'controller_tests.web_service_tests',
+              'controller_tests.matlab_engine_tests', 'controller_tests.message_passing_tests', 'world_engine', 'world_engine.utils',
               'world_engine.world', 'world_engine.world.mapping', 'world_engine.world.vehicles', 'world_engine.engine',
               'world_engine.engine.server', 'world_engine.engine.server.vrep', 'world_engine.engine.server.playground',
               'world_engine.engine.server.server_conf', 'world_engine.engine.server.web_services',

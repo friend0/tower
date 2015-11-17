@@ -1,14 +1,14 @@
 from __future__ import print_function
 from __future__ import division
-from past.utils import old_div
 import time
 import functools
 import math
-import inspect, os
-#from geopy.distance import vincenty
-from world_engine.world.mapping.map import PixelPair, Coordinate, Map
+import os
 
-from world_engine.engine.server.server_conf.config import settings
+from past.utils import old_div
+
+#from geopy.distance import vincenty
+from tower.mapping import Coordinate, Map
 
 
 def timeit(func):
@@ -30,16 +30,16 @@ coordinate_b = Coordinate(lat=37.411891, lon=-122.052183)
 #print(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+r"/bayArea.tif")
 #_map = Map(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+r"/bayArea.tif")
 
-_map = Map(os.environ.get('TRAVIS_BUILD_DIR') + r"/tests/map_tests/bayArea.tif")
+_map = Map(os.environ.get('TRAVIS_BUILD_DIR') + r"/controller_tests/map_tests/bayArea.tif")
 
 
 
 @timeit
 def test_map_instance():
-    map = Map(os.environ.get('TRAVIS_BUILD_DIR') + r"/tests/map_tests/bayArea.tif")
+    map = Map(os.environ.get('TRAVIS_BUILD_DIR') + r"/controller_tests/map_tests/bayArea.tif")
 
 
-# todo: gimped this test for the sake of ci. write better tests.
+# todo: gimped this test for the sake of ci. write better controller_tests.
 @timeit
 def test_lat_lon_to_pixel():
     print("")

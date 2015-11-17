@@ -1,6 +1,6 @@
 """
 
-The optitrack client
+The Optitrack client
 
 """
 from __future__ import print_function
@@ -25,7 +25,7 @@ class OptitrackClient(Exception):
     pass
 
 
-class OptitrackProcessor(object):
+class Optitrack(object):
     def __init__(self, ip_address='204.102.224.2', version=None):
         self.dsock = rx.mkdatasock(ip_address)
         if version is None:

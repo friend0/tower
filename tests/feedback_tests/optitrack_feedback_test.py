@@ -8,9 +8,9 @@ With proper UDP multicasting over the network, this scipt can be made to pass fe
 
 """
 import zmq
-from optitrack_client import OptitrackProcessor as optitrack
-import json
 import msgpack
+
+from tower.controllers.feedback.optitrack import Optitrack as optitrack
 
 context = zmq.Context()
 socket = context.socket(zmq.REQ)

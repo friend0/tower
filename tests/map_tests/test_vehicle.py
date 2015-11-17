@@ -1,14 +1,16 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
-from builtins import str
 import timeit
 import functools
 import time
 import math
-import pytest
 from collections import namedtuple
 
-from world_engine.world.vehicles.vehicle import Quadrotor
-from world_engine.world.mapping.map import Coordinate
+from builtins import str
+import pytest
+
+from tower.vehicles.vehicle import Quadrotor
+from tower.mapping import Coordinate
+
 coordinate_a = Coordinate(lat=36.974117, lon=-122.030796)
 coordinate_b = Coordinate(lat=37.411891, lon=-122.052183)
 

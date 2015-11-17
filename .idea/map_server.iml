@@ -3,7 +3,7 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/world_engine/server" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/world_engine/tower/server" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/world_engine" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/world_engine/mapping" isTestSource="false" />
     </content>

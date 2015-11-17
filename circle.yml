@@ -21,4 +21,4 @@ before_install:
         - echo $TRAVIS_BUILD_DIR
 test:
     override:
-        - py.test tests/
+        - py.test controller_tests/
