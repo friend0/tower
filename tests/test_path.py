@@ -1,6 +1,6 @@
 __author__ = 'empire'
 
-from mock import MagicMock
+import mock
 import tower.mapping.path as path
 import pytest
 
@@ -8,7 +8,7 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-mockPoint = MagicMock()
+mockPoint = mock.MagicMock()
 
 
 def test_node_init():
