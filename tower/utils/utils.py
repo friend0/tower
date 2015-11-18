@@ -1,7 +1,7 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-from builtins import next
-from builtins import zip
-from builtins import object
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+from builtins import *
+
 
 __metaclass__ = type
 
