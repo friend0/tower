@@ -39,8 +39,6 @@ requirements = [
 ]
 
 
-cmdclass = {'test': PyTest}
-
 setup(
     name='tower',
     version='0.1.0',
