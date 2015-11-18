@@ -14,7 +14,7 @@ except ImportError:
 
 try:
     # Python 2
-    from itertools import izip_longest
+    from itertools import izip_longest as zip_longest
 except ImportError:
     # Python 3
     from itertools import zip_longest
