@@ -14,8 +14,7 @@ env:
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
   - pip install --upgrade pip
-  - pip install --user --upgrade tox
-  - pip install --user --force-reinstall mock
+  - pip install  --upgrade tox
 
 # command to run tsts, e.g. python setup.py test
 script: tox
