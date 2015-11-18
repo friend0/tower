@@ -1,6 +1,6 @@
 __author__ = 'empire'
 
-import unittest.mock as mock
+import mock
 import tower.mapping.path as path
 import pytest
 
