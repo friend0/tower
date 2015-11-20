@@ -35,7 +35,7 @@ try:
 except ImportError:
     import osgeo.gdal as osr
 
-from tower.utils import pairwise, grouper
+from tower.utils.utils import pairwise, grouper
 from tower.server import ZmqSubWorker
 
 Coordinate = namedtuple("Coordinate", ['lat', 'lon'], verbose=False)
@@ -155,6 +155,7 @@ class Map(MapFile):
         self.adjacentElevations = np.zeros((3, 3))
         self.vehicles = {}
         self.ds = gdal.Open(self.file_name)
+
 
     def lat_lon_to_pixel(self, coords):
         """

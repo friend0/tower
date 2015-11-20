@@ -10,7 +10,7 @@ from abc import ABCMeta, abstractproperty
 from builtins import object
 from future.utils import with_metaclass
 
-from tower.mapping.map import Map
+from tower.mapping.spaces.map_ import Map
 
 """
 The vehicle, above all else, is our physical implement. It must understand its surroundings, and also how it's dynamics

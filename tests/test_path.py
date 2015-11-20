@@ -1,10 +1,9 @@
-__author__ = 'empire'
+import logging
 
 import mock
-import tower.mapping.path as path
 import pytest
 
-import logging
+import tower.mapping.path as path
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -12,6 +11,11 @@ mockPoint = mock.MagicMock()
 
 
 def test_node_init():
+    """
+    Test that Node class' init function produces an object given some point as data.
+    Test that it can store a reference to previous and next object
+    :return:
+    """
     assert isinstance(path.Node(mockPoint), object)
 
 
@@ -24,10 +28,10 @@ def test_node_connect():
     point_b = path.Node(mockPoint)
     point_a.next = point_b
     point_b.prev = point_a
-    assert(point_a.prev is None)
-    assert(point_b.next is None)
-    assert(point_a.next is point_b)
-    assert(point_b.prev is point_a)
+    assert (point_a.prev is None)
+    assert (point_b.next is None)
+    assert (point_a.next is point_b)
+    assert (point_b.prev is point_a)
 
 
 def test_edge_exception():
@@ -48,11 +52,11 @@ def test_edge():
     point_a = path.Node(mockPoint)
     point_b = path.Node(mockPoint)
     edge = path.Edge(point_a, point_b)
-    assert(isinstance(edge, path.Edge))
-    assert(edge.start.next is edge.end)
-    assert(edge.end.prev is edge.start)
-    assert(edge.start.prev is None)
-    assert(edge.end.prev is edge.start)
+    assert (isinstance(edge, path.Edge))
+    assert (edge.start.next is edge.end)
+    assert (edge.end.prev is edge.start)
+    assert (edge.start.prev is None)
+    assert (edge.end.prev is edge.start)
 
 
 def test_path():
@@ -67,9 +71,9 @@ def test_path():
     edge_bc = path.Edge(point_b, point_c)
 
     trajectory = path.Path([edge_ab, edge_bc])
-    assert(trajectory.has_next())
+    assert (trajectory.has_next())
     while trajectory.has_next():
-        assert(isinstance(trajectory.next(), object))
-    assert(not trajectory.has_next())
+        assert (isinstance(trajectory.next(), object))
+    assert (not trajectory.has_next())
     with pytest.raises(StopIteration):
         isinstance(trajectory.next(), object)

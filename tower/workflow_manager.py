@@ -5,14 +5,13 @@ from __future__ import print_function
 from multiprocessing import Process, Queue
 
 from builtins import input
-
 from builtins import object
 import zmq
 
 from world_engine.engine.server.server import ThreadedUDPServer, UDP_Interrupt
 from world_engine.engine.server.server_conf.config import settings
 from world_engine.engine.server.message_passing import ZmqSubWorker
-from tower.mapping import map
+from tower.mapping.spaces import map_
 from tower.utils import logging_thread
 from tower.utils import Interrupt
 from web_services import web_post
@@ -82,7 +81,7 @@ class WorkflowManager(object):
         @todo: This ought to be something other than a subscriber?
 
         """
-        map_process = map.Tower(settings['FILE_CONFIG']['filename'])
+        map_process = map_.Tower(settings['FILE_CONFIG']['filename'])
         self.processes['map_process'] = map_process
         self.logger.put("{} beginning..".format(map_process.name))
         map_process.start()
