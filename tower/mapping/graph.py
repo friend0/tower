@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from future.utils import iteritems
 
 from collections import OrderedDict
 
@@ -72,7 +73,7 @@ class Graph(dict):
         self.num_vertices = 0
 
         # take graph input as dictionary and and add to dictionary
-        for vertex, neighbors in OrderedDict(self.iteritems()).iteritems():
+        for vertex, neighbors in iteritems(OrderedDict(iteritems(self))):
             self[vertex] = neighbors
             for neighbor, weight in neighbors.iteritems():
                 self[vertex][neighbor] = weight
