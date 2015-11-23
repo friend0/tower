@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future.utils import iteritems
 from future.utils import viewitems
 
 from collections import OrderedDict
@@ -86,7 +85,7 @@ class Graph(dict):
         self.num_vertices += 1
         if key not in set(self.keys()):
             dict.__setitem__(self, key, val)
-        for key, val in val.iteritems():
+        for key, val in viewitems(val):
             if key not in set(self.keys()):
                 self.num_vertices += 1
                 dict.__setitem__(self, key, Vertex(key))
@@ -177,7 +176,7 @@ class Graph(dict):
 
         """
         edges = []
-        for key, vertex in self.iteritems():
+        for key, vertex in viewitems(self):
             for neighbor in vertex:
                 if set((key, neighbor)) not in edges and self[key][neighbor] > 0:
                     edges.append((key, neighbor))
