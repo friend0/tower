@@ -81,6 +81,7 @@ class Space(with_metaclass(abc.ABCMeta, object)):
         """
         pass
 
+    @abc.abstractmethod
     def point(self):
         """
 
@@ -103,10 +104,10 @@ class Space(with_metaclass(abc.ABCMeta, object)):
     @abc.abstractproperty
     def origin(self):
         """
-        
+
         ¯\_(ツ)_/¯
         :return:
-        
+
         """
         pass
 
@@ -123,7 +124,7 @@ class Space(with_metaclass(abc.ABCMeta, object)):
         pass
 
     @abc.abstractmethod
-    def get_edge(self, *args, **kwargs):
+    def get_edge(self, from_, to):
         """
 
         Sample data between two points
@@ -133,15 +134,15 @@ class Space(with_metaclass(abc.ABCMeta, object)):
         pass
 
     @abc.abstractmethod
-    def get_elevation_along_edge(self, edge):
+    def get_elevation_along_edge(self, from_, to):
         """
-        
+
         Take as input a edge, which is an iterable of points, and get a set of elevations corresponding to
-        the elevations at those points. 
-        
+        the elevations at those points.
+
         :return: An iterable of the same length as input, where each output corresponds to the input coordinate given
         in the se
-        
+
         """
         pass
 

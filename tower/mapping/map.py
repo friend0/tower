@@ -5,15 +5,17 @@ Manages
 
 """
 from __future__ import (absolute_import, division, print_function, unicode_literals)
+
+import collections
 from collections import namedtuple
 
-from builtins import *
-import rasterio
-from rasterio.transform import Affine
+import affine
 
+affine.set_epsilon(1e-12) # must set epsilon to small value to prevent sensitive trip of degenerate matrix detection
+import rasterio
+from builtins import *
 from geographiclib.geodesic import Geodesic
 from numpy import math
-
 from tower.mapping.space import Space
 
 try:
@@ -128,7 +130,7 @@ class Map(Space):
 
         self.vehicles = {}
         # todo: how to prevent openin with both rasterio and gdal
-        #self.ds = gdal.Open(self.file_name)  # don't like the idea of using gdal after opening file with rasterio
+        # self.ds = gdal.Open(self.file_name)  # don't like the idea of using gdal after opening file with rasterio
         self.__units = 'degrees'
         self.__x = 'lon'
         self.__y = 'lat'
@@ -150,12 +152,32 @@ class Map(Space):
     def y(self):
         return self.__y
 
+    @property
     def name(self):
         return self.__name
 
     @property
     def origin(self):
         pass
+
+    def point(self):
+        """
+
+        The point function is a named-tuple factory that wraps the underlying `point` abstraction of a space into
+        a universal container with x first, followed by y, and then the units. This gives users of the Space ABC
+        a way to define x and y once, then retrive a custom named-tuple object that is universally indexed by
+        [x, y, units], allowing them to be passed around with well-defined compatibility criteria.
+
+        A Map implementation of a space might do:
+        Coord = Map.point('Coordinate')
+        With `x` and `y` defined appropriately as 'lon' and 'lat' respectively, we could do:
+        point_a = Coord('lon'=-122.0264, 'lat=36.9741')
+
+        :param name: Provide a custom name for `point`, default is `Point`
+        :return: A named tuple with fields corresponding to x, y, and units for concrete implementation of Space
+
+        """
+        return collections.namedtuple(self.name, [self.x, self.y, self.units], verbose=False)
 
     def get_point_elevation(self, coordinate, **kwargs):
         """
@@ -257,10 +279,10 @@ class Map(Space):
         :return: A named tuple of type PixelPair containing an x/y pair
 
         """
-        with rasterio.open(self.filename, 'r') as ds:
+        with rasterio.open(self.file_name, 'r') as ds:
             affine = ds.affine
             inv_affine = ~affine
-            px, py = inv_affine * (coordinate.lat, coordinate.lon)
+            px, py = inv_affine * (coordinate.lon, coordinate.lat)
             return px, py
 
     def pixel_to_lat_lon(self, col, row):
@@ -277,10 +299,12 @@ class Map(Space):
 
 
         """
-        with rasterio.open(self.filename, 'r') as ds:
-            affine = ds.affine
-            lon, lat = affine * (col, row)
-            return self.point(lon=lon, lat=lat)
+        with rasterio.drivers():
+            with rasterio.open(self.file_name, 'r') as ds:
+                affine = ds.meta['affine']
+                rasterio.transform.Affine.EPSILON = -10e-12
+                lon, lat = affine * (col, row)
+                return self.point()(lon=lon, lat=lat, degrees=self.units)
 
     def distance_on_unit_sphere(self, coord1, coord2, lat_lon=None):
         # todo: need to make this work with ellipsoid earth models for more accurate distance calculations
@@ -672,8 +696,6 @@ class Map(Space):
         return pathInfo
     '''
 
-
-
     '''
     def plot(self, **window):
         """
@@ -712,5 +734,10 @@ class Map(Space):
 
     '''
 
+
 if __name__ == '__main__':
-    map = Map('/Users/empire/Documents/GitHub/tower/tower/utils/images/scClipProjected.tif')
+    map_ = Map('/Users/empire/Documents/GitHub/tower/tower/utils/images/scClipProjected.tif')
+    coord = map_.pixel_to_lat_lon(0, 100)
+    print(coord)
+    pixel = map_.lat_lon_to_pixel(coord)
+    print(pixel)

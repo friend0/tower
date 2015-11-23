@@ -11,7 +11,7 @@ import zmq
 from world_engine.engine.server.server import ThreadedUDPServer, UDP_Interrupt
 from world_engine.engine.server.server_conf.config import settings
 from world_engine.engine.server.message_passing import ZmqSubWorker
-from tower.mapping.spaces import map_
+from tower.mapping import map_
 from tower.utils import logging_thread
 from tower.utils import Interrupt
 from web_services import web_post
