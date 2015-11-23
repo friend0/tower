@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from future.utils import viewitems
 import sys
 if(sys.version_info[:2] < (2, 7)):
-    import ordereddict as OrderedDict
+    from ordereddict import OrderedDict
 else:
     from collections import OrderedDict
 
