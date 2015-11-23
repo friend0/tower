@@ -6,23 +6,23 @@ Region will serve as an abstract base class (ABC) to implement a standard interf
 """
 
 from __future__ import (absolute_import, division, print_function, unicode_literals)
-from future.utils import with_metaclass
-from builtins import *
 import abc
 import collections
 
+from future.utils import with_metaclass
+from builtins import *
+
 
 class Space(with_metaclass(abc.ABCMeta, object)):
-
     """
 
     `Space` represents a base class for flat, three-dimensional space. Concrete implementations of Space, will
     implement abstractions like curved space (geodetic map) while exposing only fundamental abstractions of flat space
-     to planning algorithms.
+    to planning algorithms.
 
-     Space defines as  attribute the notion of a Point. Concrete implementations of Space may extend this idea to
-     geographic coordinates, and etc., for example by making `lat` a property of the class `Map,` implementing Space.
-     Eg.
+    Space defines as  attribute the notion of a Point. Concrete implementations of Space may extend this idea to
+    geographic coordinates, and etc., for example by making `lat` a property of the class `Map,` implementing Space.
+    Eg.
 
 
     Space has a class attribute `Point`, which provides the Cartesian idea of a point in a plane
@@ -100,7 +100,6 @@ class Space(with_metaclass(abc.ABCMeta, object)):
         """
         return collections.namedtuple(self.name, [self.x, self.y, self.units])
 
-
     @abc.abstractproperty
     def origin(self):
         """
@@ -114,7 +113,6 @@ class Space(with_metaclass(abc.ABCMeta, object)):
     @abc.abstractmethod
     def get_point_elevation(self):
         pass
-
 
     @abc.abstractmethod
     def get_distance_between(self, point_a, point_b, *args, **kwargs):
@@ -150,4 +148,3 @@ class Space(with_metaclass(abc.ABCMeta, object)):
     @abc.abstractmethod
     def get_surrounding_elevation(self):
         pass
-

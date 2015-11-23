@@ -69,18 +69,25 @@ class Graph(dict):
         """
         super(Graph, self).__init__(*args, **kwargs)
 
-        graph_ = kwargs.get('graph', None)
-        # self.__dict__ = {}
         self.num_vertices = 0
 
         # take graph input as dictionary and and add to dictionary
-        for vertex, neighbors in self.iteritems():
+        for vertex, neighbors in OrderedDict(self.iteritems()).iteritems():
             self[vertex] = neighbors
             for neighbor, weight in neighbors.iteritems():
                 self[vertex][neighbor] = weight
 
     def __iter__(self):
         return iter(self.values())
+
+    def __setitem__(self, key, val):
+        self.num_vertices += 1
+        if key not in set(self.keys()):
+            dict.__setitem__(self, key, val)
+        for key, val in val.iteritems():
+            if key not in set(self.keys()):
+                self.num_vertices += 1
+                dict.__setitem__(self, key, Vertex(key))
 
     def add_vertex(self, vertex):
         """
@@ -89,10 +96,8 @@ class Graph(dict):
         :param vertex:
 
         """
-        self.num_vertices += 1
-        new_vertex = Vertex(vertex)
-        self[vertex] = new_vertex
-        return new_vertex.id
+        self[vertex.id] = vertex
+        return vertex.id
 
     def add_vertices(self, vertices):
         """
@@ -126,6 +131,10 @@ class Graph(dict):
         """
 
         return self.keys()
+
+    def remove_vertex(self, key):
+        self.num_vertices -= 1
+        self.pop(key, None)
 
     def add_edge(self, frm, to, weight=0):
         """
@@ -166,10 +175,10 @@ class Graph(dict):
 
         """
         edges = []
-        for vertex in self:
-            for neighbour in self[vertex]:
-                if {neighbour, vertex} not in edges:
-                    edges.append({vertex, neighbour})
+        for key, vertex in self.iteritems():
+            for neighbor in vertex:
+                if set((key, neighbor)) not in edges and self[key][neighbor] > 0:
+                    edges.append((key, neighbor))
         return edges
 
     def find_path(self, start_vertex, end_vertex, path=[]):

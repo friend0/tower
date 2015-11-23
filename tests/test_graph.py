@@ -3,11 +3,14 @@ import logging
 import mock
 import pytest
 
-import tower.mapping.graph as path
-
+import tower.mapping.graph as graph
 logging.basicConfig(level=logging.DEBUG)
+mockVertex = mock.MagicMock()
 
-mockPoint = mock.MagicMock()
+G = {'a': {'b': 10},
+     'b': {'c': 1, 'x': 2},
+     'c': {'y': 4}
+     }
 
 
 def test_node_init():
@@ -16,22 +19,56 @@ def test_node_init():
     Test that it can store a reference to previous and next object
     :return:
     """
-    assert isinstance(path.Node(mockPoint), object)
+    g = graph.Graph(G)
+    assert isinstance(g, object)
 
-
-def test_node_connect():
+def test_implicit_graph_creation():
     """
-    Test Node next and previous properties
+    Test that a graph can be made from a dictionary definition of nodes, neighbors and weights
     :return:
     """
-    point_a = path.Node(mockPoint)
-    point_b = path.Node(mockPoint)
-    point_a.next = point_b
-    point_b.prev = point_a
-    assert (point_a.prev is None)
-    assert (point_b.next is None)
-    assert (point_a.next is point_b)
-    assert (point_b.prev is point_a)
+    g = graph.Graph(G)
+    assert (g.num_vertices == 5)
+
+def test_add_vertex():
+    """
+    Test that a graph can be made from a dictionary definition of nodes, neighbors and weights
+    :return:
+    """
+    g = graph.Graph(G)
+    g.add_vertex(mockVertex)
+    assert (g.num_vertices == 6)
+
+def test_remove_vertex():
+    """
+    Test that a graph can be made from a dictionary definition of nodes, neighbors and weights
+    :return:
+    """
+    g = graph.Graph(G)
+    g.remove_vertex(mockVertex)
+    assert (g.num_vertices == 4)
+
+
+def test_edges():
+    """
+    Test that a graph can be made from a dictionary definition of nodes, neighbors and weights
+    :return:
+    """
+    g = graph.Graph(G)
+    assert (len(g.get_edges()) == 4)
+
+def test_shortest_path():
+    """
+    Use dijkstra's algorithm to find the shortest path
+    :return:
+    """
+    g = graph.Graph(G)
+
+    assert(g.shortest_path('a', 'b') == [u'a', u'b'])
+    assert(g.shortest_path('a', 'c') == [u'a', u'b', u'c'])
+
+'''
+
 
 
 def test_edge_exception():
@@ -77,3 +114,5 @@ def test_path():
     assert (not trajectory.has_next())
     with pytest.raises(StopIteration):
         isinstance(trajectory.next(), object)
+
+'''
