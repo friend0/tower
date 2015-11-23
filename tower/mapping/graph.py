@@ -76,7 +76,7 @@ class Graph(dict):
         # take graph input as dictionary and and add to dictionary
         for vertex, neighbors in viewitems(OrderedDict(viewitems(self))):
             self[vertex] = neighbors
-            for neighbor, weight in neighbors.iteritems():
+            for neighbor, weight in viewitems(neighbors):
                 self[vertex][neighbor] = weight
 
     def __iter__(self):
