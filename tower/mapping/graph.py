@@ -3,9 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 from future.utils import viewitems
-
-from collections import OrderedDict
-
+import sys
+if(sys.version_info[:2] < (2, 7)):
+    import ordereddict as OrderedDict
+else:
+    from collections import OrderedDict
 
 class Vertex(dict):
     # __slots__ = []
