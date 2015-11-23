@@ -3,7 +3,7 @@ import logging
 import mock
 import pytest
 
-import tower.mapping.path as path
+import tower.mapping.graph as path
 
 logging.basicConfig(level=logging.DEBUG)
 
