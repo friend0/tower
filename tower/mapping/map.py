@@ -5,16 +5,16 @@ Manages
 
 """
 from __future__ import (absolute_import, division, print_function, unicode_literals)
-from builtins import *
-
-import csv
 from collections import namedtuple
 
+from builtins import *
 import rasterio
+from rasterio.transform import Affine
+
 from geographiclib.geodesic import Geodesic
 from numpy import math
 
-from tower.mapping.spaces.space import Space
+from tower.mapping.space import Space
 
 try:
     from osgeo import gdal
@@ -25,8 +25,6 @@ try:
     from osgeo import osr
 except ImportError:
     import osgeo.gdal as osr
-
-from tower.utils.utils import pairwise
 
 PixelPair = namedtuple("PixelPair", ['x', 'y'], verbose=False)
 
@@ -101,41 +99,44 @@ class Map(Space):
         self.file_name = filename
         try:
             self.img = rasterio.open(self.file_name)
-        except RuntimeError as e:
-            # switch to logging
-            # print('Unable to open {}'.format(str(self.file_name)))
-            # print(e)
+        except:
+            raise RuntimeError("Error opening file with Rasterio")
             sys.exit(1)
+
         self.crs_wkt = self.img.crs_wkt
         spheroid_start = self.crs_wkt.find("SPHEROID[") + len("SPHEROID")
         spheroid_end = self.crs_wkt.find("AUTHORITY", spheroid_start)
+
         self.spheroid = str(self.crs_wkt)[spheroid_start:spheroid_end].strip('[]').split(',')
         self.semimajor = float(self.spheroid[1])
         self.inverse_flattening = float(self.spheroid[2])
         self.flattening = float(1 / self.inverse_flattening)
         self.semiminor = float(self.semimajor * (1 - self.flattening))
         self.eccentricity = math.sqrt(2 * self.flattening - self.flattening * self.flattening)
+
         self.geotransform = self.img.meta['transform']
         self.nodatavalue = self.img.meta['nodata']
+
         self.ncol = self.img.meta['width']
         self.nrow = self.img.meta['height']
+
         self.rotation = self.geotransform[2]  # rotation, 0 if image is 'north-up'
         self.originX = self.geotransform[0]  # top-left x
         self.originY = self.geotransform[3]  # top-left y
         self.pixelWidth = self.geotransform[1]  # w/e pixel resoluton
         self.pixelHeight = self.geotransform[5]  # n/s pixel resolution
 
-        if verbose is True:
-            print("GeoT:{}".format(self.geotransform))
-            print("Metadata:{}".format(self.img.meta))
-
         self.vehicles = {}
-        self.ds = gdal.Open(self.file_name)  # don't like the idea of using gdal after opening file with rasterio
-        # remove gdal dependency, or remove rasterio? On the fly file open/close?
+        # todo: how to prevent openin with both rasterio and gdal
+        #self.ds = gdal.Open(self.file_name)  # don't like the idea of using gdal after opening file with rasterio
         self.__units = 'degrees'
         self.__x = 'lon'
         self.__y = 'lat'
         self.__name = 'Coord'
+
+        if verbose is True:
+            print("GeoT:{}".format(self.geotransform))
+            print("Metadata:{}".format(self.img.meta))
 
     @property
     def units(self):
@@ -186,18 +187,18 @@ class Map(Space):
 
         return pixel[0][0]
 
-    def get_distance_between(self, point_a, point_b, *args, **kwargs):
+    def get_distance_between(self, from_, to, *args, **kwargs):
         """
 
         :return: the distance between two
         """
         mode = kwargs.get('mode', 'fast')
         if mode is 'fast':
-            return self.distance_on_unit_sphere(point_a, point_b, units='km')
+            return self.distance_on_unit_sphere(from_, to, units='km')
         elif True:
-            return self.vinc_inv(point_a, point_b)
+            return self.vinc_inv(from_, to)
 
-    def get_edge(self, *args, **kwargs):
+    def get_edge(self, from_, to):
         """
 
         Sample data between two points
@@ -206,7 +207,7 @@ class Map(Space):
         """
         pass
 
-    def get_elevation_along_edge(self, edge):
+    def get_elevation_along_edge(self, from_, to):
         """
 
         Take as input an edge, which is an iterable of points, and get a set of elevations corresponding to
@@ -256,62 +257,30 @@ class Map(Space):
         :return: A named tuple of type PixelPair containing an x/y pair
 
         """
-        ds = self.ds
-        gt = self.geotransform
-        srs = osr.SpatialReference()
-        srs.ImportFromWkt(ds.GetProjection())
-        srs_lat_lon = srs.CloneGeogCS()
-        ct = osr.CoordinateTransformation(srs_lat_lon, srs)
-        (x, y, holder) = ct.TransformPoint(coordinate.lon, coordinate.lat)
-        x = (x - gt[0]) / gt[1]
-        y = (y - gt[3]) / gt[5]
-        pixel_pair = PixelPair(x=int(x), y=int(y))
-        return pixel_pair
+        with rasterio.open(self.filename, 'r') as ds:
+            affine = ds.affine
+            inv_affine = ~affine
+            px, py = inv_affine * (coordinate.lat, coordinate.lon)
+            return px, py
 
-    # todo: ought to take datum as input
-    def pixel_to_lat_lon(self, pixel):
+    def pixel_to_lat_lon(self, col, row):
         """
+
+
 
         First open the file with gdal @todo:(see if we can get around this), then retrieve its geotransform.
         Next, obtain a spatial reference, and perform a coordinate transformation.
 
-        Return the geographic coordinate corresponding to the input coordinates given in pixel x/y
-        :param coords: A named Tuple of type 'Coordinate' containing a lat/lon pair
-        :return: A named tuple of type PixelPair containing an x/y pair
+        :param col: x pixel
+        :param row: y pixel
+        :return: Return the geographic coordinate corresponding to the input coordinates given in pixel x/y
+
 
         """
-        # get the existing coordinate system
-        ds = self.ds
-        old_cs = osr.SpatialReference()
-        old_cs.ImportFromWkt(ds.GetProjectionRef())
-
-        # create the new coordinate system
-        # @todo: this is ugly and doesnt work off of the datum of the image being read
-        wgs84_wkt = """
-        GEOGCS["WGS 84",
-            DATUM["WGS_1984",
-                SPHEROID["WGS 84",6378137,298.257223563,
-                    AUTHORITY["EPSG","7030"]],
-                AUTHORITY["EPSG","6326"]],
-            PRIMEM["Greenwich",0,
-                AUTHORITY["EPSG","8901"]],
-            UNIT["degree",0.01745329251994328,
-                AUTHORITY["EPSG","9122"]],
-            AUTHORITY["EPSG","4326"]]"""
-        new_cs = osr.SpatialReference()
-        new_cs.ImportFromWkt(wgs84_wkt)
-
-        # create a transform object to convert between coordinate systems
-        transform = osr.CoordinateTransformation(old_cs, new_cs)
-
-        # get the point to transform, pixel (0,0) in this case
-        width = ds.RasterXSize
-        height = ds.RasterYSize
-        gt = ds.GetGeoTransform()
-        minx = gt[0]
-        miny = gt[3] + width * gt[4] + height * gt[5]
-        latlong = transform.TransformPoint(minx, miny)
-        return self.point(lon=latlong[0], lat=latlong[1])
+        with rasterio.open(self.filename, 'r') as ds:
+            affine = ds.affine
+            lon, lat = affine * (col, row)
+            return self.point(lon=lon, lat=lat)
 
     def distance_on_unit_sphere(self, coord1, coord2, lat_lon=None):
         # todo: need to make this work with ellipsoid earth models for more accurate distance calculations
@@ -375,8 +344,6 @@ class Map(Space):
         and the forward and reverse azimuths between these points.
         lats, longs and azimuths are in radians, distance in metres
 
-        :param f: flattening of the geodesic
-        :param a: the semimajor axis of the geodesic
         :param coordinate_a: decimal coordinate given as named tuple coordinate
         :param coordinate_b: decimal coordinate given as named tuple coordinate
         Note: The problem calculates forward and reverse azimuths as: coordinate_a -> coordinate_b
@@ -407,9 +374,6 @@ class Map(Space):
         last_lambda = -4000000.0  # an impossibe value
         omega = lambda_
 
-        # Iterate the following equations,
-        #  until there is no significant change in lembda
-
         while (last_lambda < -3000000.0 or lambda_ != 0 and abs((last_lambda - lambda_) / lambda_) > 1.0e-9):
             sqr_sin_sigma = pow(math.cos(U2) * math.sin(lambda_), 2) + \
                             pow((math.cos(U1) * math.sin(U2) -
@@ -423,8 +387,8 @@ class Map(Space):
             C = (f / 16) * pow(math.cos(alpha), 2) * (4 + f * (4 - 3 * pow(math.cos(alpha), 2)))
             last_lambda = lambda_
             lambda_ = omega + (1 - C) * f * math.sin(alpha) * (sigma + C * math.sin(sigma) * \
-                                                              (Cos2sigma_m + C * math.cos(sigma) * (
-                                                                  -1 + 2 * pow(Cos2sigma_m, 2))))
+                                                               (Cos2sigma_m + C * math.cos(sigma) * (
+                                                                   -1 + 2 * pow(Cos2sigma_m, 2))))
         u2 = pow(math.cos(alpha), 2) * (a * a - b * b) / (b * b)
         A = 1 + (u2 / 16384) * (4096 + u2 * (-768 + u2 * (320 - 175 * u2)))
         B = (u2 / 1024) * (256 + u2 * (-128 + u2 * (74 - 47 * u2)))
@@ -458,6 +422,10 @@ class Map(Space):
         given a reference point and a distance and azimuth to project.
         lats, longs and azimuths are passed in decimal degrees
         Returns ( phi2,  lambda2,  alpha21 ) as a tuple
+
+        :param coordinate_a: start coordinate
+        :param alpha12: heading
+        :param s: arc length
 
         """
         f, a = self.map_file.flattening, self.map_file.semimajor
@@ -546,7 +514,7 @@ class Map(Space):
 
         """
 
-        """ TODO: this is bad form - need to actually check what datum we're using for the map instance """
+        # todo: this is bad form - need to actually check what datum we're using for the map instance
         profile = []
         p = Geodesic.WGS84.Inverse(startCoord.lat, startCoord.lon, endCoord.lat, endCoord.lon)
         l = Geodesic.WGS84.Line(p['lat1'], p['lon1'], p['azi1'])
@@ -558,11 +526,13 @@ class Map(Space):
 
     def get_elevation_along_segment(self, coordinateArray):
         """
+
         A segment is an array of coordinates, or similar iterable structure of coords. This function returns a conjugate
         array of elevations corresponding to each coordinate element in the input array
 
         :param coordinateArray:
         :return:
+
         """
         elevationArray = []
         for coordinate in coordinateArray:
@@ -570,8 +540,9 @@ class Map(Space):
             elevationArray.append(elevation)
         return elevationArray
 
-    def get_coordinates_along_path(self, segmentPairs, readMode='segments', **kwargs):
+    def get_coordinates_along_path(self, segmentPairs, **kwargs):
         """
+
         A path is a set of connected segments. Specifically, this function is to be called with an array of coordinates.
         Iterating through this array pairwise, we call the get_coordinates_in_segment() function iteratively forming a
         new, continuous array or coordinate connecting many segments.
@@ -580,6 +551,7 @@ class Map(Space):
         on readMode, this can be either an array or a .csv file.
         :param kwargs: Optional arguments for the get_coordinates_in_segment() function
         :return: A continuous set of coordinate along a path, which is a set of connected linear segments
+
         """
         coordinateArray = kwargs.get('coordinateArray', None)
         mode = kwargs.get('mode', None)
@@ -609,6 +581,53 @@ class Map(Space):
 
         return profile
 
+    '''
+    def pixel_to_lat_lon(self, pixel):
+        """
+
+        First open the file with gdal @todo:(see if we can get around this), then retrieve its geotransform.
+        Next, obtain a spatial reference, and perform a coordinate transformation.
+
+        Return the geographic coordinate corresponding to the input coordinates given in pixel x/y
+        :param coords: A named Tuple of type 'Coordinate' containing a lat/lon pair
+        :return: A named tuple of type PixelPair containing an x/y pair
+
+        """
+        # get the existing coordinate system
+        ds = self.ds
+        old_cs = osr.SpatialReference()
+        old_cs.ImportFromWkt(ds.GetProjectionRef())
+
+        # create the new coordinate system
+        # @todo: this is ugly and doesnt work off of the datum of the image being read
+        wgs84_wkt = """
+        GEOGCS["WGS 84",
+            DATUM["WGS_1984",
+                SPHEROID["WGS 84",6378137,298.257223563,
+                    AUTHORITY["EPSG","7030"]],
+                AUTHORITY["EPSG","6326"]],
+            PRIMEM["Greenwich",0,
+                AUTHORITY["EPSG","8901"]],
+            UNIT["degree",0.01745329251994328,
+                AUTHORITY["EPSG","9122"]],
+            AUTHORITY["EPSG","4326"]]"""
+        new_cs = osr.SpatialReference()
+        new_cs.ImportFromWkt(wgs84_wkt)
+
+        # create a transform object to convert between coordinate systems
+        transform = osr.CoordinateTransformation(old_cs, new_cs)
+
+        # get the point to transform, pixel (0,0) in this case
+        width = ds.RasterXSize
+        height = ds.RasterYSize
+        gt = ds.GetGeoTransform()
+        minx = gt[0]
+        miny = gt[3] + width * gt[4] + height * gt[5]
+        latlong = transform.TransformPoint(minx, miny)
+        return self.point(lon=latlong[0], lat=latlong[1])
+    '''
+
+    '''
     # todo: think about how we want to return all of these values. This function is beginning to look like a script
     def get_elevation_along_path(self, **kwargs):
         """
@@ -651,10 +670,9 @@ class Map(Space):
                     'latDistance': latDistanceArray, 'lonDistance': lonDistanceArray}
         # return np.array(pathInfo['elevation'])
         return pathInfo
+    '''
 
 
-if __name__ == '__main__':
-    pass
 
     '''
     def plot(self, **window):
@@ -685,7 +703,7 @@ if __name__ == '__main__':
                 cax = fig.add_axes([0.12, 0.1, 0.78, 0.8])
                 cax.get_xaxis().set_visible(False)
                 cax.get_yaxis().set_visible(False)
-                cax.patch.set_alpha(0)
+                cax.patch.set_alpha(0)cl
                 cax.set_frame_on(False)
                 plt.colorbar(orientation='vertical')
                 plt.show()
@@ -693,3 +711,6 @@ if __name__ == '__main__':
                 pass
 
     '''
+
+if __name__ == '__main__':
+    map = Map('/Users/empire/Documents/GitHub/tower/tower/utils/images/scClipProjected.tif')
