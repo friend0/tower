@@ -5,7 +5,6 @@ The Optitrack client
 """
 from __future__ import print_function
 import optirx as rx
-import sys
 from Quaternion import Quat
 
 try:

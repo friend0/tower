@@ -11,12 +11,13 @@ from collections import namedtuple
 
 import affine
 
-affine.set_epsilon(1e-12) # must set epsilon to small value to prevent sensitive trip of degenerate matrix detection
+affine.set_epsilon(1e-12)  # must set epsilon to small value to prevent sensitive trip of degenerate matrix detection
 import rasterio
 from builtins import *
 from geographiclib.geodesic import Geodesic
 from numpy import math
 from tower.mapping.space import Space
+from tower.mapping.graph import Graph
 
 try:
     from osgeo import gdal
@@ -27,8 +28,6 @@ try:
     from osgeo import osr
 except ImportError:
     import osgeo.gdal as osr
-
-PixelPair = namedtuple("PixelPair", ['x', 'y'], verbose=False)
 
 
 class ReadException(Exception):
@@ -122,11 +121,8 @@ class Map(Space):
             raise Exception("Error opening file with Rasterio")
             sys.exit(1)  # todo: is this necessary?
 
-        # todo: change to rasterio equivalents
         spheroid_start = self.crs_wkt.find("SPHEROID[") + len("SPHEROID")
-        # todo: change to rasterio equivalents
         spheroid_end = self.crs_wkt.find("AUTHORITY", spheroid_start)
-        # todo: change to rasterio equivalents
         self.spheroid = str(self.crs_wkt)[spheroid_start:spheroid_end].strip('[]').split(',')
         # todo: perhaps these ought to be properties, calculated lazily w/ most recent spheroid/geotransform
         self.semimajor = float(self.spheroid[1])
@@ -143,7 +139,7 @@ class Map(Space):
 
         # todo: figure out relation between graphs, spaces, vehicles, and controllers
         self.vehicles = {}
-        self.graph = None
+        self.graph = Graph()
 
         self.__units = 'degrees'
         self.__x = 'lon'
@@ -187,7 +183,7 @@ class Map(Space):
         :return: A named tuple with fields corresponding to x, y, and units for concrete implementation of Space
 
         """
-        return collections.namedtuple(self.name, [self.x, self.y, self.units], verbose=False)
+        return collections.namedtuple(self.name, [self.x, self.y, 'units'], verbose=False)
 
     def get_point_elevation(self, coordinate, **kwargs):
         """
@@ -309,7 +305,7 @@ class Map(Space):
 
         """
         lon, lat = self.affine * (col, row)
-        return self.point()(lon=lon, lat=lat, degrees=self.units)
+        return self.point()(lon=lon, lat=lat, units=self.units)
 
     def distance_on_unit_sphere(self, coord1, coord2, lat_lon=None):
         # todo: need to make this work with ellipsoid earth models for more accurate distance calculations
@@ -651,6 +647,8 @@ class Map(Space):
 
 if __name__ == '__main__':
     map_ = Map('/Users/empire/Documents/GitHub/tower/tower/utils/images/scClipProjected.tif')
+    point = map_.point()
+    print(point(0, 0, 0))
     coord = map_.pixel_to_lat_lon(0, 100)
     print(coord)
     pixel = map_.lat_lon_to_pixel(coord)

@@ -5,21 +5,20 @@ A simple PID control loop for crazyflie using a set of Optitrack Flex13's
 
 """
 
-import sys
-import signal
-import math
-import time
 import datetime
 import logging
+import math
+import signal
+import sys
+import time
 from logging import handlers
 
 import msgpack
 import simplejson
-import zmq
 import structlog
-
-from engine.controllers import feedback
-import tower.controllers.pid.pid as pid
+import zmq
+from tower.controllers import frames
+import tower.controllers.playground as pid
 
 
 def add_timestamp(_, __, event_dict):
@@ -114,37 +113,6 @@ pid_viz_conn.connect("tcp://127.0.0.1:5123")
 ctrl_conn = context.socket(zmq.PULL)
 ctrl_conn.connect("tcp://127.0.0.1:5124")
 
-yaw_sp = 0
-
-# todo: All PID loops ought to be organized by a dictionary or an array. They can be looped through or updated by key
-logger.info('ZMQ context set, connections configured')
-# Roll, Pitch and Yaw PID controllers
-r_pid = pid.PID_RP(name="roll", P=35, I=0.3, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
-                   zmq_connection=pid_viz_conn)
-p_pid = pid.PID_RP(name="pitch", P=35, I=0.3, D=8, Integrator_max=5, Integrator_min=-5, set_point=0,
-                   zmq_connection=pid_viz_conn)
-y_pid = pid.PID_RP(name="yaw", P=5, I=0, D=0.35, Integrator_max=5, Integrator_min=-5, set_point=0,
-                   zmq_connection=pid_viz_conn)
-
-# Vertical position and velocity PID loops
-v_pid = pid.PID_RP(name="position", P=0.6, D=0.0075, I=0.25, Integrator_max=100 / 0.035, Integrator_min=-100 / 0.035,
-                   set_point=.5,
-                   zmq_connection=pid_viz_conn)
-
-
-# todo: Testing Velocity Control on Velocity """
-vv_pid = pid.PID_V(name="velocity", p=0.25, i=1e-10, d=1e-10, set_point=0)
-
-logger.info('PIDs Initialized')
-
-prev_z, prev_vz, dt, prev_t, last_ts = 0, 0, 0, time.time(), time.time()
-midi_acc = 0
-on_detect_counter = 0
-max_step = 11  # ms
-min_step = 5  # ms
-ctrl_time = 0
-ts = 0
-
 
 def wind_up_motors(step_time=1e-2):
     """
@@ -220,7 +188,6 @@ class PidQuadControl(object):
         :param gains:
         :return:
         """
-        self.feedback = None
         if configs is None:
             self.configs = \
                 {'roll': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': pid.PID_RP},
@@ -252,7 +219,7 @@ class PidQuadControl(object):
 if __name__ == "__main__":
 
     signal.signal(signal.SIGINT, signal_handler)
-    frame_history = feedback.FrameHistory(filtering=False)
+    frame_history = frames.FrameHistory(filtering=False)
     x, y, z, yaw, roll, pitch = 0, 0, 0, 0, 0, 0
     ts, dt, prev_z, prev_vz, midi_acc, on_detect_counter, ctrl_time = 0, 0, 0, 0, 0, 0, 0
     prev_t, last_ts = time.time(), time.time()
@@ -260,12 +227,22 @@ if __name__ == "__main__":
     motors_not_wound = True
     logger.info('FrameHistory Initialized')
 
+    yaw_sp = 0
+
+    prev_z, prev_vz, dt, prev_t, last_ts = 0, 0, 0, time.time(), time.time()
+    midi_acc = 0
+    on_detect_counter = 0
+    min_step, max_step = 5, 11  # ms
+    ctrl_time = 0
+    ts = 0
+
+
     configs = \
-            {'roll': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': pid.PID_RP},
-             'pitch': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': pid.PID_RP},
-             'yaw': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': pid.PID_RP},
-             'position': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': pid.PID_RP},
-             'velocity': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': pid.PID_V}
+            {'roll': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': playground.PID_RP},
+             'pitch': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': playground.PID_RP},
+             'yaw': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': playground.PID_RP},
+             'position': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': playground.PID_RP},
+             'velocity': {'gains': {'p': 0, 'i': 0, 'd': 0, 'set_point': 0}, 'pid_type': playground.PID_V}
              }
     controller = PidQuadControl(**configs)
     while True:
@@ -293,6 +270,7 @@ if __name__ == "__main__":
             x, y, z, angle, roll, pitch = state[0], state[1], state[2], state[3], state[4], state[5]
 
             # Get the set-points (if there are any)
+            """
             try:
                 while True:
                     ctrl_sp = ctrl_conn.recv_json(zmq.NOBLOCK)
@@ -304,6 +282,8 @@ if __name__ == "__main__":
                                  midi_acc=midi_acc)
             except zmq.error.Again:
                 pass
+
+            """
 
             step = time.time() - last_ts
             logger.debug('time_step', dt=step)
@@ -325,14 +305,14 @@ if __name__ == "__main__":
                     yaw_out = yaw = y_pid.update(((angle - yaw_sp + 360 + 180) % 360) - 180)
 
                     velocity = v_pid.update(z)
-                    logger.debug('pid', name='v_pid', output=velocity)
+                    logger.debug('playground', name='v_pid', output=velocity)
                     velocity = max(min(velocity, 10), -10)  # Limit vertical velocity between -1 and 1 m/sec
                     vv_pid.set_point = velocity
                     dt = (time.time() - prev_t)
                     curr_velocity = (z - prev_z) / dt
                     curr_acc = (curr_velocity - prev_vz) / dt
                     thrust_sp = vv_pid.update(curr_velocity) + 0.50
-                    logger.debug('pid', name='vv_pid', output=velocity)
+                    logger.debug('playground', name='vv_pid', output=velocity)
 
 
                     # print "TH={:.2f}".format(thrust_sp)

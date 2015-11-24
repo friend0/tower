@@ -1,3 +1,8 @@
+"""
+
+Work in progress: Python implementation of the hybrid controller implemented in Python instead of Simulink
+
+"""
 from __future__ import absolute_import
 from __future__ import division
 from builtins import object
