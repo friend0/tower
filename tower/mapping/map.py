@@ -92,53 +92,63 @@ class Map(Space):
     The Map Class offers both atomic and advanced map read operations
 
     The Map Class is built on top of the MapFile class for low-level file reading operations.
-    Map depends on the GDAL and Rasterio abstraction layers.
+    Map depends on Rasterio, GDAL abstraction layers. Map is a concrete implementation of a space, and may contain
+    one or many graph representations of itself, along with a dictionary of vehicles located on the map.
+
+    How Spaces, Vehicles, Graphs and Controllers work together is an open problem in this framework.
 
     """
 
     def __init__(self, filename=None, verbose=False, **kwargs):
 
         self.file_name = filename
+
         try:
-            self.img = rasterio.open(self.file_name)
+            with rasterio.drivers():
+                with rasterio.open(self.file_name, 'r') as ds:
+                    self.affine = ds.meta['affine']
+                    self.ncol = ds.meta['width']
+                    self.nrow = ds.meta['height']
+                    self.geo_transform = ds.meta['transform']
+                    self.no_data_value = ds.meta['nodata']
+                    self.crs = ds.crs
+                    self.crs_wkt = ds.crs_wkt
+                    self.meta = ds.meta
+                    if verbose is True:
+                        print(ds.crs)
+                        print(ds.crs_wkt)
+                        print("Metadata:{}".format(self.img.meta))
         except:
-            raise RuntimeError("Error opening file with Rasterio")
-            sys.exit(1)
+            raise Exception("Error opening file with Rasterio")
+            sys.exit(1)  # todo: is this necessary?
 
-        self.crs_wkt = self.img.crs_wkt
+        # todo: change to rasterio equivalents
         spheroid_start = self.crs_wkt.find("SPHEROID[") + len("SPHEROID")
+        # todo: change to rasterio equivalents
         spheroid_end = self.crs_wkt.find("AUTHORITY", spheroid_start)
-
+        # todo: change to rasterio equivalents
         self.spheroid = str(self.crs_wkt)[spheroid_start:spheroid_end].strip('[]').split(',')
+        # todo: perhaps these ought to be properties, calculated lazily w/ most recent spheroid/geotransform
         self.semimajor = float(self.spheroid[1])
         self.inverse_flattening = float(self.spheroid[2])
         self.flattening = float(1 / self.inverse_flattening)
         self.semiminor = float(self.semimajor * (1 - self.flattening))
         self.eccentricity = math.sqrt(2 * self.flattening - self.flattening * self.flattening)
 
-        self.geotransform = self.img.meta['transform']
-        self.nodatavalue = self.img.meta['nodata']
+        self.rotation = self.geo_transform[2]  # rotation, 0 if image is 'north-up'
+        self.originX = self.geo_transform[0]  # top-left x
+        self.originY = self.geo_transform[3]  # top-left y
+        self.pixelWidth = self.geo_transform[1]  # w/e pixel resoluton
+        self.pixelHeight = self.geo_transform[5]  # n/s pixel resolution
 
-        self.ncol = self.img.meta['width']
-        self.nrow = self.img.meta['height']
-
-        self.rotation = self.geotransform[2]  # rotation, 0 if image is 'north-up'
-        self.originX = self.geotransform[0]  # top-left x
-        self.originY = self.geotransform[3]  # top-left y
-        self.pixelWidth = self.geotransform[1]  # w/e pixel resoluton
-        self.pixelHeight = self.geotransform[5]  # n/s pixel resolution
-
+        # todo: figure out relation between graphs, spaces, vehicles, and controllers
         self.vehicles = {}
-        # todo: how to prevent openin with both rasterio and gdal
-        # self.ds = gdal.Open(self.file_name)  # don't like the idea of using gdal after opening file with rasterio
+        self.graph = None
+
         self.__units = 'degrees'
         self.__x = 'lon'
         self.__y = 'lat'
         self.__name = 'Coord'
-
-        if verbose is True:
-            print("GeoT:{}".format(self.geotransform))
-            print("Metadata:{}".format(self.img.meta))
 
     @property
     def units(self):
@@ -218,7 +228,7 @@ class Map(Space):
         if mode is 'fast':
             return self.distance_on_unit_sphere(from_, to, units='km')
         elif True:
-            return self.vinc_inv(from_, to)
+            return self.vincenty_inverse(from_, to)
 
     def get_edge(self, from_, to):
         """
@@ -279,11 +289,10 @@ class Map(Space):
         :return: A named tuple of type PixelPair containing an x/y pair
 
         """
-        with rasterio.open(self.file_name, 'r') as ds:
-            affine = ds.affine
-            inv_affine = ~affine
-            px, py = inv_affine * (coordinate.lon, coordinate.lat)
-            return px, py
+
+        inv_affine = ~self.affine
+        px, py = inv_affine * (coordinate.lon, coordinate.lat)
+        return px, py
 
     def pixel_to_lat_lon(self, col, row):
         """
@@ -299,12 +308,8 @@ class Map(Space):
 
 
         """
-        with rasterio.drivers():
-            with rasterio.open(self.file_name, 'r') as ds:
-                affine = ds.meta['affine']
-                rasterio.transform.Affine.EPSILON = -10e-12
-                lon, lat = affine * (col, row)
-                return self.point()(lon=lon, lat=lat, degrees=self.units)
+        lon, lat = self.affine * (col, row)
+        return self.point()(lon=lon, lat=lat, degrees=self.units)
 
     def distance_on_unit_sphere(self, coord1, coord2, lat_lon=None):
         # todo: need to make this work with ellipsoid earth models for more accurate distance calculations
@@ -361,7 +366,7 @@ class Map(Space):
 
         return arc * self.semimajor  # scale to return in km
 
-    def vinc_inv(self, coordinate_a, coordinate_b):
+    def vincenty_inverse(self, coordinate_a, coordinate_b):
         """
 
         Returns the distance between two geographic points on the ellipsoid
@@ -439,7 +444,7 @@ class Map(Space):
 
         return {"distance": s, "forward_azimuth": alpha12, "reverse_azimuth": alpha21}
 
-    def vinc_dir(self, coordinate_a, alpha12, s):
+    def vincenty_direct(self, coordinate_a, alpha12, s):
         """
 
         Returns the lat and long of projected point and reverse azimuth
@@ -604,97 +609,6 @@ class Map(Space):
         #    raise TypeError("Invalid mode of operation specified for retrieving elevation by segment")
 
         return profile
-
-    '''
-    def pixel_to_lat_lon(self, pixel):
-        """
-
-        First open the file with gdal @todo:(see if we can get around this), then retrieve its geotransform.
-        Next, obtain a spatial reference, and perform a coordinate transformation.
-
-        Return the geographic coordinate corresponding to the input coordinates given in pixel x/y
-        :param coords: A named Tuple of type 'Coordinate' containing a lat/lon pair
-        :return: A named tuple of type PixelPair containing an x/y pair
-
-        """
-        # get the existing coordinate system
-        ds = self.ds
-        old_cs = osr.SpatialReference()
-        old_cs.ImportFromWkt(ds.GetProjectionRef())
-
-        # create the new coordinate system
-        # @todo: this is ugly and doesnt work off of the datum of the image being read
-        wgs84_wkt = """
-        GEOGCS["WGS 84",
-            DATUM["WGS_1984",
-                SPHEROID["WGS 84",6378137,298.257223563,
-                    AUTHORITY["EPSG","7030"]],
-                AUTHORITY["EPSG","6326"]],
-            PRIMEM["Greenwich",0,
-                AUTHORITY["EPSG","8901"]],
-            UNIT["degree",0.01745329251994328,
-                AUTHORITY["EPSG","9122"]],
-            AUTHORITY["EPSG","4326"]]"""
-        new_cs = osr.SpatialReference()
-        new_cs.ImportFromWkt(wgs84_wkt)
-
-        # create a transform object to convert between coordinate systems
-        transform = osr.CoordinateTransformation(old_cs, new_cs)
-
-        # get the point to transform, pixel (0,0) in this case
-        width = ds.RasterXSize
-        height = ds.RasterYSize
-        gt = ds.GetGeoTransform()
-        minx = gt[0]
-        miny = gt[3] + width * gt[4] + height * gt[5]
-        latlong = transform.TransformPoint(minx, miny)
-        return self.point(lon=latlong[0], lat=latlong[1])
-    '''
-
-    '''
-    # todo: think about how we want to return all of these values. This function is beginning to look like a script
-    def get_elevation_along_path(self, **kwargs):
-        """
-
-        Query elevations along a path defined by a list of segments. Works by calling get_elevation_by_segment()
-        iteratively on the segment list (CSV file)
-
-        :param lat_lon_array: Path specified as an array of coordinates
-        :return: A numpy array with elevations corresponding to each input coordinate
-
-        """
-
-        csv_file = kwargs.get('csv_file', None)
-        lat_lon_array = kwargs.get('coordinate_pairs', None)
-        if bool(csv_file) ^ bool(lat_lon_array):
-            ArgumentError("Attempting to get elevation profile with file and array input, or neither.")
-
-        mycsv = csv.reader(csv_file, delimiter=' ', quotechar='|')
-        mycsv = list(mycsv)
-        lines = [ent[0].split(',') for ent in mycsv[1:] if ent]
-
-        if csv_file:
-            coord_array = [self.point(lat=elem[1], lon=elem[0]) for elem in
-                           [[float(e) for e in line if e] for line in lines]]
-
-        else:
-            coord_array = [item for sublist in
-                           [self.get_coordinates_in_segment(segmentStart, segmentEnd) for segmentStart, segmentEnd in
-                            pairwise(lat_lon_array)] for item in sublist]
-
-        distanceArray = [self.distance_on_unit_sphere(segmentStart, segmentEnd) for segmentStart, segmentEnd in
-                         pairwise(coord_array)]
-        latDistanceArray = [self.lat_lon_distance_on_unit_sphere(segmentStart, segmentEnd, 'lat') for
-                            segmentStart, segmentEnd in pairwise(coord_array)]
-        lonDistanceArray = [self.lat_lon_distance_on_unit_sphere(segmentStart, segmentEnd, 'lon') for
-                            segmentStart, segmentEnd in pairwise(coord_array)]
-        # print "distance:\n", len(distanceArray), distanceArray
-        elevationArray = [self.get_point_elevation(coordinate=elem) for elem in coord_array]
-        pathInfo = {'coords': coord_array, 'elevation': elevationArray, 'distance': distanceArray,
-                    'latDistance': latDistanceArray, 'lonDistance': lonDistanceArray}
-        # return np.array(pathInfo['elevation'])
-        return pathInfo
-    '''
 
     '''
     def plot(self, **window):

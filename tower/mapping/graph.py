@@ -366,6 +366,7 @@ if __name__ == '__main__':
          'x': {'u': 3, 'v': 9, 'y': 2},
          'y': {'s': 7, 'v': 6}}
 
+
     g = Graph(G)
     print(g)
     print(g.dijkstra('s'))
