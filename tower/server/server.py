@@ -21,7 +21,7 @@ import numpy as np
 import requests
 
 from tower import utils
-from tower.mapping.map_interface import MapInterface
+from tower.map.map_interface import MapInterface
 from server_conf.config import settings
 
 HOST = 'localhost'

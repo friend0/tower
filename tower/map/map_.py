@@ -863,7 +863,7 @@ class Tower(Map, multiprocessing.Process):
         self.api = self.map_api.copy()
         self.api.update(self.process_api)
 
-    # @todo: will need to manage the update of all vehicles managed by the map - threads?
+    # @todo: will need to manage the update of all swarm managed by the map - threads?
     def run(self, context=None, worker_ip=None):
         """
         Now that the ZMQ processes are up and running, check to see if they put any api calls on the results queue
@@ -921,7 +921,7 @@ class Tower(Map, multiprocessing.Process):
         @todo: now path class needs to be assigned to a vehicle, and we need to call equations of motion for that
         vehicle processing will consist of:
           - calling vinc_dist between adjacent points on a circular path
-          - once we have tracking angle and distance between points, call vinc_pt with information on the vehicles speed
+          - once we have tracking angle and distance between points, call vinc_pt with information on the swarm speed
           every five seconds.
 
         """
