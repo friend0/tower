@@ -212,7 +212,7 @@ class Graph(dict):
         G is a dictionary, indexed by vertices.  For any vertex v, G[v] is itself a dictionary,
         indexed by the neighbors of v.  For any edge v->w, G[v][w] is the length of the edge.
         This is related to the representation in <http://www.python.org/doc/essays/graphs.html>
-        where Guido van Rossum suggests representing graphs as dictionaries mapping vertices
+        where Guido van Rossum suggests representing graphs as dictionaries map vertices
         to lists of outgoing edges, however dictionaries of edges have many advantages over lists:
         they can store extra information (here, the lengths), they support fast existence tests,
         and they allow easy modification of the graph structure by edge insertion and removal.

@@ -28,7 +28,7 @@ def web_post(url=None, data=None, headers=None):
     time_stamp = strftime("%Y-%m-%d %H:%M:%S")
     payload = next(trajectory)
     payload['time'] = time_stamp
-    r = requests.put("http://nasaforwarding.appspot.com/nasaforwarding/default/api/vehicles/5654313976201216.json",
+    r = requests.put("http://nasaforwarding.appspot.com/nasaforwarding/default/api/swarm/5654313976201216.json",
                      data=payload)
     print(r)
     # @todo: return should interpret http code and decide what to return at that point
@@ -51,5 +51,5 @@ def post_vehicle(data):
     time_stamp = strftime("%Y-%m-%d %H:%M:%S")
     data = {'status': 'idle', 'flightId': '00428', 'hasLanded': 'True', 'altitude': 250.0, 'longitude': 37.1,
             'heading': 0.0, 'dataSource': 'UCSC', 'latitude': -122.0, 'speed': 0.0, 'id': 5654313976201216}
-    r = requests.post(url_base + '/vehicles', json=data, headers=headers)
+    r = requests.post(url_base + '/swarm', json=data, headers=headers)
     print(r.status_code)

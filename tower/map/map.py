@@ -16,8 +16,9 @@ import rasterio
 from builtins import *
 from geographiclib.geodesic import Geodesic
 from numpy import math
-from tower.mapping.space import Space
-from tower.mapping.graph import Graph
+from tower.map.space import Space
+from tower.map.graph import Graph
+from tower.controllers.swarm.swarm import Swarm
 
 try:
     from osgeo import gdal
@@ -92,7 +93,7 @@ class Map(Space):
 
     The Map Class is built on top of the MapFile class for low-level file reading operations.
     Map depends on Rasterio, GDAL abstraction layers. Map is a concrete implementation of a space, and may contain
-    one or many graph representations of itself, along with a dictionary of vehicles located on the map.
+    one or many graph representations of itself, along with a dictionary of swarm located on the map.
 
     How Spaces, Vehicles, Graphs and Controllers work together is an open problem in this framework.
 
@@ -137,9 +138,12 @@ class Map(Space):
         self.pixelWidth = self.geo_transform[1]  # w/e pixel resoluton
         self.pixelHeight = self.geo_transform[5]  # n/s pixel resolution
 
-        # todo: figure out relation between graphs, spaces, vehicles, and controllers
-        self.vehicles = {}
-        self.graph = Graph()
+        self.swarm = Swarm()    # A swarm is a collection of vehicles. A vehicle contains its own controller plugin
+                                # that is updated regularly by swarm it belongs to
+
+        self.graph = Graph()    # Graph object used for planning and controller logic.
+                                # Each vehicle will probably alo need to carry arodun an instance of Graph or Path
+                                # to keep track of it's path
 
         self.__units = 'degrees'
         self.__x = 'lon'

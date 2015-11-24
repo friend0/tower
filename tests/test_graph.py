@@ -3,7 +3,7 @@ import logging
 import mock
 import pytest
 
-import tower.mapping.graph as graph
+import tower.map.graph as graph
 logging.basicConfig(level=logging.DEBUG)
 mockVertex = mock.MagicMock()
 

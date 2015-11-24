@@ -23,8 +23,8 @@ class PID_V(object):
         self.kp = p
         self.ki = i
         self.kd = d
-        self._Ti = old_div(self.kp, self.ki)
-        self._Td = old_div(self.kd, self.kp)
+        self._Ti = self.kp/self.ki
+        self._Td = self.kd/self.kp
 
         self.saturate_max = saturate_max
         self.saturate_min = saturate_min
@@ -127,13 +127,13 @@ class PID_V(object):
 
 
 class PID(object):
-    def __init__(self, name="N/A", P=1.0, I=0.0, D=10.0, Derivator=0, Integrator=0,
+    def __init__(self, name="N/A", p=1.0, i=0.0, d=10.0, Derivator=0, Integrator=0,
                  Integrator_max=300, Integrator_min=-200, set_point=0.0,
                  power=1.0, zmq_connection=None):
         self._zmq = zmq_connection
-        self.Kp = P
-        self.Ki = I
-        self.Kd = D
+        self.Kp = p
+        self.Ki = i
+        self.Kd = d
         self.Derivator = Derivator
         self.power = power
         self.Integrator = Integrator
@@ -214,14 +214,14 @@ class PID(object):
 
 
 class PID_RP(object):
-    def __init__(self, name="N/A", P=1.0, I=0.0, D=10.0, Derivator=0, Integrator=0,
+    def __init__(self, name="N/A", p=1.0, i=0.0, d=10.0, Derivator=0, Integrator=0,
                  Integrator_max=20000, Integrator_min=-20000, set_point=0.0,
                  power=1.0, zmq_connection=None):
 
         self._zmq = zmq_connection
-        self.Kp = P
-        self.Ki = I
-        self.Kd = D
+        self.Kp = p
+        self.Ki = i
+        self.Kd = d
         self.name = name
         self.Derivator = Derivator
         self.power = power
