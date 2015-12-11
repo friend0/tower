@@ -1,6 +1,8 @@
-from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import print_function
+
 from future import standard_library
+
 standard_library.install_aliases()
 from builtins import input
 from builtins import object
@@ -14,8 +16,7 @@ from .server import ThreadedUDPServer, UDP_Interrupt
 from .server_conf import settings
 from tower.server import ZmqSubWorker
 from mapping import map_interface, map
-from tower.utils import logging_thread
-from tower.utils import Interrupt, web_post
+from tower.utils import Interrupt, web_post, logging_thread
 
 KILL_COMMAND = 'DEATH'
 
@@ -26,7 +27,7 @@ PORT = 2002
 class WorkflowManager(object):
     def __init__(self):
         np.matrix('1 1 1')
-        # self.logger = logging.getLogger('py_map_server')
+        # self.logger = logger.getLogger('py_map_server')
         self.processes = {}
         self.threads = {}
         self.context = zmq.Context()

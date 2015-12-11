@@ -2,19 +2,19 @@
 
 """
 from __future__ import print_function
-from multiprocessing import Process, Queue
+
+from multiprocessing import Queue
+
+import zmq
+import msgpack
+import time
+import threading
 
 from builtins import input
 from builtins import object
-import zmq
 
-from world_engine.engine.server.server import ThreadedUDPServer, UDP_Interrupt
-from world_engine.engine.server.server_conf.config import settings
-from world_engine.engine.server.message_passing import ZmqSubWorker
-from tower.map import map_
-from tower.utils import logging_thread
-from tower.utils import Interrupt
-from web_services import web_post
+from server.message_passing.zmq_workers import ZmqSubWorker
+from utils import logging_thread
 
 KILL_COMMAND = 'DEATH'
 
@@ -23,99 +23,101 @@ PORT = 2002
 
 
 class WorkflowManager(object):
-    def __init__(self):
-        # self.logger = logging.getLogger('py_map_server')
+
+    def __init__(self, test_directory=None):
+        # self.logger = logger.getLogger('py_map_server')
         self.processes = {}
         self.threads = {}
+        self.test_dir = test_directory
         self.context = zmq.Context()
-        self.zmq_result = Queue()
-        self.commands = Queue()
-        self.logger = Queue()
+        self.zmqLog = None
 
-    def start_engine(self):
-        self.start_logging()
-        self.start_server_process()
-        # self.start_zmq_processes()
-        self.start_map_process()
+    def start(self):
+        self.start_logging(self.test_dir)
+        # self.start_server_process()
+        self.start_zmq_processes()
         # self.start_web_services()
+
+    def end(self):
+        for process in self.processes.values():
+            process.results_q.put(KILL_COMMAND)
+            print(process)
+            process.terminate()
+        for thread in list(self.threads.values()):
+            print(thread)
+            # thread.kill()
 
     def init_model(self):
         pass
 
-    def start_logging(self):
-        logger = logging_thread.LogThread(self.logger)
+    def add_tower(self, tower):
+        # todo: disallow adding tower before start of logging
+        # todo: pass logging port to Towers? Or have them inherit from config?
+        self.processes[tower.name] = tower
+
+    def start_logging(self, test_dir=None):
+
+        logger = logging_thread.LogThread(worker_port=5555+128, test_dir=test_dir)
         logger.daemon = True
         self.threads['logging_thread'] = logger
         logger.start()
+        self.zmqLog = self.context.socket(zmq.PUB)
+        self.zmqLog.bind("tcp://*:{}".format(str(5683)))
+        time.sleep(.005)
+        self.log("Log portal initialized", "info")
 
     def start_web_services(self):
-        rt = Interrupt(5, web_post, url=None, data=None, headers=None)  # it auto-starts, no need of rt.start()
+        # rt = Interrupt(5, web_post, url=None, data=None, headers=None)  # it auto-starts, no need of rt.start()
+        pass
 
-    def start_server_process(self):
-        """
-        Starts a threaded UDP server for taking API calls. This was mainly impleneted as a communication layer between
-        Matlab and Python. Because it is cumbersome, other options are being pursued, including higher level socket
-        APIs like LCM and ZMQ.
-
-        Note that the server process will instantiate it's own map interface. When all of it's functionality has been
-        duplicated by other means, this module will be deprecated,
-        """
-        map_server = ThreadedUDPServer((HOST, PORT), UDP_Interrupt)
-        server_process = Process(name='server_process', target=map_server.serve_forever)
-        self.processes['server_process'] = server_process
-        self.logger.put("Threaded server loop running in process:'{}'".format(server_process.name))
-        print("UDP server running in process: '{}'".format(server_process.name))
-        server_process.daemon = True
-        server_process.start()
-
-    def start_matlab_process(self):
-        """
-        :return:
-        """
-
-    def start_map_process(self):
-        """
-        Instantiates a Map object and makes it's services available in a process. This process listens for requests
-        as a ZMQ subscriber.
-
-        @todo: This ought to be something other than a subscriber?
-
-        """
-        map_process = map_.Tower(settings['FILE_CONFIG']['filename'])
-        self.processes['map_process'] = map_process
-        self.logger.put("{} beginning..".format(map_process.name))
-        map_process.start()
-        self.logger.put("{} running in: {}".format(map_process.name, map_process.pid))
+    def log(self, msg, level):
+        msg = msgpack.packb([level, msg])
+        self.zmqLog.send(msg)
 
     def start_zmq_processes(self):
         """
         Initialize ZMQ communication links in a process, interface to QGIS
         :return:
         """
-        zmq_worker_qgis = ZmqSubWorker(qin=self.commands, qout=self.zmq_result)
-        zmq_worker_qgis.start()
-        self.threads['qgis_worker'] = zmq_worker_qgis
-        # self.logger.info("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
-        self.logger.put("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
-        print("ZMQ processes running in: '{}'".format(zmq_worker_qgis.name))
+
+        # zmq_worker_qgis = ZmqSubWorker(qin=self.commands, qout=self.zmq_result)
+        # zmq_worker_qgis.start()
+
+        # self.threads['qgis_worker'] = zmq_worker_qgis
+        # self.log("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
+        pass
 
 
-# @todo: remove executable from server file into a workflow_manager file
+def publisher():
+    # Prepare publisher
+    ctx = zmq.Context.instance()
+    pub = ctx.socket(zmq.PUB)
+    pub.bind("tcp://*:{}".format(str(5683)))
+
+    while True:
+        # Send current clock (secs) to subscribers
+        pub.send(msgpack.packb(str(time.time())))
+        time.sleep(1e-3)            # 1msec wait
+
+
 if __name__ == "__main__":
 
+    subscriptions = []
+    manager = WorkflowManager()
+    manager.start()
+
     try:
-        subscriptions = []
-        manager = WorkflowManager()
-        manager.start_engine()
-        command = eval(input('Server Command:'))
-        if command == 'shutdown':
-            print("Giving the kill command")
-            manager.commands.put(KILL_COMMAND)
-            for process in list(manager.processes.values()):
-                print(process)
-                process.terminate()
-            for thread in list(manager.threads.values()):
-                print(thread)
-                # thread.kill()
+
+        #pub_thread = threading.Thread(target=publisher)
+        #pub_thread.start()
+
+        command = input('Server Command:')
+        print(command)
     except KeyboardInterrupt:
         pass
+
+    if command == 'shutdown':
+        print("Giving the kill command")
+        manager.end()
+
+

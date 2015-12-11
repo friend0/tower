@@ -10,7 +10,7 @@ from builtins import object
 from past.utils import old_div
 import zmq
 
-
+# todo: add ZMQ connections to PIDs without one
 class PID_V(object):
     """
 

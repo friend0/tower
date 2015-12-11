@@ -3,37 +3,81 @@ import threading
 import logging
 
 import zmq
+import msgpack
+import sys
+
+import structlog
+from logging import handlers
 
 
 class LogThread(threading.Thread):
-    def __init__(self, q, worker_port=None):
+
+    def __init__(self, worker_port=None, test_dir=None):
         threading.Thread.__init__(self)
-        self.q = q
-        self.logger = logging.getLogger('py_map_server')
+
+        structlog.configure(
+            processors=[
+                structlog.stdlib.filter_by_level,
+                structlog.stdlib.add_logger_name,
+                structlog.stdlib.add_log_level,
+                structlog.stdlib.PositionalArgumentsFormatter(),
+                structlog.processors.TimeStamper(fmt='iso'),
+                structlog.processors.StackInfoRenderer(),
+                structlog.processors.format_exc_info,
+                structlog.processors.JSONRenderer()  # ,
+                # zmq_processor
+            ],
+            context_class=dict,
+            logger_factory=structlog.stdlib.LoggerFactory(),
+            wrapper_class=structlog.stdlib.BoundLogger,
+            cache_logger_on_first_use=True,
+        )
+        self.logger = structlog.getLogger()
         self.logger.setLevel(logging.DEBUG)
-        fh = logging.FileHandler('../logs/spam.log')
-        fh.setLevel(logging.DEBUG)
+        # create file handler which logs messages down to the debug level to a file for postprocessing
+        if test_dir is None:
+            latest_experiment = logging.FileHandler('../logs/octrl.log', mode='w')
+        else:
+            print(test_dir)
+            latest_experiment = logging.FileHandler(test_dir+'/octrl.log', mode='w')
+
+        latest_experiment.setLevel(logging.DEBUG)
+        # create console handler with a higher log level
+        console = logging.StreamHandler(stream=sys.stderr)
+        console.setLevel(logging.WARNING)
+        if test_dir is None:
+            rotating = handlers.RotatingFileHandler('../logs/experiment_history.log', mode='w', maxBytes=128e+6, backupCount=5, delay=True)
+        else:
+            rotating = handlers.RotatingFileHandler(test_dir+'/experiment_history.log', mode='w', maxBytes=128e+6, backupCount=5, delay=True)
+
+        rotating.doRollover()
+        rotating.setLevel(logging.DEBUG)
+
+        # create formatter and add it to the handlers
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
-        self.logger.info('Creating an instance of pyMapServer...')
-        self.logger.info('Instantiation succesful')
+        console.setFormatter(formatter)
+        # add the handlers to logger
+        self.logger.addHandler(latest_experiment)
+        self.logger.addHandler(console)
+        self.logger.addHandler(rotating)
 
         if worker_port is None:
             worker_port = 5555 + 128
+        self.logger.info('Logging initialized in {} on port {}'.format(self.name, worker_port))
+
         context = zmq.Context.instance()
         self.socket = context.socket(zmq.SUB)
-        self.socket.setsockopt(zmq.SUBSCRIBE, '')
+        self.socket.setsockopt(zmq.SUBSCRIBE, "")
 
         worker_ip = 'tcp://localhost:{}'
         self.socket.connect(worker_ip.format(worker_port))
 
     def run(self):
+        levels = {'info': self.logger.info, 'debug': self.logger.debug, 'warning': self.logger.warning,
+                  'error': self.logger.error}
         while 1:
-            msg = self.socket.recv_string()
-            print("Message received")
-            # log_msg = msgpack.unpackb(msg)
-            self.logger.info(msg)
+            # todo: see if we can make this log to different levels
+            msg = self.socket.recv()
+            msg = msgpack.unpackb(msg)
+            levels[msg[0]](msg[1])
 
-            while not self.q.empty():
-                self.logger.info(self.q.get())

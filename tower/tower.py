@@ -15,9 +15,8 @@ import zmq
 from mock import Mock
 
 from utils.utils import grouper
-from tower.map import Map
-from tower.server import ZmqSubWorker
-
+#from tower.map import Map
+#from tower.server import ZmqSubWorker
 
 
 # create the mock object
@@ -36,7 +35,9 @@ fooSpec = ["_fooValue", "source", "doFoo"]
 # create the mock object
 mockFoo = Mock(spec=fooSpec)
 
+
 class Tower(multiprocessing.Process):
+    KILL_COMMAND = 'DEATH'
 
     def __init__(self, local_region, control_laws, worker_ip=None, worker_port=5555):
         """
@@ -52,28 +53,30 @@ class Tower(multiprocessing.Process):
         :param worker_port: ZMQ port
         """
         multiprocessing.Process.__init__(self)
+
+        self.context = zmq.Context()
+        self.client_conn, self.optitrack_conn, self.pid_viz_conn, self.ctrl_conn = self.zmq_setup()
+
         self.region = local_region
         self.controller = control_laws
 
-        if worker_ip is None:
-            self.worker_ip = 'tcp://127.0.0.1:{}'
-        else:
-            self.worker_ip = worker_ip
         self.context = zmq.Context()
 
         self.results_q = multiprocessing.Queue()
-        self.zmq_worker_qgis = ZmqSubWorker(qin=None, qout=self.results_q)
-        self.zmq_worker_qgis.start()
+
+        #self.zmq_worker_qgis = ZmqSubWorker(qin=None, qout=self.results_q)
+        #self.zmq_worker_qgis.start()
 
         """ Configure API """
         # will not include statically defined methods
-        self.map_api = dict((x, y) for x, y in inspect.getmembers(Map, predicate=inspect.ismethod))
-        self.process_api = dict((x, y) for x, y in inspect.getmembers(self, predicate=inspect.ismethod))
-        self.api = self.map_api.copy()
-        self.api.update(self.process_api)
+        #self.map_api = dict((x, y) for x, y in inspect.getmembers(Map, predicate=inspect.ismethod))
+        #self.process_api = dict((x, y) for x, y in inspect.getmembers(self, predicate=inspect.ismethod))
+        #self.api = self.map_api.copy()
+        #self.api.update(self.process_api)
 
     def run(self, context=None, worker_ip=None):
         """
+
         Now that the ZMQ processes are up and running, check to see if they put any api calls on the results queue
         :param context:
         :param worker_ip:
@@ -82,15 +85,102 @@ class Tower(multiprocessing.Process):
         """
 
         # rt = Interrupt(5, post_vehicle, data=self.update_data())  # it auto-starts, no need of rt.start()
-
+        # todo: re-evaluate this, see what NEEDS to run for now.
+        #  Need to run:
+        #       - Controller Update
+        #       - Optitrack Update (Frame History)
+        #       - Zmq?
         while 1:
             if not self.results_q.empty():
                 msg = self.results_q.get()
-                self.decode_api_call(msg)
-                """ TODO: this is a really gross workaround for a weird problem. Seem like the message from QGIS is
-                getting put onto the queue more than once """
-                while not self.results_q.empty():
-                    self.results_q.get()
+                if msg == self.KILL_COMMAND:
+                    self.__kill()
+                    return
+                else:
+                    try:
+                        self.decode_api_call(msg)
+                    except:
+                        pass
+                    """ TODO: this is a really gross workaround for a weird problem. Seem like the message from QGIS is
+                    getting put onto the queue more than once """
+                    #while not self.results_q.empty():
+                    #    self.results_q.get()
+
+    def __kill(self):
+        """
+
+        Kill the currently running Tower instance safely, i.e. handle all vehicle threads safely first
+        Returns:
+
+        """
+        # todo: handle vehicle threads here, misc cleanup here...
+        pass
+
+    def zmq_setup(self):
+        """
+
+        Initialize relevant ZMQ connections
+        Returns: tuple of ZMQ connections initialized
+
+        """
+        client_conn = self.context.socket(zmq.PUSH)
+        client_conn.connect("tcp://127.0.0.1:1212")
+
+        try:
+            optitrack_conn = self.context.socket(zmq.REP)
+            optitrack_conn.bind("tcp://204.102.224.3:5000")
+        except:
+            pass
+
+        pid_viz_conn = self.context.socket(zmq.PUSH)
+        pid_viz_conn.connect("tcp://127.0.0.1:5123")
+
+        ctrl_conn = self.context.socket(zmq.PULL)
+        ctrl_conn.connect("tcp://127.0.0.1:5124")
+
+        return client_conn, optitrack_conn, pid_viz_conn, ctrl_conn
+
+
+    # todo: what is the best way to init and configure logger?
+    def logging_init(self):
+        pass
+
+    # todo: implement intialization routine for low level quad controllers
+    def ll_controller_init(self):
+        pass
+
+    # todo: how to implement 'signal handler' kill switch for control processes
+    def signal_handler(signal, frame):
+        """
+
+        This signal handler function detects a keyboard interrupt and responds by sending kill command to CF via client
+
+        :param signal:
+        :param frame:
+
+        logger.info('Kill Sequence Initiated')
+        print 'Kill Command Detected...'
+        cmd["ctrl"]["roll"] = 0
+        cmd["ctrl"]["pitch"] = 0
+        cmd["ctrl"]["thrust"] = 0
+        cmd["ctrl"]["yaw"] = 0
+        r_pid.reset_dt()
+        p_pid.reset_dt()
+        y_pid.reset_dt()
+        v_pid.reset_dt()
+        # vv_pid.reset_dt()
+
+        # vv_pid.Integrator = 0.0
+        r_pid.Integrator = 0.0
+        p_pid.Integrator = 0.0
+        y_pid.Integrator = 0.0
+        on_detect_counter = 0
+        client_conn.send_json(cmd, zmq.NOBLOCK)
+        print 'Vehicle Killed'
+        sys.exit(0)
+        """
+        pass
+
 
     def decode_api_call(self, raw_cmd):
         """
