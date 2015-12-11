@@ -22,6 +22,7 @@ information.
 Install
 ---------
 World Engine is currently not configured or packaged for distribution. Stay tuned, as this functionality will be introduced soon.::
+Note: this doesn't work. Not hosting on pip yet.
 
     pip install map_server
 
@@ -32,6 +33,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   self
    readme
    installation
    usage
