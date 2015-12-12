@@ -8,15 +8,16 @@ laws. Control laws are specified in the provided framework.
 """
 
 import multiprocessing
-import inspect
 
 import zmq
-
+import msgpack
 from mock import Mock
 
+import time
 from utils.utils import grouper
-#from tower.map import Map
-#from tower.server import ZmqSubWorker
+
+# from tower.map import Map
+# from tower.server import ZmqSubWorker
 
 
 # create the mock object
@@ -39,9 +40,19 @@ mockFoo = Mock(spec=fooSpec)
 class Tower(multiprocessing.Process):
     KILL_COMMAND = 'DEATH'
 
+    cmd = {
+        "version": 1,
+        "client_name": "N/A",
+        "ctrl": {
+            "roll": 0.1,
+            "pitch": 0.1,
+            "yaw": 0.0,
+            "thrust": 0.0
+        }
+    }
+
     def __init__(self, local_region, control_laws, worker_ip=None, worker_port=5555):
         """
-
 
         :param local_region: a space inheriting from ABC region; most commonly, a map or a surface object
         :param control_laws: a tower plugin that specifies safety, stabilization, and management control laws.
@@ -63,16 +74,43 @@ class Tower(multiprocessing.Process):
         self.context = zmq.Context()
 
         self.results_q = multiprocessing.Queue()
+        self.zmqLog = None
 
-        #self.zmq_worker_qgis = ZmqSubWorker(qin=None, qout=self.results_q)
-        #self.zmq_worker_qgis.start()
+        # self.zmq_worker_qgis = ZmqSubWorker(qin=None, qout=self.results_q)
+        # self.zmq_worker_qgis.start()
 
         """ Configure API """
         # will not include statically defined methods
-        #self.map_api = dict((x, y) for x, y in inspect.getmembers(Map, predicate=inspect.ismethod))
-        #self.process_api = dict((x, y) for x, y in inspect.getmembers(self, predicate=inspect.ismethod))
-        #self.api = self.map_api.copy()
-        #self.api.update(self.process_api)
+        # self.map_api = dict((x, y) for x, y in inspect.getmembers(Map, predicate=inspect.ismethod))
+        # self.process_api = dict((x, y) for x, y in inspect.getmembers(self, predicate=inspect.ismethod))
+        # self.api = self.map_api.copy()
+        # self.api.update(self.process_api)
+
+    def start_logging(self):
+        """
+
+        Initialize the ZMQ publisher channel to begin logging
+        :return: None
+
+        """
+
+        self.zmqLog = self.context.socket(zmq.PUB)
+        self.zmqLog.bind("tcp://*:{}".format(str(5683)))
+        time.sleep(.005)
+        self.log("Log portal initialized in {}".format(self.name), "info")
+
+    def log(self, msg, level):
+        """
+
+        Write to log through a ZMQ publisher
+        :param msg: the message to be logged
+        :param level: the level of logging
+        :return: None
+
+        """
+        if self.zmqLog is not None:
+            msg = msgpack.packb([level, msg])
+            self.zmqLog.send(msg)
 
     def run(self, context=None, worker_ip=None):
         """
@@ -94,19 +132,19 @@ class Tower(multiprocessing.Process):
             if not self.results_q.empty():
                 msg = self.results_q.get()
                 if msg == self.KILL_COMMAND:
-                    self.__kill()
+                    self._kill()
                     return
                 else:
                     try:
                         self.decode_api_call(msg)
                     except:
                         pass
-                    """ TODO: this is a really gross workaround for a weird problem. Seem like the message from QGIS is
+                    """ TODO: this is a really gross workaround for a weird problem. Seems like the message from QGIS is
                     getting put onto the queue more than once """
-                    #while not self.results_q.empty():
+                    # while not self.results_q.empty():
                     #    self.results_q.get()
 
-    def __kill(self):
+    def _kill(self):
         """
 
         Kill the currently running Tower instance safely, i.e. handle all vehicle threads safely first
@@ -114,6 +152,24 @@ class Tower(multiprocessing.Process):
 
         """
         # todo: handle vehicle threads here, misc cleanup here...
+        self.cmd["ctrl"]["roll"] = 0
+        self.cmd["ctrl"]["pitch"] = 0
+        self.cmd["ctrl"]["thrust"] = 0
+        self.cmd["ctrl"]["yaw"] = 0
+
+        #r_pid.reset_dt()
+        #p_pid.reset_dt()
+        #y_pid.reset_dt()
+        #v_pid.reset_dt()
+        # vv_pid.reset_dt()
+
+        # vv_pid.Integrator = 0.0
+        #r_pid.Integrator = 0.0
+        #p_pid.Integrator = 0.0
+        #y_pid.Integrator = 0.0
+        on_detect_counter = 0
+        self.client_conn.send_json(self.cmd, zmq.NOBLOCK)
+        print 'Vehicle Killed'
         pass
 
     def zmq_setup(self):
@@ -129,9 +185,9 @@ class Tower(multiprocessing.Process):
         try:
             optitrack_conn = self.context.socket(zmq.REP)
             optitrack_conn.bind("tcp://204.102.224.3:5000")
-        except:
+        except Exception as err:
+            # todo: log a message noting that we've failed to start ZMQ connection
             pass
-
         pid_viz_conn = self.context.socket(zmq.PUSH)
         pid_viz_conn.connect("tcp://127.0.0.1:5123")
 
@@ -140,47 +196,9 @@ class Tower(multiprocessing.Process):
 
         return client_conn, optitrack_conn, pid_viz_conn, ctrl_conn
 
-
-    # todo: what is the best way to init and configure logger?
-    def logging_init(self):
-        pass
-
     # todo: implement intialization routine for low level quad controllers
     def ll_controller_init(self):
         pass
-
-    # todo: how to implement 'signal handler' kill switch for control processes
-    def signal_handler(signal, frame):
-        """
-
-        This signal handler function detects a keyboard interrupt and responds by sending kill command to CF via client
-
-        :param signal:
-        :param frame:
-
-        logger.info('Kill Sequence Initiated')
-        print 'Kill Command Detected...'
-        cmd["ctrl"]["roll"] = 0
-        cmd["ctrl"]["pitch"] = 0
-        cmd["ctrl"]["thrust"] = 0
-        cmd["ctrl"]["yaw"] = 0
-        r_pid.reset_dt()
-        p_pid.reset_dt()
-        y_pid.reset_dt()
-        v_pid.reset_dt()
-        # vv_pid.reset_dt()
-
-        # vv_pid.Integrator = 0.0
-        r_pid.Integrator = 0.0
-        p_pid.Integrator = 0.0
-        y_pid.Integrator = 0.0
-        on_detect_counter = 0
-        client_conn.send_json(cmd, zmq.NOBLOCK)
-        print 'Vehicle Killed'
-        sys.exit(0)
-        """
-        pass
-
 
     def decode_api_call(self, raw_cmd):
         """
@@ -199,10 +217,10 @@ class Tower(multiprocessing.Process):
         argDict = {key: value for key, value in grouper(raw_cmd[1:], 2)}
         cmd(**argDict)  # callable functions in map must take kwargs in order to be called..
 
+
 if __name__ == '__main__':
     tower = Tower(mockRegion, mockControlLaw)
     tower.run()
-
 
 '''
 class Tower(Map, multiprocessing.Process):

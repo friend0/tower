@@ -1,5 +1,7 @@
 """
+
 Tests for Tower module.
+
 """
 import pytest
 

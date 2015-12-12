@@ -56,7 +56,13 @@ class WorkflowManager(object):
         self.processes[tower.name] = tower
 
     def start_logging(self, test_dir=None):
+        """
 
+        Initialize the Logging Thread, and a ZMQ publisher to push to the logger.
+        :param test_dir: directory we want to use to store logs. Defaults to logs folder
+        :return: None
+
+        """
         logger = logging_thread.LogThread(worker_port=5555+128, test_dir=test_dir)
         logger.daemon = True
         self.threads['logging_thread'] = logger
@@ -66,13 +72,13 @@ class WorkflowManager(object):
         time.sleep(.005)
         self.log("Log portal initialized", "info")
 
-    def start_web_services(self):
-        # rt = Interrupt(5, web_post, url=None, data=None, headers=None)  # it auto-starts, no need of rt.start()
-        pass
-
     def log(self, msg, level):
         msg = msgpack.packb([level, msg])
         self.zmqLog.send(msg)
+
+    def start_web_services(self):
+        # rt = Interrupt(5, web_post, url=None, data=None, headers=None)  # it auto-starts, no need of rt.start()
+        pass
 
     def start_zmq_processes(self):
         """
@@ -87,6 +93,38 @@ class WorkflowManager(object):
         # self.log("Threaded ZMQ loop running in: {}".format(zmq_worker_qgis.name))
         pass
 
+    # todo: how to implement 'signal handler' kill switch for control processes
+    def signal_handler(signal, frame):
+        """
+
+        This signal handler function detects a keyboard interrupt and responds by sending kill command to CF via client
+
+        :param signal:
+        :param frame:
+
+        logger.info('Kill Sequence Initiated')
+        print 'Kill Command Detected...'
+        cmd["ctrl"]["roll"] = 0
+        cmd["ctrl"]["pitch"] = 0
+        cmd["ctrl"]["thrust"] = 0
+        cmd["ctrl"]["yaw"] = 0
+        r_pid.reset_dt()
+        p_pid.reset_dt()
+        y_pid.reset_dt()
+        v_pid.reset_dt()
+        # vv_pid.reset_dt()
+
+        # vv_pid.Integrator = 0.0
+        r_pid.Integrator = 0.0
+        p_pid.Integrator = 0.0
+        y_pid.Integrator = 0.0
+        on_detect_counter = 0
+        client_conn.send_json(cmd, zmq.NOBLOCK)
+        print 'Vehicle Killed'
+        sys.exit(0)
+        """
+        pass
+
 
 def publisher():
     # Prepare publisher
@@ -98,7 +136,6 @@ def publisher():
         # Send current clock (secs) to subscribers
         pub.send(msgpack.packb(str(time.time())))
         time.sleep(1e-3)            # 1msec wait
-
 
 if __name__ == "__main__":
 
