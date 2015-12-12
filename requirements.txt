@@ -10,4 +10,3 @@ pyzmq == 15.1.0
 structlog
 mock
 ordereddict
-pytest
