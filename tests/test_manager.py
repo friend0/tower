@@ -7,7 +7,7 @@ Tests for manager module.
 import pytest
 import mock
 
-'''
+
 import tower
 import time
 
@@ -50,5 +50,3 @@ def test_teardown(tmpdir):
     time.sleep(.005)
     manager.end()
     # todo: make sure the processes have cleaned themselves up
-
-'''
