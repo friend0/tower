@@ -2,9 +2,9 @@ import logging
 
 import mock
 
-import tower.map.graph as graph
+import tower
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 mockVertex = mock.MagicMock()
 
 G = {'a': {'b': 10},
@@ -21,7 +21,7 @@ def test_node_init():
     :return:
 
     """
-    g = graph.Graph(G)
+    g = tower.Graph(G)
     assert isinstance(g, object)
 
 
@@ -32,7 +32,7 @@ def test_implicit_graph_creation():
     :return:
 
     """
-    g = graph.Graph(G)
+    g = tower.Graph(G)
     assert (g.num_vertices == 5)
 
 
@@ -43,7 +43,7 @@ def test_add_vertex():
     :return:
 
     """
-    g = graph.Graph(G)
+    g = tower.Graph(G)
     g.add_vertex(mockVertex)
     assert (g.num_vertices == 6)
 
@@ -55,7 +55,7 @@ def test_remove_vertex():
     :return:
 
     """
-    g = graph.Graph(G)
+    g = tower.Graph(G)
     g.remove_vertex(mockVertex)
     assert (g.num_vertices == 4)
 
@@ -67,7 +67,7 @@ def test_edges():
     :return:
 
     """
-    g = graph.Graph(G)
+    g = tower.Graph(G)
     assert (len(g.get_edges()) == 4)
 
 
@@ -78,15 +78,11 @@ def test_shortest_path():
     :return:
 
     """
-    g = graph.Graph(G)
-
+    g = tower.Graph(G)
     assert (g.shortest_path('a', 'b') == [u'a', u'b'])
     assert (g.shortest_path('a', 'c') == [u'a', u'b', u'c'])
 
-
 '''
-
-
 
 def test_edge_exception():
     """
