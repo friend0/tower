@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from swarm.controller_plugins.quadrotor_plugins.quadrotor_pid_plugin import QuadrotorPID
+from tower.swarm.controller_plugins.quadrotor_plugins.quadrotor_pid_plugin import QuadrotorPID
 from tower.tower import Tower
 from tower.swarm.vehicles.crazyflie import Crazyflie
 from workflow_manager import WorkflowManager
