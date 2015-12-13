@@ -11,31 +11,9 @@ import multiprocessing
 
 import zmq
 import msgpack
-from mock import Mock
-
 import time
 from tower.utils.utils import grouper
-
-# from tower.map import Map
-# from tower.server import ZmqSubWorker
-
-
-# create the mock object
-mockRegion = Mock(name="Region")
-# prepare the spec list
-fooSpec = ["_fooValue", "source", "doFoo"]
-
-# create the mock object
-mockFoo = Mock(spec=fooSpec)
-
-# create the mock object
-mockControlLaw = Mock(name="Control")
-# prepare the spec list
-fooSpec = ["_fooValue", "source", "doFoo"]
-
-# create the mock object
-mockFoo = Mock(spec=fooSpec)
-
+from tower.swarm.feedback.frames import FrameHistory
 
 class Tower(multiprocessing.Process):
     KILL_COMMAND = 'DEATH'
@@ -64,27 +42,17 @@ class Tower(multiprocessing.Process):
         :param worker_port: ZMQ port
         """
         multiprocessing.Process.__init__(self)
-
+        self.frame_history = None
+        self.initialize_optitrack()
         self.context = zmq.Context()
         self.client_conn, self.optitrack_conn, self.pid_viz_conn, self.ctrl_conn = self.zmq_setup()
 
         self.region = local_region
         self.controller = control_laws
 
-        self.context = zmq.Context()
-
         self.results_q = multiprocessing.Queue()
         self.zmqLog = None
 
-        # self.zmq_worker_qgis = ZmqSubWorker(qin=None, qout=self.results_q)
-        # self.zmq_worker_qgis.start()
-
-        """ Configure API """
-        # will not include statically defined methods
-        # self.map_api = dict((x, y) for x, y in inspect.getmembers(Map, predicate=inspect.ismethod))
-        # self.process_api = dict((x, y) for x, y in inspect.getmembers(self, predicate=inspect.ismethod))
-        # self.api = self.map_api.copy()
-        # self.api.update(self.process_api)
 
     def start_logging(self):
         """
@@ -175,8 +143,6 @@ class Tower(multiprocessing.Process):
     def initialize_optitrack(self):
         self.frame_history = FrameHistory(filtering=False)
 
-        pass
-
     def zmq_setup(self):
         """
 
@@ -214,18 +180,11 @@ class Tower(multiprocessing.Process):
 
         """
         cmd = raw_cmd[0]
-        # cmd = self.map_api[cmd]
         cmd = self.api[cmd]
-        # for key, value in utils.grouper(raw_cmd[1:], 2):
-        #    print key, value
         argDict = dict((key, value) for key, value in grouper(raw_cmd[1:], 2))  # for python < 2.7 compatibility
         # argDict = {key: value for key, value in grouper(raw_cmd[1:], 2)}  # Only works for Python >= 2.7
         cmd(**argDict)  # callable functions in map must take kwargs in order to be called..
 
-
-#if __name__ == '__main__':
-#    tower = Tower(mockRegion, mockControlLaw)
-#    tower.run()
 
 '''
 class Tower(Map, multiprocessing.Process):

@@ -212,7 +212,7 @@ class Graph(dict):
         This is related to the representation in <http://www.python.org/doc/essays/graphs.html>
         where Guido van Rossum suggests representing graphs as dictionaries map vertices
         to lists of outgoing edges, however dictionaries of edges have many advantages over lists:
-        they can store extra information (here, the lengths), they support fast existence tests,
+        they can store extra information (here, the lengths), they support fast existence playground,
         and they allow easy modification of the graph structure by edge insertion and removal.
         Such modifications are not needed here but are important in many other graph algorithms.
         Since dictionaries obey iterator protocol, a graph represented as described here could
