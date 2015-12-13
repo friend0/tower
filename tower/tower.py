@@ -6,7 +6,7 @@ Manages vehicles in a region (Raster Terrain, Surface Function + Shape and Vecto
 laws. Control laws are specified in the provided framework.
 
 """
-
+from __future__ import (absolute_import, division, print_function, unicode_literals)
 import multiprocessing
 
 import zmq
@@ -14,7 +14,7 @@ import msgpack
 from mock import Mock
 
 import time
-from utils.utils import grouper
+from tower.utils.utils import grouper
 
 # from tower.map import Map
 # from tower.server import ZmqSubWorker
@@ -169,7 +169,7 @@ class Tower(multiprocessing.Process):
         #y_pid.Integrator = 0.0
         on_detect_counter = 0
         self.client_conn.send_json(self.cmd, zmq.NOBLOCK)
-        print 'Vehicle Killed'
+        print('Vehicle Killed')
         pass
 
     def zmq_setup(self):
@@ -209,12 +209,12 @@ class Tower(multiprocessing.Process):
 
         """
         cmd = raw_cmd[0]
-
         # cmd = self.map_api[cmd]
         cmd = self.api[cmd]
         # for key, value in utils.grouper(raw_cmd[1:], 2):
         #    print key, value
-        argDict = {key: value for key, value in grouper(raw_cmd[1:], 2)}
+        argDict = dict((key, value) for key, value in grouper(raw_cmd[1:], 2))  # for python < 2.7 compatibility
+        # argDict = {key: value for key, value in grouper(raw_cmd[1:], 2)}  # Only works for Python >= 2.7
         cmd(**argDict)  # callable functions in map must take kwargs in order to be called..
 
 
