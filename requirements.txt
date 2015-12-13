@@ -2,7 +2,6 @@ future == 0.15.2
 matplotlib == 1.4.3
 numpy == 1.10.1
 requests == 2.8.1
-scipy == 0.16.1
 simplejson == 3.8.1
 msgpack_python == 0.4.6
 pynmea == 0.6.0
@@ -10,3 +9,6 @@ pyzmq == 15.1.0
 structlog
 mock
 ordereddict
+
+# Need to do a manual install of this
+# scipy == 0.16.1
