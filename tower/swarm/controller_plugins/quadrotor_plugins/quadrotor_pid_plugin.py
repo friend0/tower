@@ -2,12 +2,13 @@ from __future__ import (absolute_import, division, print_function, unicode_liter
 
 from builtins import *
 
-from . import pid
+from tower.swarm.controllers import pid
+
 
 class QuadrotorPID(object):
     """
 
-    The Quadrotor PID plugin is deaigned to run onboard vehicles with orientation set-point control already implemented,
+    The Quadrotor PID plugin is designed to run onboard vehicles with orientation set-point control already implemented,
     for example, the stock crazyflie. Given an object of type `Quadrotor,` instantiated with a QuadrotorPID controller,
     a vehicle simply needs to update the controller with the latest state feedback by calling `update_controllers`
 
@@ -42,6 +43,9 @@ class QuadrotorPID(object):
         self.controllers = {controller: self.configs[controller]['pid_type'](**self.configs[controller]['gains']) for
                             controller in self.controllers}
 
+    def update(self, state):
+        return self.update_controllers(state)
+
     def update_controllers(self, state):
         """
 
@@ -52,8 +56,7 @@ class QuadrotorPID(object):
         :return: A dict of output values, i.e {'roll': roll_ctrl_output, ...}
 
         """
-        results = {PID: self.controllers[PID].update(state) for PID in self.controllers}
-        return results
+        return {PID: self.controllers[PID].update(state) for PID in self.controllers}
 
 if __name__ == '__main__':
 

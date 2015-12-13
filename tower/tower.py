@@ -172,6 +172,11 @@ class Tower(multiprocessing.Process):
         print('Vehicle Killed')
         pass
 
+    def initialize_optitrack(self):
+        self.frame_history = FrameHistory(filtering=False)
+
+        pass
+
     def zmq_setup(self):
         """
 
@@ -218,9 +223,9 @@ class Tower(multiprocessing.Process):
         cmd(**argDict)  # callable functions in map must take kwargs in order to be called..
 
 
-if __name__ == '__main__':
-    tower = Tower(mockRegion, mockControlLaw)
-    tower.run()
+#if __name__ == '__main__':
+#    tower = Tower(mockRegion, mockControlLaw)
+#    tower.run()
 
 '''
 class Tower(Map, multiprocessing.Process):

@@ -1,5 +1,9 @@
-import tower
 from mock import Mock
+
+import tower
+from tower import QuadrotorPID, Crazyflie
+
+
 # create the mock object
 mockRegion = Mock(name="Region")
 # prepare the spec list
@@ -22,8 +26,16 @@ if __name__ == '__main__':
 
     # instantiate a Tower
     tower_1 = tower.Tower(mockRegion, mockControlLaw)
+    # instantiate a Manager
     manager = tower.WorkflowManager()
+    # Instantiate Vehicles
+    crazyflie = Crazyflie()
+    # Add Vehicles to the Tower
+
+    # Add Tower to Manager
     manager.add_tower(tower_1)
+
+    # Start all Towers managed by Manager
     for ps in manager.processes.values():
         ps.start()
         print("Started {}".format(ps.name))
