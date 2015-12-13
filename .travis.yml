@@ -14,13 +14,15 @@ before_install:
   - pip install codecov
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: travis_wait 30 pip install -U tox
+install:
+  - travis_wait 30 pip install -U tox
 
 after_success:
   - codecov
 
 # command to run tsts, e.g. python setup.py test
-script: tox
+script:
+  - travis_wait 30 tox
 
 # After you create the Github repo and add it to Travis, run the
 # travis_pypi_setup.py script to finish PyPI deployment setup
