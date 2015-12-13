@@ -1,1 +1,0 @@
-from quadrotor_plugins import quadrotor_pid_plugin
