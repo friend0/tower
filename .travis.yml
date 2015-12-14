@@ -21,7 +21,7 @@ after_success:
 
 # command to run tsts, e.g. python setup.py test
 script:
-    - tox
+    - travis_wait 30 tox
 
 # After you create the Github repo and add it to Travis, run the
 # travis_pypi_setup.py script to finish PyPI deployment setup
