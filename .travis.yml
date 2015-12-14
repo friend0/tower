@@ -43,7 +43,7 @@ before_install:
   - sudo ln -s /run/shm /dev/shm
 
 # command to run tsts, e.g. python setup.py test
-script:  travis_wait 30 tox
+script:  python setup.py test
 
 #addons:
 #  apt:
