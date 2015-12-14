@@ -29,7 +29,7 @@ if __name__ == '__main__':
     # instantiate a Manager
     manager = tower.WorkflowManager()
     # Instantiate Vehicles
-    crazyflie = Crazyflie()
+    crazyflie = Crazyflie(QuadrotorPID)
     # Add Vehicles to the Tower
 
     # Add Tower to Manager

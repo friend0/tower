@@ -8,13 +8,11 @@ from tower.swarm.controllers import pid
 class QuadrotorPID(object):
     """
 
-    The Quadrotor PID plugin is designed to run onboard vehicles with orientation set-point control already implemented,
+    The Quadrotor PID plugin is designed to run 'on top of' vehicles with orientation set-point control;
     for example, the stock crazyflie. Given an object of type `Quadrotor,` instantiated with a QuadrotorPID controller,
-    a vehicle simply needs to update the controller with the latest state feedback by calling `update_controllers`
-
+    a vehicle simply needs to update the controller with the latest state feedback by calling `update`
 
     """
-
     def __init__(self, configs=None, *args, **kwargs):
         """
 
@@ -23,6 +21,7 @@ class QuadrotorPID(object):
         :param ref:
         :param gains:
         :return:
+
         """
         if configs is None:
             self.configs = \
@@ -36,30 +35,34 @@ class QuadrotorPID(object):
             self.configs = configs
 
         self.controllers = {'roll': None, 'pitch': None, 'yaw': None, 'position': None, 'velocity': None}
+
         #for controller in self.controllers:
             #print(self.configs[controller]['pid_type'])
             #print((self.configs[controller]['gains']))
             #print(self.configs[controller]['pid_type'](**self.configs[controller]['gains']))
+
         self.controllers = {controller: self.configs[controller]['pid_type'](**self.configs[controller]['gains']) for
                             controller in self.controllers}
 
-    def update(self, state):
-        return self.update_controllers(state)
+        self.controllers = dict((controller, self.configs[controller]['pid_type'](**self.configs[controller]['gains']))
+                                for controller in self.controllers)
 
-    def update_controllers(self, state):
+    def update(self, state):
         """
 
-        Update all the PID controllers with new state feedback. Each vehicle updates it's controller with just its
-        state.
+        Update all the PID controllers with new state feedback. Each vehicle updates it's controller with its
+        new state, then returns a new control command.
 
         :param state: A dict of states, specified by controller, i.e. {'roll': roll_state (x), ...}
         :return: A dict of output values, i.e {'roll': roll_ctrl_output, ...}
 
         """
-        return {PID: self.controllers[PID].update(state) for PID in self.controllers}
+        # return {PID: self.controllers[PID].update(state) for PID in self.controllers}
+        return dict((PID, self.controllers[PID].update(state)) for PID in self.controllers)
+
 
 if __name__ == '__main__':
 
     cf_controller = QuadrotorPID()
     while 1:
-        print(cf_controller.update_controllers(4))
+        print(cf_controller.update(4))

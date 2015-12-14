@@ -13,8 +13,7 @@ import threading
 from builtins import input
 from builtins import object
 
-from server.message_passing.zmq_workers import ZmqSubWorker
-from utils import logging_thread
+from tower.utils import logging_thread
 
 KILL_COMMAND = 'DEATH'
 

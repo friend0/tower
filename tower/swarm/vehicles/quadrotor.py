@@ -10,11 +10,13 @@ from abc import ABCMeta, abstractproperty
 from future.utils import with_metaclass
 
 """
+
 The vehicle, above all else, is our physical implement. It must understand its surroundings, and also how it's dynamics
 inform the way that it can interact with the world.
 
 To this end, the vehicle must inherit from a physical model. Fine or course, this model must - at minimum - describe how
 a vehicle's point mass translates, and how the possible paths it may take are limited by the reality of under-actuation.
+
 """
 
 
@@ -32,34 +34,39 @@ class Quadrotor(with_metaclass(ABCMeta, object)):
          'ft/s': {'m/s': 0.3048, 'km/h': 1.09728, 'mph': 0.681818, 'kn': 0.592484, 'ft/s': 1}
          }
 
-    # todo: really, the vehicle ought to compose with coordinate systems.
     @property
     def coordinates(self):
-        return self._coordinates
+        """ return the current coordinates of the Quadrotor """
+        pass
 
     @coordinates.setter
     def coordinates(self, coordinate):
-        if abs(coordinate.lat) > 90:
-            raise ValueError("Invalid latitude")
-        if abs(coordinate.lon) > 180:
-            raise ValueError("Invalid longitude")
-        self._coordinates = coordinate
+        """ Update the coordinates of the Quadrotor """
+        pass
 
     @abstractproperty
     def vehicle_type(self):
-        """"
-
-        Return a string representing the type of vehicle this is.
-
-        """
+        """" Return a string representing the type of vehicle this is. """
         pass
 
     @abstractproperty
     def range(self):
+        """ Indicate the maximum range of the Quadrotor"""
         pass
 
     def speed_conversion(self, rate, units1, units2):
+        # todo: speed can be a tuple, carry around it's own units. Eliminates need for units1
+        """
 
+        Simple API for using the units conversion table. Simply enter the current rate,
+        current units, and desired units to get converted rate value in new units.
+
+        :param rate: The current speed
+        :param units1: The current units of the speed
+        :param units2: The desired units
+        :return: The speed in terms of units2
+
+        """
         try:
             conversion = self.conversion_table[units1][units2]
             return rate * conversion

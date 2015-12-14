@@ -14,13 +14,16 @@ class Crazyflie(Quadrotor):
 
 
     """
-
     def __init__(self, controller, name=None, dynamics=None,  initial_coords=None, designation='crazyflie', rnge=0):
         self.dynamics = dynamics
         self.controller = controller
         self.designation = designation
         self.initial_coordinates = initial_coords
-        self.coordinates = self.initial_coordinates
+
+        # todo: self.coordinates = self.initial_coordinates
+        #self.coordinates = self.initial_coordinates
+
+        self.altitude = 0
         self.heading = 0
         self.speed = 0
         self.weight = 1
