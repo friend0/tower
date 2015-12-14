@@ -4,7 +4,6 @@ sudo: false   # for container based install
 
 language:
   - python
-
 env:
   - TOXENV=py34
   - TOXENV=py33
