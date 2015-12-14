@@ -30,6 +30,12 @@ deploy:
     repo: friend0/tower
     condition: $TOXENV == py27
 
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - scipy
 
 before_install:
   - pip install codecov
