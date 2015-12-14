@@ -5,9 +5,6 @@ sudo: false   # for container based install
 language:
   - python
 
-branches:
-  only:
-m    - controller_integration
 env:
   - TOXENV=py34
   - TOXENV=py33
