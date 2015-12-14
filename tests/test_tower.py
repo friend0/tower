@@ -3,8 +3,6 @@
 Tests for Tower module.
 
 """
-import pytest
-
 
 class TestTower:
 
