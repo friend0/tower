@@ -23,7 +23,7 @@ mockFoo = Mock(spec=fooSpec)
 KILL_COMMAND = 'DEATH'
 
 if __name__ == '__main__':
-
+    #comment
     manager = tower.WorkflowManager()
     # todo: I don't know if I like this from a user perspective
     manager.start()  # call this to start logging, other zmq processes
