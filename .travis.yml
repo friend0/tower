@@ -7,7 +7,6 @@ language:
 
 branches:
   only:
-    - master
     - controller_integration
 env:
   - TOXENV=py34
