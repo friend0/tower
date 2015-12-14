@@ -33,6 +33,6 @@ deploy:
 
 before_install:
   - pip install codecov
-    - apt-get -qq install scipy
+  - apt-get -qq install scipy
 after_success:
   - codecov
