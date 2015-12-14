@@ -1,16 +1,8 @@
-# Config file for automatic testing at travis-ci.org
-# This file will be regenerated if you run travis_pypi_setup.py
 sudo: false   # for container based install
-
 language: python
-python:
-  - "pypy"
-  - 2.6
-  - 2.7
-  - "2.7_with_system_site_packages"
-  - 3.2
-  - "3.2_with_system_site_packages"
-  - 3.3
+
+virtualenv:
+  system_site_packages: true
 
 env:
   - TOXENV=py34
@@ -18,16 +10,8 @@ env:
   - TOXENV=py27
   - TOXENV=py26
 
- before_install:
-     - apt-get update
-     - apt-get install -qq python-numpy python-scipy
-     - pip install codecov
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
     - pip install -U tox
-
-after_success:
-  - codecov
 
 # command to run tsts, e.g. python setup.py test
 script:
@@ -46,3 +30,9 @@ deploy:
     repo: friend0/tower
     condition: $TOXENV == py27
 
+
+before_install:
+  - pip install codecov
+    - apt-get -qq install scipy
+after_success:
+  - codecov
