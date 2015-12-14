@@ -4,7 +4,6 @@ Tests for manager module.
 
 """
 
-import pytest
 import mock
 
 

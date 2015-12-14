@@ -4,6 +4,7 @@ Tests for Tower module.
 
 """
 
+
 class TestTower:
 
     @classmethod
