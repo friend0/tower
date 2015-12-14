@@ -32,8 +32,6 @@ deploy:
 
 addons:
   apt:
-    sources:
-    - ubuntu-toolchain-r-test
     packages:
     - scipy
 
