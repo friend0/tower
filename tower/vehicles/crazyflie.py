@@ -1,7 +1,12 @@
 from __future__ import (absolute_import, division, print_function, unicode_literals)
 
-from tower.swarm.vehicles.quadrotor import Quadrotor
 from uuid import uuid4
+
+import msgpack
+import zmq
+
+from tower.units.units import Speed, Weight
+from tower.vehicles import Quadrotor
 
 
 class Crazyflie(Quadrotor):
@@ -12,31 +17,68 @@ class Crazyflie(Quadrotor):
     - Take position commands from Tower
     - Run controller and determine output commands
 
-
     """
-    def __init__(self, controller, name=None, dynamics=None,  initial_coords=None, designation='crazyflie', rnge=0):
+    index = 0
+
+    def __init__(self, controller_plugin, name=None, dynamics=None, initial_coords=None, designation='crazyflie'):
+        Crazyflie.index += 1
+        self.id = uuid4()
+        if name is None:
+            self.name = 'Crazyflie_{}'.format(Crazyflie.index)
+        else:
+            self.name = name
         self.dynamics = dynamics
-        self.controller = controller
+        self.controller = controller_plugin
         self.designation = designation
         self.initial_coordinates = initial_coords
 
-        # todo: self.coordinates = self.initial_coordinates
-        #self.coordinates = self.initial_coordinates
+        self.coordinates = self.initial_coordinates
 
+        # todo: make tuples for these too
         self.altitude = 0
         self.heading = 0
-        self.speed = 0
-        self.weight = 1
+        # todo: extend the speed, weight namedtuples to check for valid inputs
+        self.speed = Speed(rate=0, unitsPerTime='km/h')
+        self.weight = Weight(weight=30, units='g')
         self.payload = 0
-        self.id = uuid4()
-        if name is None:
-            self.name = {self.designation + str(self.id): self.id}
-        else:
-            self.name = {name: self.id}
+        self.context = zmq.Context()
+        self.zmqLog = None
+        self.start_logging()
 
-        self.state = {'status': 'idle', 'flightId': None, 'hasLanded': False, 'altitude': self.altitude,
-                      'longitude': self.coordinates.lon, 'heading': self.heading, 'dataSource': 'UCSC_HSL',
-                      'latitude': self.coordinates.lat, 'speed': self.speed}
+        if self.coordinates:
+            longitude = self.coordinates.lon
+            latitutde = self.coordinates.lat
+        else:
+            longitude = None
+            latitutde = None
+
+        current_state = {'status': 'idle', 'flightId': None, 'hasLanded': False, 'altitude': self.altitude,
+                      'longitude': longitude, 'heading': self.heading, 'dataSource': 'UCSC_HSL',
+                      'latitude': latitutde, 'speed': self.speed.rate, 'units': self.speed.unitsPerTime}
+
+    def start_logging(self, port=5683):
+        """
+
+        :param port: the port to PUSH on
+        :return: None
+
+        """
+        self.zmqLog = self.context.socket(zmq.PUSH)
+        self.zmqLog.connect("tcp://127.0.0.1:{}".format(str(port)))
+        self.log("Log portal initialized in {}, id:{}".format(self.name, self.id), "info")
+
+    def log(self, msg,level):
+        """
+
+        Write to log through a ZMQ PUSH
+        :param msg: the message to be logged
+        :param level: the level of logging
+        :return: None
+
+        """
+        if self.zmqLog is not None:
+            msg = msgpack.packb([level, msg])
+            self.zmqLog.send(msg)
 
     def update(self, state):
         return self.controller.update(state)
