@@ -64,7 +64,7 @@ class Tower(multiprocessing.Process):
     def start_logging(self):
         """
 
-        Initialize the ZMQ publisher channel to begin logging
+        Initialize the ZMQ publisher channel to begin logger
         :return: None
 
         """
@@ -78,7 +78,7 @@ class Tower(multiprocessing.Process):
 
         Write to log through a ZMQ PUSH
         :param msg: the message to be logged
-        :param level: the level of logging
+        :param level: the level of logger
         :return: None
 
         """
@@ -127,7 +127,7 @@ class Tower(multiprocessing.Process):
         #       - Zmq?
 
         self.context = zmq.Context()  # do this first, subzequent inits require a ZMQ context
-        self.start_logging()    # do this next, start logging
+        self.start_logging()    # do this next, start logger
         self.zmq_setup()
         self.frame_history, self.optitrack_conn = self.initialize_optitrack(**self.optitrack_args)
 

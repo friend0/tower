@@ -2,7 +2,7 @@ import mock
 
 import tower
 
-# logging.basicConfig(level=logging.DEBUG)
+# logger.basicConfig(level=logger.DEBUG)
 mockVertex = mock.MagicMock()
 
 G = {'a': {'b': 10},

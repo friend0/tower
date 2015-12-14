@@ -10,7 +10,7 @@ import zmq
 from builtins import input
 from builtins import object
 
-from tower.logging import logging_thread
+from tower.logger import logging_thread
 
 KILL_COMMAND = 'DEATH'
 
@@ -47,8 +47,8 @@ class WorkflowManager(object):
         pass
 
     def add_tower(self, tower):
-        # todo: disallow adding tower before start of logging
-        # todo: pass logging port to Towers? Or have them inherit from config?
+        # todo: disallow adding tower before start of logger
+        # todo: pass logger port to Towers? Or have them inherit from config?
         self.processes[tower.name] = tower
 
     def start_logging(self, log_directory=None):

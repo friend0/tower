@@ -72,7 +72,7 @@ class Crazyflie(Quadrotor):
 
         Write to log through a ZMQ PUSH
         :param msg: the message to be logged
-        :param level: the level of logging
+        :param level: the level of logger
         :return: None
 
         """
