@@ -23,8 +23,9 @@ install:
   # OK, this used to *fix* the build, but now it *breaks* the build.
   # If you're reading this, good luck out there. I'm not sure what to tell you.
   - conda config --add channels soft-matter
-  - conda create -n testenv --yes $DEPS pip mock future requests pyzmq setuptools gdal rasterio python=$TRAVIS_PYTHON_VERSION
+  - conda create -n testenv --yes $DEPS pip mock requests pyzmq setuptools gdal rasterio python=$TRAVIS_PYTHON_VERSION
   - source activate testenv
+  - pip install future
   # for debugging...
   - echo $PATH
   - which python
