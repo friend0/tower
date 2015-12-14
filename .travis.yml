@@ -2,8 +2,13 @@
 # This file will be regenerated if you run travis_pypi_setup.py
 sudo: false   # for container based install
 
-language: python
+language:
+  - python
 
+branches:
+  only:
+    - master
+    - controller_integration
 env:
   - TOXENV=py34
   - TOXENV=py33
