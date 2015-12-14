@@ -48,7 +48,6 @@ class QuadrotorPID(object):
                                 for controller in self.controllers)
 
     def __str__(self):
-        controllers = str()
         controllers = list(self.configs.keys())
         final = ["Controller:\t{}:\n Gains:\t{} \n PID Type:\t{}".format(controller, self.configs[controller]['gains'],
                  self.configs[controller]['pid_type']) for controller in controllers]
