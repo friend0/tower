@@ -6,7 +6,7 @@ import msgpack
 import zmq
 
 from tower.units.units import Speed, Weight
-from tower.vehicles import Quadrotor
+from tower.vehicles.quadrotor import Quadrotor
 
 
 class Crazyflie(Quadrotor):
@@ -65,9 +65,9 @@ class Crazyflie(Quadrotor):
         """
         self.zmqLog = self.context.socket(zmq.PUSH)
         self.zmqLog.connect("tcp://127.0.0.1:{}".format(str(port)))
-        self.log("Log portal initialized in {}, id:{}".format(self.name, self.id), "info")
+        self.log("Log portal initialized in '{}', id:{}".format(self.name, self.id), "info")
 
-    def log(self, msg,level):
+    def log(self, msg, level):
         """
 
         Write to log through a ZMQ PUSH

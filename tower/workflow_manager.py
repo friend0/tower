@@ -3,17 +3,14 @@
 """
 from __future__ import (absolute_import, division, print_function, unicode_literals)
 
-from multiprocessing import Queue
-
-import zmq
-import msgpack
 import time
-import threading
 
+import msgpack
+import zmq
 from builtins import input
 from builtins import object
 
-from tower.utils import logging_thread
+from tower.logging import logging_thread
 
 KILL_COMMAND = 'DEATH'
 
@@ -31,8 +28,8 @@ class WorkflowManager(object):
         self.context = zmq.Context()
         self.zmqLog = None
 
-    def start(self):
-        self.start_logging(self.test_dir)
+    def start(self, log_directory=None):
+        self.start_logging(log_directory=log_directory)
         # self.start_server_process()
         self.start_zmq_processes()
         # self.start_web_services()
@@ -54,7 +51,7 @@ class WorkflowManager(object):
         # todo: pass logging port to Towers? Or have them inherit from config?
         self.processes[tower.name] = tower
 
-    def start_logging(self, test_dir=None):
+    def start_logging(self, log_directory=None):
         """
 
         Initialize the Logging Thread, and a ZMQ publisher to push to the logger.
@@ -62,12 +59,13 @@ class WorkflowManager(object):
         :return: None
 
         """
-        logger = logging_thread.LogThread(worker_port=5555+128, test_dir=test_dir)
+
+        logger = logging_thread.LogThread(worker_port=5555 + 128, log_directory=log_directory)
         logger.daemon = True
         self.threads['logging_thread'] = logger
         logger.start()
-        self.zmqLog = self.context.socket(zmq.PUB)
-        self.zmqLog.bind("tcp://*:{}".format(str(5683)))
+        self.zmqLog = self.context.socket(zmq.PUSH)
+        self.zmqLog.connect("tcp://127.0.0.1:{}".format(str(5555 + 128)))
         time.sleep(.005)
         self.log("Log portal initialized", "info")
 

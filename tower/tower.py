@@ -7,13 +7,16 @@ laws. Control laws are specified in the provided framework.
 
 """
 from __future__ import (absolute_import, division, print_function, unicode_literals)
-import multiprocessing
 
-import zmq
-import msgpack
+import multiprocessing
 import time
+
+import msgpack
+import zmq
+
+from tower.controllers.feedback.frames import FrameHistory
 from tower.utils.utils import grouper
-from tower.swarm.feedback.frames import FrameHistory
+
 
 class Tower(multiprocessing.Process):
     KILL_COMMAND = 'DEATH'
@@ -29,7 +32,11 @@ class Tower(multiprocessing.Process):
         }
     }
 
-    def __init__(self, local_region, control_laws, worker_ip=None, worker_port=5555):
+    client_conn = None
+    pid_viz_conn = None
+    ctrl_conn = None
+
+    def __init__(self, local_region, control_laws, worker_ip=None, worker_port=5555, **optitrack_args):
         """
 
         :param local_region: a space inheriting from ABC region; most commonly, a map or a surface object
@@ -40,19 +47,19 @@ class Tower(multiprocessing.Process):
                 follow.
         :param worker_ip: ZMQ IP address
         :param worker_port: ZMQ port
+
         """
         multiprocessing.Process.__init__(self)
-        self.frame_history = None
-        self.initialize_optitrack()
-        self.context = zmq.Context()
-        self.client_conn, self.optitrack_conn, self.pid_viz_conn, self.ctrl_conn = self.zmq_setup()
+        self.client_conn, self.ctrl_conn, self.pid_viz_conn = None, None, None
+        self.optitrack_args = optitrack_args
+        self.frame_history, self.optitrack_conn = None, None
 
         self.region = local_region
         self.controller = control_laws
+        self.vehicles = {}
 
         self.results_q = multiprocessing.Queue()
         self.zmqLog = None
-
 
     def start_logging(self):
         """
@@ -61,16 +68,15 @@ class Tower(multiprocessing.Process):
         :return: None
 
         """
-
-        self.zmqLog = self.context.socket(zmq.PUB)
-        self.zmqLog.bind("tcp://*:{}".format(str(5683)))
+        self.zmqLog = self.context.socket(zmq.PUSH)
+        self.zmqLog.connect("tcp://127.0.0.1:{}".format(str(5683)))
         time.sleep(.005)
         self.log("Log portal initialized in {}".format(self.name), "info")
 
     def log(self, msg, level):
         """
 
-        Write to log through a ZMQ publisher
+        Write to log through a ZMQ PUSH
         :param msg: the message to be logged
         :param level: the level of logging
         :return: None
@@ -79,6 +85,29 @@ class Tower(multiprocessing.Process):
         if self.zmqLog is not None:
             msg = msgpack.packb([level, msg])
             self.zmqLog.send(msg)
+
+    def initialize_optitrack(self, **kwargs):
+        try:
+            optitrack_conn = self.context.socket(zmq.REP)
+            optitrack_conn.bind("tcp://204.102.224.3:5000")
+            self.log('Initialize Optitrack REP socket', 'info')
+        except Exception as err:
+            self.log('Failed to initialize Optitrack REP socket, error: {}'.format(err), 'info')
+            optitrack_conn = None
+        return FrameHistory(**kwargs), optitrack_conn
+
+    def zmq_setup(self):
+        """
+
+        Initialize relevant ZMQ connections
+        Returns: tuple of ZMQ connections initialized
+
+        """
+        pass
+
+    def add_vehicles(self, vehicles):
+        for vehicle in vehicles:
+            self.vehicles[vehicle.name] = vehicle
 
     def run(self, context=None, worker_ip=None):
         """
@@ -96,21 +125,78 @@ class Tower(multiprocessing.Process):
         #       - Controller Update
         #       - Optitrack Update (Frame History)
         #       - Zmq?
+
+        self.context = zmq.Context()  # do this first, subzequent inits require a ZMQ context
+        self.start_logging()    # do this next, start logging
+        self.zmq_setup()
+        self.frame_history, self.optitrack_conn = self.initialize_optitrack(**self.optitrack_args)
+
+        # todo: verify these all work if we have multiple instances of Tower
+        self.client_conn = self.context.socket(zmq.PUSH)
+        self.client_conn.connect("tcp://127.0.0.1:1212")
+
+        self.pid_viz_conn = self.context.socket(zmq.PUSH)
+        self.pid_viz_conn.connect("tcp://127.0.0.1:5123")
+
+        self.ctrl_conn = self.context.socket(zmq.PULL)
+        self.ctrl_conn.connect("tcp://127.0.0.1:5124")
+
+        #ctrl_conn = self.context.socket(zmq.PULL)
+        #ctrl_conn.connect("tcp://127.0.0.1:5124")
+
+        self.log('Running Tower', 'info')
         while 1:
+
+            # todo: think about a nicer way to do this, potentially with ZMQ
             if not self.results_q.empty():
                 msg = self.results_q.get()
                 if msg == self.KILL_COMMAND:
                     self._kill()
                     return
-                else:
-                    try:
-                        self.decode_api_call(msg)
-                    except:
-                        pass
-                    """ TODO: this is a really gross workaround for a weird problem. Seems like the message from QGIS is
-                    getting put onto the queue more than once """
-                    # while not self.results_q.empty():
-                    #    self.results_q.get()
+
+            # Receive Packet over ZMQ, unpack it
+            if self.optitrack_conn:
+                frame_data = msgpack.unpackb(packet)
+                self.optitrack_conn.send(b'Ack')
+                detected = bool(frame_data[-1])
+                if self.frame_history.update(frame_data) is None:
+                    continue
+            else:
+                packet = None
+                frame_data = None
+                detected = False
+
+
+
+            # Get the set-points (if there are any)
+            # todo: this will probably only work out nicely for one vehicle
+            # todo: need to gather individual set points and 'send' them to vehicle
+                            #while True:
+
+
+
+            #print("Not Here")
+            try:
+                while True:
+                    ctrl_sp = self.ctrl_conn.recv_json(flags=zmq.NOBLOCK)
+                    yaw_sp = ctrl_sp["set-points"]["yaw"]
+                    # r_pid.set_point = ctrl_sp["set-points"]["roll"]
+                    # p_pid.set_point = ctrl_sp["set-points"]["pitch"]
+                    midi_acc = ctrl_sp["set-points"]["velocity"]
+
+                    #logger.debug('set_points', yaw_sp=yaw_sp, roll_sp=r_pid.set_point, pitch_sp=p_pid.set_point,
+                    #             midi_acc=midi_acc)
+            except zmq.error.Again:
+                pass
+
+            if detected:
+                for vehicle in self.vehicles:
+                    """
+                    todo: for operation with many vehicles, frame_data with all information will get passed to each
+                    vehicle. Is there a simple way to just get info on relevant rigid body?
+                    - How will we associate a rigid body iod with a vehicle/vehicle name/ vehicle ID?
+                    """
+                    vehicle.update(frame_data)
 
     def _kill(self):
         """
@@ -137,38 +223,7 @@ class Tower(multiprocessing.Process):
         #y_pid.Integrator = 0.0
         on_detect_counter = 0
         self.client_conn.send_json(self.cmd, zmq.NOBLOCK)
-        print('Vehicle Killed')
-        pass
-
-    def initialize_optitrack(self):
-        self.frame_history = FrameHistory(filtering=False)
-
-    def zmq_setup(self):
-        """
-
-        Initialize relevant ZMQ connections
-        Returns: tuple of ZMQ connections initialized
-
-        """
-        client_conn = self.context.socket(zmq.PUSH)
-        client_conn.connect("tcp://127.0.0.1:1212")
-
-        try:
-            optitrack_conn = self.context.socket(zmq.REP)
-            optitrack_conn.bind("tcp://204.102.224.3:5000")
-        except Exception as err:
-            # todo: log a message noting that we've failed to start ZMQ connection
-            pass
-        pid_viz_conn = self.context.socket(zmq.PUSH)
-        pid_viz_conn.connect("tcp://127.0.0.1:5123")
-
-        ctrl_conn = self.context.socket(zmq.PULL)
-        ctrl_conn.connect("tcp://127.0.0.1:5124")
-
-        return client_conn, optitrack_conn, pid_viz_conn, ctrl_conn
-
-    # todo: implement intialization routine for low level quad controllers
-    def ll_controller_init(self):
+        self.log('Vehicle Killed', 'info')
         pass
 
     def decode_api_call(self, raw_cmd):

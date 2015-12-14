@@ -2,7 +2,7 @@ from __future__ import (absolute_import, division, print_function, unicode_liter
 
 from builtins import *
 
-from tower.swarm.controllers import pid
+from tower.controllers import pid
 
 
 class QuadrotorPID(object):
@@ -25,11 +25,11 @@ class QuadrotorPID(object):
         """
         if configs is None:
             self.configs = \
-                {'roll': {'gains': {'p':  1e-10, 'i': 1e-10, 'd':  1e-10, 'set_point': 0}, 'pid_type': pid.PID_RP},
-                 'pitch': {'gains': {'p':  1e-10, 'i': 1e-10, 'd':  1e-10, 'set_point': 0}, 'pid_type': pid.PID_RP},
-                 'yaw': {'gains': {'p':  1e-10, 'i': 0, 'd':  1e-10, 'set_point': 0}, 'pid_type': pid.PID_RP},
-                 'position': {'gains': {'p':  1e-10, 'i':  1e-10, 'd':  1e-10, 'set_point': 0}, 'pid_type': pid.PID_RP},
-                 'velocity': {'gains': {'p':  1e-10, 'i':  1e-10, 'd':  1e-10, 'set_point': 0}, 'pid_type': pid.PID_V}
+                {'roll': {'gains': {'p':  15, 'i': .2, 'd':  7, 'set_point': 0}, 'pid_type': pid.PID_RP},
+                 'pitch': {'gains': {'p':  15, 'i': .2, 'd':  7, 'set_point': 0}, 'pid_type': pid.PID_RP},
+                 'yaw': {'gains': {'p':  5, 'i': 0, 'd':  0, 'set_point': 0}, 'pid_type': pid.PID_RP},
+                 'position': {'gains': {'p':  1, 'i':  0, 'd':  0, 'set_point': 0}, 'pid_type': pid.PID_RP},
+                 'velocity': {'gains': {'p':  .4, 'i':  1e-10, 'd':  1e-8, 'set_point': 0}, 'pid_type': pid.PID_V}
                  }
         else:
             self.configs = configs
@@ -46,6 +46,17 @@ class QuadrotorPID(object):
 
         self.controllers = dict((controller, self.configs[controller]['pid_type'](**self.configs[controller]['gains']))
                                 for controller in self.controllers)
+
+    def __str__(self):
+        controllers = str()
+        controllers = list(self.configs.keys())
+        final = ["Controller:\t{}:\n Gains:\t{} \n PID Type:\t{}".format(controller, self.configs[controller]['gains'],
+                 self.configs[controller]['pid_type']) for controller in controllers]
+
+        output = str()
+        for elem in final:
+            output += str(elem + '\n')
+        return str("QuadrotorPID plugin with gains:\n" + output)
 
     def update(self, state):
         """

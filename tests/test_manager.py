@@ -21,7 +21,7 @@ def test_init(tmpdir):
     :param tmpdir: temp directory provided  by test framework
 
     """
-    manager = tower.WorkflowManager(test_directory=str(tmpdir))
+    manager = tower.WorkflowManager(log_directory=str(tmpdir))
 
 
 def test_start(tmpdir):
@@ -32,7 +32,7 @@ def test_start(tmpdir):
 
     """
 
-    manager = tower.WorkflowManager(test_directory=str(tmpdir))
+    manager = tower.WorkflowManager(log_directory=str(tmpdir))
     manager.add_tower(mockTower)
     manager.start()
 
@@ -44,7 +44,7 @@ def test_teardown(tmpdir):
     :param tmpdir:
 
     """
-    manager = tower.WorkflowManager(test_directory=str(tmpdir))
+    manager = tower.WorkflowManager(log_directory=str(tmpdir))
     manager.add_tower(mockTower)
     manager.start()
     time.sleep(.005)

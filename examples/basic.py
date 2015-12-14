@@ -24,12 +24,16 @@ KILL_COMMAND = 'DEATH'
 
 if __name__ == '__main__':
 
-    # instantiate a Tower
-    tower_1 = tower.Tower(mockRegion, mockControlLaw)
-    # instantiate a Manager
     manager = tower.WorkflowManager()
+    # todo: I don't know if I like this from a user perspective
+    manager.start()  # call this to start logging, other zmq processes
+    # instantiate a Tower
+    tower_1 = tower.Tower(mockRegion, mockControlLaw, optitrack_args={'filtering': False})
+    # instantiate a Manager
+
     # Instantiate Vehicles
-    crazyflie = Crazyflie(QuadrotorPID)
+    crazyflie = Crazyflie(QuadrotorPID(), name='Stringer')
+    print(crazyflie.controller)
     # Add Vehicles to the Tower
 
     # Add Tower to Manager
@@ -47,10 +51,13 @@ if __name__ == '__main__':
         for process in manager.processes.values():
             print("Killing {}".format(process.name))
             process.results_q.put(KILL_COMMAND)
+            print("joining")
             process.join()
+
         for thread in manager.threads.values():
             print(thread)
-            thread.terminate()
+            # todo: ask threads to take the poison pill, then join
+            #thread.kill()
     else:
         for ps in manager.processes.values():
             ps.terminate()

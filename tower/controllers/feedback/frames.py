@@ -1,9 +1,12 @@
 from __future__ import (absolute_import, division, print_function, unicode_literals)
-from scipy import signal
-import numpy as np
-import time
+
 import math
-from tower.utils.transformations import euler_from_quaternion
+import time
+
+import numpy as np
+from scipy import signal
+
+from tower.transformations.transformations import euler_from_quaternion
 
 
 def butter_lowpass(cutoff, fs, order=3):

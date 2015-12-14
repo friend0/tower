@@ -76,6 +76,8 @@ class LogThread(threading.Thread):
         self.socket.bind("tcp://127.0.0.1:{}".format(worker_port))
         self.logger.info('ZMQ subscriber socket initialized: ready to receive external log messages...')
 
+
+
     def run(self):
         levels = {'info': self.logger.info, 'debug': self.logger.debug, 'warning': self.logger.warning,
                   'error': self.logger.error}

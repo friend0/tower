@@ -17,9 +17,9 @@ import msgpack
 import simplejson
 import structlog
 import zmq
-
-import tower.swarm.controllers.playground as pid
 from tower.swarm.controllers import frames
+
+import tower.controllers.playground as pid
 
 
 def add_timestamp(_, __, event_dict):
