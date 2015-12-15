@@ -1,4 +1,8 @@
-language: python
+language: c
+
+os:
+    - linux
+
 sudo: false
 
 matrix:
