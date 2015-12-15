@@ -280,7 +280,8 @@ class Graph(dict):
                 path.append(P[end])
             except KeyError:
                 # todo: figure out what it ens if we've wound up here
-                pass
+                path.reverse()
+                return path
             end = P[end]
 
 
