@@ -66,22 +66,24 @@ class LogThread(threading.Thread):
         self.logger.addHandler(console)
         self.logger.addHandler(rotating)
 
+
         if worker_port is None:
-            worker_port = 5555 + 128
+            self.worker_port = 5555 + 128
+        else:
+            self.worker_port = worker_port
+
         self.logger.info('Logging thread started...')
         self.logger.info('Logging initialized in {} on port {}'.format(self.name, worker_port))
-
-        context = zmq.Context().instance()
-
-        self.socket = context.socket(zmq.PULL)
-        self.socket.connect("tcp://127.0.0.1:{}".format(worker_port))
-        self.logger.info('ZMQ subscriber socket initialized: ready to receive external log messages...')
-
-
+        self.socket = None
 
     def run(self):
         levels = {'info': self.logger.info, 'debug': self.logger.debug, 'warning': self.logger.warning,
                   'error': self.logger.error}
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.PULL)
+        self.socket.bind("tcp://127.0.0.1:{}".format(self.worker_port))
+        self.logger.info('ZMQ subscriber socket initialized: ready to receive external log messages...')
+
         while 1:
             # todo: see if we can make this log to different levels
             msg = self.socket.recv()

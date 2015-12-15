@@ -26,7 +26,6 @@ if __name__ == '__main__':
     #comment
     manager = tower.WorkflowManager()
     # todo: I don't know if I like this from a user perspective
-    manager.start()  # call this to start logger, other zmq processes
     # instantiate a Tower
     tower_1 = tower.Tower(mockRegion, mockControlLaw, optitrack_args={'filtering': False})
     # instantiate a Manager
