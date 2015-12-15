@@ -27,12 +27,8 @@ class WorkflowManager(object):
         self.log_dir = log_directory
         self.context = zmq.Context()
         self.zmqLog = None
-
-    def start(self, log_directory=None):
         self.start_logging(log_directory=log_directory)
-        # self.start_server_process()
         self.start_zmq_processes()
-        # self.start_web_services()
 
     def end(self):
         for process in self.processes.values():
@@ -55,11 +51,12 @@ class WorkflowManager(object):
         """
 
         Initialize the Logging Thread, and a ZMQ publisher to push to the logger.
+        :param log_directory:
         :param test_dir: directory we want to use to store logs. Defaults to logs folder
         :return: None
 
         """
-
+        print(log_directory)
         logger = logging_thread.LogThread(worker_port=5555 + 128, log_directory=log_directory)
         logger.daemon = True
         self.threads['logging_thread'] = logger
