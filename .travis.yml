@@ -5,16 +5,28 @@ os:
 
 sudo: false
 
+env:
+    global:
+        # Set defaults to avoid repeating in most cases
+        - NUMPY_VERSION=1.9
+        - MAIN_CMD='python setup.py'
+        - CONDA_DEPENDENCIES='Cython jinja2'
+        - CONDA_ALL_DEPENDENCIES='Cython jinja2 scipy h5py matplotlib pyyaml scikit-image pandas pytz beautiful-soup'
+        - PIP_DEPENDENCIES=''
+
 matrix:
   include:
-    # "Legacy" environments: oldest supported versions, without and with numba
-    - python: "2.6"
-    - python: "2.7"
-      #env: DEPS="numpy=1.10.1 scipy=0.16 matplotlib=1.4 "
-    - python: "3.4"
-      #env: DEPS="numpy=1.10.1 scipy=0.16 matplotlib=1.4 "
-    - python: "3.5"
-      #env: DEPS="numpy scipy matplotlib "
+    - os: linux
+      env: PYTHON_VERSION=2.6 SETUP_CMD='test --open-files'
+    - os: linux
+      env: PYTHON_VERSION=2.7 SETUP_CMD='test --open-files'
+    - os: linux
+      env: PYTHON_VERSION=3.3 SETUP_CMD='test --open-files'
+    - os: linux
+      env: PYTHON_VERSION=3.4 SETUP_CMD='test --open-files'
+    - os: linux
+      env: PYTHON_VERSION=3.5 SETUP_CMD='test --open-files'
+
 
 install:
   # See:
@@ -39,7 +51,7 @@ before_install:
   - ./miniconda.sh -b -p /home/travis/miniconda
   - export PATH=/home/travis/miniconda/bin:$PATH
   - conda update --yes conda
-
+  - pip install codecov
 
 
   # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
@@ -48,7 +60,10 @@ before_install:
 
 # command to run tsts, e.g. python setup.py test
 script:
-     - py.test -v --color=yes --exitfirst --showlocals --durations=5
+    - $MAIN_CMD $SETUP_CMD
+
+#script:
+#     - py.test -v --color=yes --exitfirst --showlocals --durations=5
 
 
 #addons:
