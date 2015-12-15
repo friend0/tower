@@ -50,6 +50,7 @@ class Tower(multiprocessing.Process):
 
         """
         multiprocessing.Process.__init__(self)
+        # todo: launch a headless client here! :smiling_imp:
         self.client_conn, self.ctrl_conn, self.pid_viz_conn = None, None, None
         self.optitrack_args = optitrack_args
         self.frame_history, self.optitrack_conn = None, None
@@ -58,6 +59,7 @@ class Tower(multiprocessing.Process):
         self.controller = control_laws
         self.vehicles = {}
 
+        # todo: the queue is ugly...let's do ZMQ instead
         self.results_q = multiprocessing.Queue()
         self.zmqLog = None
 
@@ -131,7 +133,8 @@ class Tower(multiprocessing.Process):
         self.zmq_setup()
         self.frame_history, self.optitrack_conn = self.initialize_optitrack(**self.optitrack_args)
 
-        # todo: verify these all work if we have multiple instances of Tower
+        '''todo: verify that all of these work if we have multiple instances of Tower;
+            I suspect we will have problems :weary:'''
         self.client_conn = self.context.socket(zmq.PUSH)
         self.client_conn.connect("tcp://127.0.0.1:1212")
 

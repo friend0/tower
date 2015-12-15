@@ -1,6 +1,9 @@
 from __future__ import (absolute_import, division, print_function, unicode_literals)
+import future
 from future.utils import viewitems
 import sys
+
+from pqdict import PQDict
 
 if sys.version_info[:2] < (2, 7):
     from ordereddict import OrderedDict
@@ -27,6 +30,13 @@ class Vertex(dict):
         self.previous = prev
         self.next = next_
         self.visited = False
+
+    def __setitem__(self, key, val):
+        dict.__setitem__(self, key, val)
+
+    def update(self, *args, **kwargs):
+        for k, v in dict(*args, **kwargs).iteritems():
+            self[k] = v
 
     def set_previous(self, prev):
         self.previous = prev
@@ -79,6 +89,10 @@ class Graph(dict):
             for neighbor, weight in viewitems(neighbors):
                 self[vertex][neighbor] = weight
 
+    def update(self, *args, **kwargs):
+        for k, v in dict(*args, **kwargs).iteritems():
+            self[k] = v
+
     def __iter__(self):
         return iter(self.values())
 
@@ -90,6 +104,10 @@ class Graph(dict):
             if key not in set(self.keys()):
                 self.num_vertices += 1
                 dict.__setitem__(self, key, Vertex(key))
+
+    def __getitem__(self, key):
+        val = dict.__getitem__(self, key)
+        return val
 
     def add_vertex(self, vertex):
         """
@@ -241,7 +259,7 @@ class Graph(dict):
 
         d = {}  # dictionary of final distances
         p = {}  # dictionary of predecessors
-        q = OrderedDict()  # estimated distances of non-final vertices
+        q = PQDict()  # estimated distances of non-final vertices
         q[start] = 0
         for v_ in q:
             d[v_] = q[v_]
@@ -255,7 +273,7 @@ class Graph(dict):
                 elif w not in q or vwLength < q[w]:
                     q[w] = vwLength
                     p[w] = v_
-        return d, p.copy()
+        return d, p
 
     def shortest_path(self, start, end):
         """
@@ -266,24 +284,14 @@ class Graph(dict):
         :param end: ending node
         :return:
         """
-
         d, p = self.dijkstra(start, end)
-
         path = []
-        path.append(end)
         while 1:
-            if end == start:
-                path.reverse()
-                return path
-            try:
-                path.append(p[end])
-            except KeyError:
-                # todo: figure out what it ens if we've wound up here
-                path.reverse()
-                return path
+            path.append(end)
+            if end == start: break
             end = p[end]
-
-
+        path.reverse()
+        return path
 
 class Path(object):
     """
