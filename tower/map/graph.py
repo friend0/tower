@@ -2,7 +2,6 @@ from __future__ import (absolute_import, division, print_function, unicode_liter
 import future
 from future.utils import viewitems
 import sys
-
 from pqdict import PQDict
 
 if sys.version_info[:2] < (2, 7):
