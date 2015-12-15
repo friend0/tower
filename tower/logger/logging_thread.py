@@ -71,10 +71,10 @@ class LogThread(threading.Thread):
         self.logger.info('Logging thread started...')
         self.logger.info('Logging initialized in {} on port {}'.format(self.name, worker_port))
 
-        context = zmq.Context()
+        context = zmq.Context().instance()
 
         self.socket = context.socket(zmq.PULL)
-        self.socket.connect("tcp://127.0.0.1:{}".format(worker_port))
+        self.socket.bind("tcp://127.0.0.1:{}".format(worker_port))
         self.logger.info('ZMQ subscriber socket initialized: ready to receive external log messages...')
 
 
