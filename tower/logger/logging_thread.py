@@ -37,8 +37,7 @@ class LogThread(threading.Thread):
             wrapper_class=structlog.stdlib.BoundLogger,
             cache_logger_on_first_use=True,
         )
-        self.logger = structlog.getLogger()
-        self.logger.setLevel(logging.DEBUG)
+
         # create file handler which logs messages down to the debug level to a file for postprocessing
         if log_directory is None:
             latest_experiment = logging.FileHandler('../logs/octrl.log', mode='w')
@@ -51,29 +50,28 @@ class LogThread(threading.Thread):
         console.setLevel(logging.WARNING)
 
         if log_directory is None:
-            rotating = handlers.RotatingFileHandler('../logs/experiment_history.log', mode='w', maxBytes=128e+6, backupCount=5, delay=True)
+            rotating = handlers.RotatingFileHandler('../logs/experiment_history.log', mode='w', maxBytes=128e+6,
+                                                    backupCount=5, delay=True)
         else:
-            rotating = handlers.RotatingFileHandler(log_directory+'/experiment_history.log', mode='w', maxBytes=128e+6, backupCount=5, delay=True)
+            rotating = handlers.RotatingFileHandler(log_directory+'/experiment_history.log', mode='w', maxBytes=128e+6,
+                                                    backupCount=5, delay=True)
 
+        self.logger = structlog.getLogger()
+        self.logger.setLevel(logging.DEBUG)
         rotating.doRollover()
         rotating.setLevel(logging.DEBUG)
-
-        # create formatter and add it to the handlers
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         console.setFormatter(formatter)
-        # add the handlers to logger
         self.logger.addHandler(latest_experiment)
         self.logger.addHandler(console)
         self.logger.addHandler(rotating)
-
-
         if worker_port is None:
             self.worker_port = 5555 + 128
         else:
             self.worker_port = worker_port
-
         self.logger.info('Logging thread started...')
         self.logger.info('Logging initialized in {} on port {}'.format(self.name, worker_port))
+        self.context = None
         self.socket = None
 
     def run(self):

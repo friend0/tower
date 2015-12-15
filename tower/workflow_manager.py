@@ -88,7 +88,8 @@ class WorkflowManager(object):
         pass
 
     # todo: how to implement 'signal handler' kill switch for control processes
-    def signal_handler(signal, frame):
+
+    def signal_handler(self, signal, frame):
         """
 
         This signal handler function detects a keyboard interrupt and responds by sending kill command to CF via client
@@ -116,6 +117,7 @@ class WorkflowManager(object):
         client_conn.send_json(cmd, zmq.NOBLOCK)
         print 'Vehicle Killed'
         sys.exit(0)
+
         """
         pass
 
