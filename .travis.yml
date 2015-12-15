@@ -22,10 +22,7 @@ install:
   # - conda update --yes --no-deps conda
   # OK, this used to *fix* the build, but now it *breaks* the build.
   # If you're reading this, good luck out there. I'm not sure what to tell you.
-  - conda config --add channels soft-matter
-  - conda create -n testenv --yes $DEPS pip mock requests pyzmq setuptools gdal rasterio python=$TRAVIS_PYTHON_VERSION
-  - source activate testenv
-  - pip install future
+
   # for debugging...
   - echo $PATH
   - which python
@@ -34,11 +31,22 @@ install:
   - python setup.py install
 
 before_install:
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-3.5.5-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-3.5.5-Linux-x86_64.sh -O miniconda.sh; fi
+
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p /home/travis/miniconda
   - export PATH=/home/travis/miniconda/bin:$PATH
+
+  #- if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-3.5.5-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-3.5.5-Linux-x86_64.sh -O miniconda.sh; fi
+  #- chmod +x miniconda.sh
+  - ./miniconda.sh -b -p /home/travis/miniconda
+  #- export PATH=/home/travis/miniconda/bin:$PATH
   - conda update --yes conda
+  - conda create --yes -n testenv python=$TRAVIS_PYTHON_VERSION
+  - conda install --yes -n testenv pip
+  - source activate testenv
+  - conda install --yes -n python=$TRAVIS_PYTHON_VERSION $DEPS pip mock requests pyzmq setuptools gdal rasterio
+  - pip install future
   # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
   # - rm -rf /dev/shm
   # - ln -s /run/shm /dev/shm
