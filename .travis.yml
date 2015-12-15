@@ -27,6 +27,11 @@ install:
   # OK, this used to *fix* the build, but now it *breaks* the build.
   # If you're reading this, good luck out there. I'm not sure what to tell you.
 
+  - conda create --yes -n testenv python=$TRAVIS_PYTHON_VERSION
+  - conda install --yes -n testenv pip
+  - source activate testenv
+  - conda install --yes -n $DEPS pip mock requests pyzmq setuptools gdal rasterio
+  - pip install future
   # for debugging...
   - echo $PATH
   - which python
@@ -42,12 +47,8 @@ before_install:
   - export PATH=/home/travis/miniconda/bin:$PATH
 
   - conda update --yes conda
-  - conda create --yes -n testenv python=$TRAVIS_PYTHON_VERSION
-  - conda install --yes -n testenv pip
-  - source activate testenv
 
-  - conda install --yes -n $DEPS pip mock requests pyzmq setuptools gdal rasterio
-  - pip install future
+
   # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
   # - rm -rf /dev/shm
   # - ln -s /run/shm /dev/shm
