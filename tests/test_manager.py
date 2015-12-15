@@ -21,6 +21,7 @@ def test_init(tmpdir):
 
     """
     manager = tower.WorkflowManager(log_directory=str(tmpdir))
+    manager.end()
 
 
 def test_start(tmpdir):
@@ -33,7 +34,7 @@ def test_start(tmpdir):
 
     manager = tower.WorkflowManager(log_directory=str(tmpdir))
     manager.add_tower(mockTower)
-    manager.start()
+    manager.end()
 
 
 def test_teardown(tmpdir):
@@ -45,7 +46,6 @@ def test_teardown(tmpdir):
     """
     manager = tower.WorkflowManager(log_directory=str(tmpdir))
     manager.add_tower(mockTower)
-    manager.start()
     time.sleep(.005)
     manager.end()
     # todo: make sure the processes have cleaned themselves up

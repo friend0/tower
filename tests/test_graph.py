@@ -1,3 +1,4 @@
+from __future__ import (absolute_import, division, print_function, unicode_literals)
 import mock
 
 import tower
@@ -5,9 +6,9 @@ import tower
 # logger.basicConfig(level=logger.DEBUG)
 mockVertex = mock.MagicMock()
 
-G = {'a': {'b': 10},
-     'b': {'c': 1, 'x': 2},
-     'c': {'y': 4}
+G = {u'a': {'b': 10},
+     u'b': {'c': 1, 'x': 2},
+     u'c': {'y': 4}
      }
 
 
@@ -77,8 +78,8 @@ def test_shortest_path():
 
     """
     g = tower.Graph(G)
-    assert (g.shortest_path('a', 'b') == [u'a', u'b'])
-    assert (g.shortest_path('a', 'c') == [u'a', u'b', u'c'])
+    assert (g.shortest_path('a', 'b') == ['a', 'b'])
+    assert (g.shortest_path('a', 'c') == ['a', 'b', 'c'])
 
 '''
 

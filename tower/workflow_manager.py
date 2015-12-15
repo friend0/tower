@@ -20,19 +20,15 @@ PORT = 2002
 
 class WorkflowManager(object):
 
-    def __init__(self, test_directory=None):
+    def __init__(self, log_directory=None):
         # self.logger = logger.getLogger('py_map_server')
         self.processes = {}
         self.threads = {}
-        self.test_dir = test_directory
+        self.log_dir = log_directory
         self.context = zmq.Context()
         self.zmqLog = None
-
-    def start(self, log_directory=None):
         self.start_logging(log_directory=log_directory)
-        # self.start_server_process()
         self.start_zmq_processes()
-        # self.start_web_services()
 
     def end(self):
         for process in self.processes.values():
@@ -55,11 +51,12 @@ class WorkflowManager(object):
         """
 
         Initialize the Logging Thread, and a ZMQ publisher to push to the logger.
+        :param log_directory:
         :param test_dir: directory we want to use to store logs. Defaults to logs folder
         :return: None
 
         """
-
+        print(log_directory)
         logger = logging_thread.LogThread(worker_port=5555 + 128, log_directory=log_directory)
         logger.daemon = True
         self.threads['logging_thread'] = logger
@@ -91,7 +88,8 @@ class WorkflowManager(object):
         pass
 
     # todo: how to implement 'signal handler' kill switch for control processes
-    def signal_handler(signal, frame):
+
+    def signal_handler(self, signal, frame):
         """
 
         This signal handler function detects a keyboard interrupt and responds by sending kill command to CF via client
@@ -119,6 +117,7 @@ class WorkflowManager(object):
         client_conn.send_json(cmd, zmq.NOBLOCK)
         print 'Vehicle Killed'
         sys.exit(0)
+
         """
         pass
 
