@@ -244,11 +244,9 @@ class Graph(dict):
         q = OrderedDict()  # estimated distances of non-final vertices
         q[start] = 0
         for v_ in q:
-
             d[v_] = q[v_]
             if v_ == end:
                 break
-
             for w in self[v_]:
                 vwLength = d[v_] + self[v_][w]
                 if w in d:
@@ -257,7 +255,7 @@ class Graph(dict):
                 elif w not in q or vwLength < q[w]:
                     q[w] = vwLength
                     p[w] = v_
-        return d, p
+        return d, p.copy()
 
     def shortest_path(self, start, end):
         """
@@ -269,7 +267,8 @@ class Graph(dict):
         :return:
         """
 
-        D, P = self.dijkstra(start, end)
+        d, p = self.dijkstra(start, end)
+
         path = []
         path.append(end)
         while 1:
@@ -277,12 +276,12 @@ class Graph(dict):
                 path.reverse()
                 return path
             try:
-                path.append(P[end])
+                path.append(p[end])
             except KeyError:
                 # todo: figure out what it ens if we've wound up here
                 path.reverse()
                 return path
-            end = P[end]
+            end = p[end]
 
 
 

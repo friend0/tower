@@ -78,8 +78,8 @@ def test_shortest_path():
 
     """
     g = tower.Graph(G)
-    assert (g.shortest_path(u'a', u'b') == [u'a', u'b'])
-    assert (g.shortest_path(u'a', u'c') == [u'a', u'b', u'c'])
+    assert (g.shortest_path('a', 'b') == ['a', 'b'])
+    assert (g.shortest_path('a', 'c') == ['a', 'b', 'c'])
 
 '''
 
