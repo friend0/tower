@@ -20,11 +20,11 @@ PORT = 2002
 
 class WorkflowManager(object):
 
-    def __init__(self, test_directory=None):
+    def __init__(self, log_directory=None):
         # self.logger = logger.getLogger('py_map_server')
         self.processes = {}
         self.threads = {}
-        self.test_dir = test_directory
+        self.log_dir = log_directory
         self.context = zmq.Context()
         self.zmqLog = None
 
