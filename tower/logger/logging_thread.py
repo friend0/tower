@@ -58,7 +58,12 @@ class LogThread(threading.Thread):
 
         self.logger = structlog.getLogger()
         self.logger.setLevel(logging.DEBUG)
-        rotating.doRollover()
+
+        try:
+            rotating.doRollover()
+        except AttributeError:
+            # python2.6 quirk
+            pass
         rotating.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         console.setFormatter(formatter)
