@@ -41,8 +41,8 @@ class QuadrotorPID(object):
             #print((self.configs[controller]['gains']))
             #print(self.configs[controller]['pid_type'](**self.configs[controller]['gains']))
 
-        self.controllers = {controller: self.configs[controller]['pid_type'](**self.configs[controller]['gains']) for
-                            controller in self.controllers}
+        #self.controllers = {controller: self.configs[controller]['pid_type'](**self.configs[controller]['gains']) for
+        #                    controller in self.controllers}
 
         self.controllers = dict((controller, self.configs[controller]['pid_type'](**self.configs[controller]['gains']))
                                 for controller in self.controllers)
