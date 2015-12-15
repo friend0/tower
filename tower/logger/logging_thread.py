@@ -46,7 +46,7 @@ class LogThread(threading.Thread):
 
         latest_experiment.setLevel(logging.DEBUG)
         # create console handler with a higher log level
-        console = logging.StreamHandler(stream=sys.stderr)
+        console = logging.StreamHandler(sys.stderr)
         console.setLevel(logging.WARNING)
 
         if log_directory is None:
