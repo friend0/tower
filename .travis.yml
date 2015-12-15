@@ -35,8 +35,9 @@ install:
   # OK, this used to *fix* the build, but now it *breaks* the build.
   # If you're reading this, good luck out there. I'm not sure what to tell you.
   - conda create --yes -n testenv python=$PYTHON_VERSION
-  - conda install --yes -n testenv pip numpy scipy matplotlib mock requests pyzmq=15.1.0 setuptools gdal rasterio
+  - conda install --yes -n testenv pip numpy scipy matplotlib mock requests setuptools gdal rasterio
   - source activate testenv
+  - pip install pyzmq
   - pip install future
   - pip install codecov
   - pip install msgpack-python
