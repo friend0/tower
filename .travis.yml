@@ -21,7 +21,7 @@ matrix:
     - os: linux
       env: PYTHON_VERSION=2.7 SETUP_CMD='test --open-files'
     - os: linux
-      env: PYTHON_VERSION=3.3 SETUP_CMD='test --open-files'
+      env: PYTHON_VERSION=3.2 SETUP_CMD='test --open-files'
     - os: linux
       env: PYTHON_VERSION=3.4 SETUP_CMD='test --open-files'
     - os: linux
