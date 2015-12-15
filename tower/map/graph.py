@@ -274,16 +274,15 @@ class Graph(dict):
         path.append(end)
         while 1:
             if end == start:
-                break
-            path.append(P[end])
+                path.reverse()
+                return path
+            try:
+                path.append(P[end])
+            except KeyError:
+                # todo: figure out what it ens if we've wound up here
+                pass
             end = P[end]
-        #while 1:
-        #    path.append(end)
-        #    if end == start:
-        #        break
-        #    end = P[end]
-        path.reverse()
-        return path
+
 
 
 class Path(object):
