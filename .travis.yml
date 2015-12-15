@@ -40,7 +40,7 @@ install:
   - pip install future
   - pip install codecov
   - pip install msgpack-python
-  - pip install -i https://pypi.anaconda.org/pypi/simple structlog
+  - pip install structlog
   # for debugging...
   - echo $PATH
   - which python
