@@ -11,7 +11,7 @@ env:
         - NUMPY_VERSION=1.9
         - MAIN_CMD='python setup.py'
         - CONDA_DEPENDENCIES='Cython jinja2'
-        - CONDA_ALL_DEPENDENCIES='pip numpy scipy matplotlib mock requests pyzmq setuptools gdal rasterio'
+        - CONDA_ALL_DEPENDENCIES='pip numpy scipy matplotlib mock requests pyzmq msgpack setuptools gdal rasterio'
         - PIP_DEPENDENCIES=''
 
 matrix:
