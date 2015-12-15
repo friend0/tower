@@ -13,11 +13,7 @@ env:
         - CONDA_DEPENDENCIES='Cython jinja2'
         - CONDA_ALL_DEPENDENCIES='pip numpy scipy matplotlib mock requests pyzmq setuptools gdal rasterio'
         - PIP_DEPENDENCIES=''
-    matrix:
-        - PYTHON_VERSION=2.6
-        - PYTHON_VERSION=2.7
-        - PYTHON_VERSION=3.4
-        - PYTHON_VERSION=3.5
+
 matrix:
   include:
     - os: linux
