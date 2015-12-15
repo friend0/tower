@@ -257,24 +257,26 @@ class Graph(dict):
         Find a single shortest path from the given start vertex to the given end vertex.
         The input has the same conventions as Dijkstra().
         The output is a list of the vertices in order along the shortest path.
+        :param start: starting node
+        :param end: ending node
+        :return:
         """
 
         D, P = self.dijkstra(start, end)
-        Path = []
+        path = []
         while 1:
-            Path.append(end)
+            path.append(end)
             if end == start:
                 break
             end = P[end]
-        Path.reverse()
-        print(Path)
-        return Path
+        path.reverse()
+        return path
 
 
 class Path(object):
     """
 
-    Formally, can be understood to represent a simply connected, directed sub-graph.
+    Formally, can be understood to represent a simply connected, directed graph.
 
     """
 
