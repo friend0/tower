@@ -105,6 +105,8 @@ class Graph(dict):
         """
 
         Add a list of vertices
+        :param vertices: a list of vertices to be added
+        :return:
 
         """
         for vertex in vertices:
@@ -202,7 +204,7 @@ class Graph(dict):
                     return extended_path
         return None
 
-    def dijkstra(self, start, end=None):
+    def dijkstra(self, start, end):
         """
         Find shortest paths from the  start vertex to all vertices nearer than or equal to the end.
 
@@ -230,26 +232,31 @@ class Graph(dict):
         This code does not verify this property for all edges (only the edges examined until the end
         vertex is reached), but will correctly compute shortest paths even for some graphs with negative
         edges, and will raise an exception if it discovers that a negative edge has caused it to make a mistake.
+
+        :param start: key to starting node
+        :param end: key to ending node
+        :return: The output is a pair (D,P) where D[v] is the distance from start to v and P[v] is the
+        predecessor of v along the shortest path from s to v.
         """
 
         d = {}  # dictionary of final distances
         p = {}  # dictionary of predecessors
         q = OrderedDict()  # estimated distances of non-final vertices
         q[start] = 0
-        for v in q:
+        for v_ in q:
 
-            d[v] = q[v]
-            if v == end:
+            d[v_] = q[v_]
+            if v_ == end:
                 break
 
-            for w in self[v]:
-                vwLength = d[v] + self[v][w]
+            for w in self[v_]:
+                vwLength = d[v_] + self[v_][w]
                 if w in d:
                     if vwLength < d[w]:
                         raise ValueError("Dijkstra: found better path to already-final vertex")
                 elif w not in q or vwLength < q[w]:
                     q[w] = vwLength
-                    p[w] = v
+                    p[w] = v_
         return d, p
 
     def shortest_path(self, start, end):
@@ -264,11 +271,17 @@ class Graph(dict):
 
         D, P = self.dijkstra(start, end)
         path = []
+        path.append(end)
         while 1:
-            path.append(end)
             if end == start:
                 break
+            path.append(P[end])
             end = P[end]
+        #while 1:
+        #    path.append(end)
+        #    if end == start:
+        #        break
+        #    end = P[end]
         path.reverse()
         return path
 
