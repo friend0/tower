@@ -7,6 +7,7 @@ if sys.version_info[:2] < (2, 7):
 else:
     from collections import OrderedDict
 
+
 class Vertex(dict):
     # __slots__ = []
 
@@ -266,6 +267,7 @@ class Graph(dict):
                 break
             end = P[end]
         Path.reverse()
+        print(Path)
         return Path
 
 
