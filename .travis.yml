@@ -14,16 +14,15 @@ env:
         - CONDA_ALL_DEPENDENCIES='pip numpy scipy matplotlib mock requests pyzmq setuptools gdal rasterio'
         - PIP_DEPENDENCIES=''
 
-matrix:
-  include:
-    - os: linux
-      env: PYTHON_VERSION=2.6
-    - os: linux
-      env: PYTHON_VERSION=2.7
-    - os: linux
-      env: PYTHON_VERSION=3.4
-    - os: linux
-      env: PYTHON_VERSION=3.5
+    matrix:
+        - os: linux
+          env: PYTHON_VERSION=2.6
+        - os: linux
+          env: PYTHON_VERSION=2.7
+        - os: linux
+          env: PYTHON_VERSION=3.4
+        - os: linux
+          env: PYTHON_VERSION=3.5
 
 install:
   # See:
