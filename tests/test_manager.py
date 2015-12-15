@@ -21,6 +21,7 @@ def test_init(tmpdir):
 
     """
     manager = tower.WorkflowManager(log_directory=str(tmpdir))
+    manager.end()
 
 
 def test_start(tmpdir):
@@ -34,6 +35,7 @@ def test_start(tmpdir):
     manager = tower.WorkflowManager(log_directory=str(tmpdir))
     manager.add_tower(mockTower)
     manager.start()
+    manager.end()
 
 
 def test_teardown(tmpdir):
