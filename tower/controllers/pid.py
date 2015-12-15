@@ -20,7 +20,8 @@ class PID_V(object):
     """
 
     def __init__(self, p=1, i=1, d=1, set_point=1, set_point_max=1, set_point_min=-1, saturate_max=None,
-                 saturate_min=None):
+                 saturate_min=None, zmq_connection=None):
+        self._zmq = zmq_connection
         self.kp = p
         self.ki = i
         self.kd = d
@@ -58,6 +59,19 @@ class PID_V(object):
         self.et_2 = self.et_1
         self.et_1 = self.et
         self.ut_1 = self.ut
+
+        self._z_data["data"]["P"] = 0.0
+        self._z_data["data"]["I"] = 0.0
+        self._z_data["data"]["D"] = 0.0
+        self._z_data["data"]["E"] = self.et
+        self._z_data["data"]["SP"] = self.set_point
+        self._z_data["data"]["OUT"] = PID
+        if self._zmq:
+            try:
+                self._zmq.send_json(self._z_data, zmq.NOBLOCK)
+            except zmq.error.Again:
+                pass
+
         return self.ut
 
     """
@@ -128,9 +142,9 @@ class PID_V(object):
 
 
 class PID(object):
-    def __init__(self, name="N/A", p=1.0, i=0.0, d=10.0, Derivator=0, Integrator=0,
-                 Integrator_max=300, Integrator_min=-200, set_point=0.0,
-                 power=1.0, zmq_connection=None):
+    def __init__(self, name="N/A", p=1.0, i=0.0, d=10.0, Derivator=0, Integrator=0, Integrator_max=300,
+                 Integrator_min=-200, set_point=0.0, power=1.0, zmq_connection=None):
+
         self._zmq = zmq_connection
         self.Kp = p
         self.Ki = i
