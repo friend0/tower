@@ -49,6 +49,7 @@ class LogThread(threading.Thread):
         # create console handler with a higher log level
         console = logging.StreamHandler(stream=sys.stderr)
         console.setLevel(logging.WARNING)
+
         if log_directory is None:
             rotating = handlers.RotatingFileHandler('../logs/experiment_history.log', mode='w', maxBytes=128e+6, backupCount=5, delay=True)
         else:
