@@ -60,7 +60,8 @@ before_install:
 
 # command to run tsts, e.g. python setup.py test
 script:
-    - py.test -v --color=yes --exitfirst --showlocals --durations=5
+    - python setup.py test
+    #- py.test -v --color=yes --exitfirst --showlocals --durations=5
 
 #script:
 #     - py.test -v --color=yes --exitfirst --showlocals --durations=5
