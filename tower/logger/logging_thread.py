@@ -75,7 +75,7 @@ class LogThread(threading.Thread):
         else:
             self.worker_port = worker_port
         self.logger.info('Logging thread started...')
-        self.logger.info('Logging initialized in {} on port {}'.format(threading.current_thread(), worker_port))
+        self.logger.info('Logging initialized in {} on port {}'.format(self.name, self.worker_port))
         self.context = None
         self.socket = None
 
