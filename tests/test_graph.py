@@ -6,9 +6,9 @@ import tower
 # logger.basicConfig(level=logger.DEBUG)
 mockVertex = mock.MagicMock()
 
-G = {'a': {'b': 10},
-     'b': {'c': 1, 'x': 2},
-     'c': {'y': 4}
+G = {u'a': {'b': 10},
+     u'b': {'c': 1, 'x': 2},
+     u'c': {'y': 4}
      }
 
 
