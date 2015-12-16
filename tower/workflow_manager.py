@@ -62,7 +62,7 @@ class WorkflowManager(object):
         self.threads['logging_thread'] = logger
         logger.start()
         self.zmqLog = self.context.socket(zmq.PUSH)
-        self.zmqLog.connect("tcp://127.0.0.1:{}".format(str(5555 + 128)))
+        self.zmqLog.connect("tcp://127.0.0.1:{0}".format(str(5555 + 128)))
         time.sleep(.005)
         self.log("Log portal initialized", "info")
 
@@ -126,7 +126,7 @@ def publisher():
     # Prepare publisher
     ctx = zmq.Context.instance()
     pub = ctx.socket(zmq.PUB)
-    pub.bind("tcp://*:{}".format(str(5683)))
+    pub.bind("tcp://*:{0}".format(str(5683)))
 
     while True:
         # Send current clock (secs) to subscribers

@@ -71,9 +71,9 @@ class Tower(multiprocessing.Process):
 
         """
         self.zmqLog = self.context.socket(zmq.PUSH)
-        self.zmqLog.connect("tcp://127.0.0.1:{}".format(str(5683)))
+        self.zmqLog.connect("tcp://127.0.0.1:{0}".format(str(5683)))
         time.sleep(.005)
-        self.log("Log portal initialized in {}".format(self.name), "info")
+        self.log("Log portal initialized in {0}".format(self.name), "info")
 
     def log(self, msg, level):
         """
@@ -94,7 +94,7 @@ class Tower(multiprocessing.Process):
             optitrack_conn.bind("tcp://204.102.224.3:5000")
             self.log('Initialize Optitrack REP socket', 'info')
         except Exception as err:
-            self.log('Failed to initialize Optitrack REP socket, error: {}'.format(err), 'info')
+            self.log('Failed to initialize Optitrack REP socket, error: {0}'.format(err), 'info')
             optitrack_conn = None
         return FrameHistory(**kwargs), optitrack_conn
 
