@@ -60,7 +60,7 @@ class WorkflowManager(object):
         self.threads['logging_thread'] = logger
         logger.start()
         self.zmqLog = self.context.socket(zmq.PUSH)
-        self.zmqLog.connect("tcp://127.0.0.1:{0}".format(5555 + 128))
+        self.zmqLog.connect("tcp://127.0.0.1:{0}".format(str(5555 + 128)))
         time.sleep(.005)
         self.log("Log portal initialized", "info")
 
