@@ -924,7 +924,7 @@ def affine_matrix_from_points(v0, v1, shear=True, scale=True, usesvd=True):
     >>> numpy.allclose(v1, numpy.dot(M, v0))
     True
 
-    More examples in superimposition_matrix()
+    More dev in superimposition_matrix()
 
     """
     v0 = numpy.array(v0, dtype=numpy.float64, copy=True)

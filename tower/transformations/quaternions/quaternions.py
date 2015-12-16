@@ -82,7 +82,6 @@ class Quaternion(object):
     def inverse(self):
         return self.conjugate/np.linalg.norm(self.q)
 
-
     def dcm(self):
         # first norm the quat
         np.linalg.norm(self.q)
@@ -102,7 +101,9 @@ class Quaternion(object):
         return r
 
     def quaternion_matrix(self):
-        """Return homogeneous rotation matrix from quaternion.
+        """
+
+        Return homogeneous rotation matrix from quaternion.
 
         >>> M = quaternion_matrix([0.99810947, 0.06146124, 0, 0])
         >>> numpy.allclose(M, rotation_matrix(0.123, [1, 0, 0]))

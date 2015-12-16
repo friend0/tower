@@ -11,7 +11,7 @@ import time
 import numpy as np
 from scipy import signal
 
-from tower.controllers.swarm.vehicles.dynamics import euler_from_quaternion
+from tower.map.dynamics import euler_from_quaternion
 
 
 # todo: make this more extensible, i.e. specify the type of filter that should be implemented

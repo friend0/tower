@@ -1,13 +1,14 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+import future
 from future.utils import viewitems
 import sys
-if(sys.version_info[:2] < (2, 7)):
+from pqdict import PQDict
+
+if sys.version_info[:2] < (2, 7):
     from ordereddict import OrderedDict
 else:
     from collections import OrderedDict
+
 
 class Vertex(dict):
     # __slots__ = []
@@ -28,6 +29,13 @@ class Vertex(dict):
         self.previous = prev
         self.next = next_
         self.visited = False
+
+    def __setitem__(self, key, val):
+        dict.__setitem__(self, key, val)
+
+    def update(self, *args, **kwargs):
+        for k, v in dict(*args, **kwargs).iteritems():
+            self[k] = v
 
     def set_previous(self, prev):
         self.previous = prev
@@ -80,6 +88,10 @@ class Graph(dict):
             for neighbor, weight in viewitems(neighbors):
                 self[vertex][neighbor] = weight
 
+    def update(self, *args, **kwargs):
+        for k, v in dict(*args, **kwargs).iteritems():
+            self[k] = v
+
     def __iter__(self):
         return iter(self.values())
 
@@ -91,6 +103,10 @@ class Graph(dict):
             if key not in set(self.keys()):
                 self.num_vertices += 1
                 dict.__setitem__(self, key, Vertex(key))
+
+    def __getitem__(self, key):
+        val = dict.__getitem__(self, key)
+        return val
 
     def add_vertex(self, vertex):
         """
@@ -106,6 +122,8 @@ class Graph(dict):
         """
 
         Add a list of vertices
+        :param vertices: a list of vertices to be added
+        :return:
 
         """
         for vertex in vertices:
@@ -203,7 +221,7 @@ class Graph(dict):
                     return extended_path
         return None
 
-    def dijkstra(self, start, end=None):
+    def dijkstra(self, start, end):
         """
         Find shortest paths from the  start vertex to all vertices nearer than or equal to the end.
 
@@ -214,7 +232,7 @@ class Graph(dict):
         This is related to the representation in <http://www.python.org/doc/essays/graphs.html>
         where Guido van Rossum suggests representing graphs as dictionaries map vertices
         to lists of outgoing edges, however dictionaries of edges have many advantages over lists:
-        they can store extra information (here, the lengths), they support fast existence tests,
+        they can store extra information (here, the lengths), they support fast existence playground,
         and they allow easy modification of the graph structure by edge insertion and removal.
         Such modifications are not needed here but are important in many other graph algorithms.
         Since dictionaries obey iterator protocol, a graph represented as described here could
@@ -231,26 +249,29 @@ class Graph(dict):
         This code does not verify this property for all edges (only the edges examined until the end
         vertex is reached), but will correctly compute shortest paths even for some graphs with negative
         edges, and will raise an exception if it discovers that a negative edge has caused it to make a mistake.
+
+        :param start: key to starting node
+        :param end: key to ending node
+        :return: The output is a pair (D,P) where D[v] is the distance from start to v and P[v] is the
+        predecessor of v along the shortest path from s to v.
         """
 
         d = {}  # dictionary of final distances
         p = {}  # dictionary of predecessors
-        q = OrderedDict()  # estimated distances of non-final vertices
+        q = PQDict()  # estimated distances of non-final vertices
         q[start] = 0
-        for v in q:
-
-            d[v] = q[v]
-            if v == end:
+        for v_ in q:
+            d[v_] = q[v_]
+            if v_ == end:
                 break
-
-            for w in self[v]:
-                vwLength = d[v] + self[v][w]
+            for w in self[v_]:
+                vwLength = d[v_] + self[v_][w]
                 if w in d:
                     if vwLength < d[w]:
                         raise ValueError("Dijkstra: found better path to already-final vertex")
                 elif w not in q or vwLength < q[w]:
                     q[w] = vwLength
-                    p[w] = v
+                    p[w] = v_
         return d, p
 
     def shortest_path(self, start, end):
@@ -258,23 +279,23 @@ class Graph(dict):
         Find a single shortest path from the given start vertex to the given end vertex.
         The input has the same conventions as Dijkstra().
         The output is a list of the vertices in order along the shortest path.
+        :param start: starting node
+        :param end: ending node
+        :return:
         """
-
-        D, P = self.dijkstra(start, end)
-        Path = []
+        d, p = self.dijkstra(start, end)
+        path = []
         while 1:
-            Path.append(end)
-            if end == start:
-                break
-            end = P[end]
-        Path.reverse()
-        return Path
-
+            path.append(end)
+            if end == start: break
+            end = p[end]
+        path.reverse()
+        return path
 
 class Path(object):
     """
 
-    Formally, can be understood to represent a simply connected, directed sub-graph.
+    Formally, can be understood to represent a simply connected, directed graph.
 
     """
 

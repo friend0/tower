@@ -1,75 +1,87 @@
-import logging
-
+from __future__ import (absolute_import, division, print_function, unicode_literals)
 import mock
 import pytest
+import tower
 
-import tower.map.graph as graph
-logging.basicConfig(level=logging.DEBUG)
+# logger.basicConfig(level=logger.DEBUG)
 mockVertex = mock.MagicMock()
 
 G = {'a': {'b': 10},
-     'b': {'c': 1, 'x': 2},
-     'c': {'y': 4}
+     'b': {'c': 3, 'x': 2},
+     'c': {'d': 4}
      }
 
 
 def test_node_init():
     """
+
     Test that Node class' init function produces an object given some point as data.
     Test that it can store a reference to previous and next object
     :return:
+
     """
-    g = graph.Graph(G)
+    g = tower.Graph(G)
     assert isinstance(g, object)
+
 
 def test_implicit_graph_creation():
     """
+
     Test that a graph can be made from a dictionary definition of nodes, neighbors and weights
     :return:
+
     """
-    g = graph.Graph(G)
+    g = tower.Graph(G)
     assert (g.num_vertices == 5)
+
 
 def test_add_vertex():
     """
+
     Test that a graph can be made from a dictionary definition of nodes, neighbors and weights
     :return:
+
     """
-    g = graph.Graph(G)
+    g = tower.Graph(G)
     g.add_vertex(mockVertex)
     assert (g.num_vertices == 6)
 
+
 def test_remove_vertex():
     """
+
     Test that a graph can be made from a dictionary definition of nodes, neighbors and weights
     :return:
+
     """
-    g = graph.Graph(G)
+    g = tower.Graph(G)
     g.remove_vertex(mockVertex)
     assert (g.num_vertices == 4)
 
 
 def test_edges():
     """
+
     Test that a graph can be made from a dictionary definition of nodes, neighbors and weights
     :return:
+
     """
-    g = graph.Graph(G)
+    g = tower.Graph(G)
     assert (len(g.get_edges()) == 4)
+
 
 def test_shortest_path():
     """
+
     Use dijkstra's algorithm to find the shortest path
     :return:
-    """
-    g = graph.Graph(G)
 
-    assert(g.shortest_path('a', 'b') == [u'a', u'b'])
-    assert(g.shortest_path('a', 'c') == [u'a', u'b', u'c'])
+    """
+    g = tower.Graph(G)
+    #assert (g.shortest_path('a', 'b') == ['a', 'b'])
+    assert (g.shortest_path('a', 'd') == ['a', 'b', 'c', 'd'])
 
 '''
-
-
 
 def test_edge_exception():
     """
