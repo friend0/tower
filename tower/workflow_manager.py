@@ -33,7 +33,6 @@ class WorkflowManager(object):
     def end(self):
         for process in self.processes.values():
             process.results_q.put(KILL_COMMAND)
-            print(process)
             process.terminate()
         for thread in list(self.threads.values()):
             print(thread)
@@ -56,13 +55,12 @@ class WorkflowManager(object):
         :return: None
 
         """
-        print(log_directory)
         logger = logging_thread.LogThread(worker_port=5555 + 128, log_directory=log_directory)
         logger.daemon = True
         self.threads['logging_thread'] = logger
         logger.start()
         self.zmqLog = self.context.socket(zmq.PUSH)
-        self.zmqLog.connect("tcp://127.0.0.1:{0}".format(str(5555 + 128)))
+        self.zmqLog.connect("tcp://127.0.0.1:{0}".format(5555 + 128))
         time.sleep(.005)
         self.log("Log portal initialized", "info")
 
