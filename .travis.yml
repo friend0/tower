@@ -1,38 +1,59 @@
-# Config file for automatic testing at travis-ci.org
-# This file will be regenerated if you run travis_pypi_setup.py
-sudo: false   # for container based install
+language: c
 
-language: python
+os:
+    - linux
 
+sudo: false
 
 env:
-  - TOXENV=py34
-  - TOXENV=py33
-  - TOXENV=py27
-  - TOXENV=py26
+  global:
+    - PYTHON_VERSION=2.7
+
+matrix:
+  include:
+    - os: linux
+      env: PYTHON_VERSION=2.7
+    - os: linux
+      env: PYTHON_VERSION=3.4
+    - os: linux
+      env: PYTHON_VERSION=3.5
+
+install:
+  # See:
+  # https://groups.google.com/a/continuum.io/forum/#!topic/conda/RSFENqovnro
+  # - conda update --yes --no-deps conda
+  # OK, this used to *fix* the build, but now it *breaks* the build.
+  # If you're reading this, good luck out there. I'm not sure what to tell you.
+  - conda create --yes -n testenv python=$PYTHON_VERSION
+  - conda install --yes -n testenv pip numpy scipy matplotlib mock requests setuptools gdal rasterio
+  - source activate testenv
+  - pip install pyzmq
+  - pip install future
+  - pip install codecov
+  - pip install msgpack-python
+  - pip install structlog
+  - pip install pqdict
+  # for debugging...
+  - echo $PATH
+  - which python
+  - conda info
+  - conda list
+  - python setup.py install
 
 before_install:
-  - pip install codecov
+  - if [ ${PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-3.5.5-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-3.5.5-Linux-x86_64.sh -O miniconda.sh; fi
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b -p /home/travis/miniconda
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes conda
+  # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
+  # - rm -rf /dev/shm
+  # - ln -s /run/shm /dev/shm
 
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: pip install -U tox
+# command to run tsts, e.g. python setup.py test
+script:
+    - python setup.py test
+    #- py.test -v --color=yes --exitfirst --showlocals --durations=5
 
 after_success:
   - codecov
-
-# command to run tsts, e.g. python setup.py test
-script: tox
-
-# After you create the Github repo and add it to Travis, run the
-# travis_pypi_setup.py script to finish PyPI deployment setup
-deploy:
-  provider: pypi
-  distributions: sdist bdist_wheel
-  user: friend0
-  password:
-    secure: PLEASE_REPLACE_ME
-  on:
-    tags: true
-    repo: friend0/tower
-    condition: $TOXENV == py27
-

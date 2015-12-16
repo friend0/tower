@@ -1,21 +1,16 @@
-"""
+from __future__ import (absolute_import, division, print_function, unicode_literals)
 
-The frames module is composed of two classes, the Frame, and the FrameBuffer.
-Each frame stores data on state, and the time the sample was received.
-The FrameBuffer is a collection of Frames that we use for filtering and extrapolation functions.
-
-"""
 import math
 import time
 
 import numpy as np
 from scipy import signal
 
-from tower.map.dynamics import euler_from_quaternion
+from tower.transformations.transformations import euler_from_quaternion
 
 
-# todo: make this more extensible, i.e. specify the type of filter that should be implemented
 def butter_lowpass(cutoff, fs, order=3):
+    # todo: make this more extensible
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
     b, a = signal.butter(order, normal_cutoff, btype='low', analog=True)
@@ -27,34 +22,7 @@ def butter_lowpass_filter(b, a, data):
     return y
 
 
-def quat2euler(q):
-    """
-
-    Function for returning a set of Euler angles from a given quaternion. Uses a fixed rotation sequence.
-
-    :param q:
-    :return:
-
-    """
-    qx, qy, qz, qw = q
-    sqx, sqy, sqz, sqw = q ** 2
-    invs = 1.0 / (sqx + sqy + sqz + sqw)
-
-    yaw = np.arctan2(2.0 * (qx * qz + qy * qw) * invs, (sqx - sqy - sqz + sqw) * invs)
-    pitch = -np.arcsin(2.0 * (qx * qy - qz * qw) * invs)
-    roll = np.arctan2(2.0 * (qy * qz + qx * qw) * invs, (-sqx + sqy - sqz + sqw) * invs)
-
-    return np.array((yaw, pitch, roll))
-
-
 class Frame(object):
-    """
-
-    The frame class is typically managed by a FrameBuffer, which instantiates a new Frame when it receives a call to
-    update.
-    A call to update means a new sample has arrived, and should be added to the buffer.
-
-    """
 
     def __init__(self, value=None):
         self._frame_data = np.array(value)
@@ -86,15 +54,9 @@ class Frame(object):
         else:
             return None
 
-    @property
-    def state_dict(self):
-        if self._frame_data is not None:
-            return self._frame_data[:6]
-        else:
-            return None
 
+class FrameHistory(object):
 
-class FrameBuffer(object):
     def __init__(self, extrapolating=False, filtering=False, **kwargs):
         self.extrapolation_max = kwargs.get('extrapolation_max', 5)
         self._cutoff, self._fs, self._order = kwargs.get('cutoff', 20), kwargs.get('fs', 120), kwargs.get('order', 4)
@@ -113,46 +75,20 @@ class FrameBuffer(object):
 
     @property
     def cutoff(self):
-        """
-
-        The cutoff frequency of the filter. Implementation dependent.
-        :return: the cutoff of the filter
-
-        """
         return self._cutoff
 
     @cutoff.setter
     def cutoff(self, value):
-        """
-
-        Cutoff property setter. Limit to positive frequencies, defualt to 8.
-
-        :param value: new value for cutoff
-
-        """
         if value > 0:
             self._cutoff = value
         else:
             self._cutoff = 8  # default
-
     @property
     def filtered_frame(self):
-        """
-
-        The filtered frame resulting from taking the latest value from filter output.
-        :return: the most current, filtered frame
-        """
         return self._filtered_frame
 
     @filtered_frame.setter
     def filtered_frame(self, value):
-        """
-
-        Filtered frame property setter. Updates last_frame (l_frame) and last last frame (ll_frame)
-
-        :param value: the new value for the filtered frame
-
-        """
         self.ll_frame = self.l_frame
         self.l_frame = self.filtered_frame
         self._filtered_frame = value
@@ -161,11 +97,9 @@ class FrameBuffer(object):
     def can_extrapolate(self):
         """
 
-        Determine if extrapolation is valid based on given constraints. Prevents us from extrapolating forever if we've
-        left the capture volume, and also prevents us from extrapolating if we do not have enough previous information.
+        Determine if extrapolation is valid based on given constraints
 
         :return: True if we can extrapolate position, false if we cannot
-
         """
         return self.l_frame is not None and self.ll_frame is not None and self.extrapolation_count \
                                                                           < self.extrapolation_max
@@ -175,16 +109,14 @@ class FrameBuffer(object):
 
         Used to estimate the position of a body during occlusion, or missed frame events.
         Based on the previous two valid frames, estimate velocity, and therefore position of the current dropped frame.
-
         :return: the estimated state of the body, or none is extrapolation cannot be completed
 
         """
         if self.can_extrapolate:
             self.extrapolation_count += 1
-            dt = time.time() - self.prev_time  # current time - last time we added a state to smooth operator
-            frame_velocity = (self.l_frame.state - self.ll_frame.state) / (
-            self.l_frame.time_stamp - self.ll_frame.time_stamp)
-            state = self.l_frame.state + frame_velocity * dt
+            dt = time.time() - self.prev_time # current time - last time we added a state to smooth operator
+            frame_velocity = (self.l_frame.state - self.ll_frame.state)/(self.l_frame.time_stamp - self. ll_frame.time_stamp)
+            state = self.l_frame.state + frame_velocity*dt
             return state
         else:
             self.extrapolation_count = 0
@@ -193,7 +125,7 @@ class FrameBuffer(object):
     def filter(self, state):
         """
 
-        Apply a filter to input states. Currently implements Butterworth - will be extended to variety of filters.
+        Apply a Butterworth filter to input states
 
         :param state: state array consisting of [x, y, z, yaw, roll, pitch]
         :return:
@@ -208,7 +140,7 @@ class FrameBuffer(object):
                 # Filter
                 for column in range(len(self.current_frame.state + 1)):
                     filt = butter_lowpass_filter(self._b, self._a, self.smooth_operator[:, column])
-                    # print("Last", filt[-1])
+                    #print("Last", filt[-1])
                     filtered.append(filt[-1])
                 return filtered
         return None
@@ -220,7 +152,6 @@ class FrameBuffer(object):
 
         :param packet: Raw, serialized packet from ZMQ stream
         :return: The state of the vehicle is given in an array of the form [x, y, z, yaw, roll, pitch, detected(bool)]
-
         """
         detected = packet[-1]
         delta = packet[-2]
@@ -258,7 +189,6 @@ class FrameBuffer(object):
         if state is not None:
             if self.filtering:
                 state = self.filter(state)
-                print(state)
             else:
                 pass
 

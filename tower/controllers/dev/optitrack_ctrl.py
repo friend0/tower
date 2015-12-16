@@ -17,7 +17,8 @@ import msgpack
 import simplejson
 import structlog
 import zmq
-from tower.controllers import frames
+from tower.swarm.controllers import frames
+
 import tower.controllers.playground as pid
 
 
@@ -321,7 +322,7 @@ if __name__ == "__main__":
                     prev_z = z
                     prev_vz = curr_velocity
                     prev_t = time.time()
-                    """ Thrust was being generated as a decimal value instead of as percent in other examples """
+                    """ Thrust was being generated as a decimal value instead of as percent in other dev """
                     thrust_sp = max(min(thrust_sp, 1), 0.40)
 
                     # thrust_sp = max(min(thrust_sp, 0.90), 0.40)

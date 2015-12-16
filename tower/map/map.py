@@ -5,12 +5,8 @@ Manages
 
 """
 from __future__ import (absolute_import, division, print_function, unicode_literals)
-
 import collections
-from collections import namedtuple
-
 import affine
-
 affine.set_epsilon(1e-12)  # must set epsilon to small value to prevent sensitive trip of degenerate matrix detection
 import rasterio
 from builtins import *
@@ -18,7 +14,6 @@ from geographiclib.geodesic import Geodesic
 from numpy import math
 from tower.map.space import Space
 from tower.map.graph import Graph
-from tower.controllers.swarm.swarm import Swarm
 
 try:
     from osgeo import gdal
@@ -137,9 +132,6 @@ class Map(Space):
         self.originY = self.geo_transform[3]  # top-left y
         self.pixelWidth = self.geo_transform[1]  # w/e pixel resoluton
         self.pixelHeight = self.geo_transform[5]  # n/s pixel resolution
-
-        self.swarm = Swarm()    # A swarm is a collection of vehicles. A vehicle contains its own controller plugin
-                                # that is updated regularly by swarm it belongs to
 
         self.graph = Graph()    # Graph object used for planning and controller logic.
                                 # Each vehicle will probably alo need to carry arodun an instance of Graph or Path
