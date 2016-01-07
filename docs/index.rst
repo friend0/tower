@@ -11,12 +11,19 @@ For Spatially Aware Decision Making Algorithms
 
 Intro
 ---------
-Tower uses GDAL and Rasterio to interface with raw raster data in a variety of formats.
-A built-in socket server makes it possible to host this information via UDP to client applications.
-The intent of this project is to offer a framework for those wishing to implement decision making algorithms on top of geographic
-information.
+Tower is a Python 2/3 compatible package for developing and analyzing autonomous control algorithms for unmanned systems.
+In particular, Tower was built to conduct autonomous flights of small unmanned aerial systems at the Hybrid Systems Lab at UC Santa Cruz.
 
-.. image:: ../img/hslLogo.png
+Tower makes it possible to configure and execute low level control with a simple plugin API, and to interface these
+controllers with real vehicles. Tower also provides a plugin architecture for higher level planning algorithms. The plugin architecture
+of Tower is complemented by built-in spatial, mapping, and graph abstractions for planning paths and conducting experiments in
+realistic scenarios.
+
+Roadmap
+-----------
+Tower is in the early stages of development, but we have a lot planned.
+
+.. image:: ./img/hslLogo.png
     :align: center
 
 Install
@@ -31,7 +38,7 @@ Note: this doesn't work. Not hosting on pip yet.
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
    self
    readme
